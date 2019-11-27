@@ -1070,7 +1070,8 @@ MODULE OIL_MOD
                                     else
                                        waveheight = 0.243 * (0.71*WindSpeed**1.23)**2.0 / Gravity                                                        !ADIOS formulation (NOAA 1994)
                                     end if         
-                                    FormTime = Fingas_Class(ClassIndex, 7) + (Fingas_Class(ClassIndex, 8) / ((waveheight*100.0)**1.5)) !(minutes)
+                                    FormTime = Fingas_Class(ClassIndex, 7) + &
+                                      (Fingas_Class(ClassIndex, 8) / ((waveheight*100.0)**1.5)) !(minutes)
                                    ELSE
                                        FormTime = 0.0
                                    END IF
