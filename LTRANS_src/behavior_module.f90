@@ -210,7 +210,7 @@ CONTAINS
         ' maxtimeatsurf=',maxtimeatsurf,' maxsizeatsurf=',maxsizeatsurf
       !Note: P_swim(n,3) is updated at each time step in Subroutine behave
     enddo
-    if(maxtimeatsurf==0 )maxtimeatsurf=999999999999
+    if(maxtimeatsurf==0 )maxtimeatsurf=999999999
     !The following variables are used by the C. virginica and C. ariakensis 
     !  behavior routines
     timer = DBLE(0.0)         !to count how long C. arikensis particles swim down

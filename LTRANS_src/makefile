@@ -17,7 +17,7 @@ GFORTRAN_UMCES :=
 GFORTRAN_USGS :=   
 PGI_USGS   :=
 Fluxus :=   
-Galileo := on  
+Galileo := on   
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
@@ -149,10 +149,10 @@ ifdef FOPENMP
   else
     FOPENMP_FLAG = -fopenmp
   endif
-  LTRANSEXE=LTRANS_vZ_OMP.exe
+  LTRANSEXE=LTRANS_Zlev_OMP.exe
 else
   FOPENMP_FLAG =
-  LTRANSEXE=LTRANS_vZ_SEQ.exe
+  LTRANSEXE=LTRANS_Zlev_SEQ.exe
 endif
 
 COMPILINGMESSAGE1= "Executable is ../$(LTRANSEXE)"

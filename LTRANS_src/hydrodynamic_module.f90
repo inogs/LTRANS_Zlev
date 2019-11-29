@@ -1860,9 +1860,9 @@ CONTAINS
        if(Zgrid)then
          !write(*,*)'open MITgcm datafile: ',TRIM(filenm)
          if(filegiven)then
-           write(*,'(3a)') 'initHydro : file name to open and read is ',TRIM(filenm),' with swaped conversion (little-big endian)'
+           write(*,'(3a,i8)') 'initHydro : file name to open and read is ',TRIM(filenm),' with little endian, rec length is ',hydrobytes*vi
            open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
-                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='swap')          !--- CL-OGS: all var are read with dim vi !
+                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
             if ( ios /= 0 ) then
                 do waiting=1,10
                         rand15=int( 15.0*genrand_real1() )
@@ -1871,7 +1871,7 @@ CONTAINS
                                   ' failed . New trial after sleep ',rand15
                         open(unit=110,file=TRIM(filenm),form='unformatted',    &
                           status='old', action='read',access='direct',         &
-                          recl=hydrobytes*vi, iostat=ios,convert='swap')
+                          recl=hydrobytes*vi, iostat=ios,convert='little_endian')
                         if ( ios == 0 ) exit
                 enddo
             endif
@@ -5096,8 +5096,6 @@ CONTAINS
     LOGICAL :: fst
     INTEGER :: i,triangle,checkele,P_r_ele,P_u_ele,P_v_ele,oP_ele,P_ele,error,k
     INTEGER :: updatednode ,j,err_in
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: rxtmp,rytmp,uxtmp,uytmp,vxtmp,vytmp
-
     err_in=0
     if(PRESENT(err)) then
        err_in= err
@@ -5139,28 +5137,16 @@ CONTAINS
       write(*,*)'run routine setEle searching among every single triangle element '
       fst=.True. 
     ENDIF
-  
-   ALLOCATE(rxtmp(4,rho_kwele(k)))
-   ALLOCATE(rytmp(4,rho_kwele(k)))
-   ALLOCATE(uxtmp(4,u_kwele(k)))
-   ALLOCATE(uytmp(4,u_kwele(k)))
-   ALLOCATE(vxtmp(4,v_kwele(k)))
-   ALLOCATE(vytmp(4,v_kwele(k)))
-    rxtmp=r_kwele_x(:,1:rho_kwele(k),k)
-    rytmp=r_kwele_y(:,1:rho_kwele(k),k)
-    uxtmp=u_kwele_x(:,1:u_kwele(k),k)
-    uytmp=u_kwele_y(:,1:u_kwele(k),k)
-    vxtmp=v_kwele_x(:,1:v_kwele(k),k)
-    vytmp=v_kwele_y(:,1:v_kwele(k),k)
 
-   IF(.not.fst)THEN
+    IF(.not.fst)THEN !if not the first iteration 
       !Find rho element in which particle is located
       oP_ele = P_r_element(n)
       do i=1,10
         triangle = 0
         if(r_Adjacent(oP_ele,i,k).NE.0) then
            checkele = r_Adjacent(oP_ele,i,k)
-           call gridcell(rho_kwele(k),rytmp,rxtmp, &
+           call gridcell(rho_kwele(k),r_kwele_y(:,1:rho_kwele(k),k),           &
+                      r_kwele_x(:,1:rho_kwele(k),k), &
                     Xpar,Ypar,P_ele,triangle,checkele)
         endif
         if(triangle .NE. 0) then
@@ -5181,7 +5167,8 @@ CONTAINS
         triangle = 0
         if(u_Adjacent(oP_ele,i,k).NE.0)then
            checkele = u_Adjacent(oP_ele,i,k)
-           call gridcell(u_kwele(k),uytmp,uxtmp, &
+           call gridcell(u_kwele(k),u_kwele_y(:,1:u_kwele(k),k),               &
+                       u_kwele_x(:,1:u_kwele(k),k), &
                        Xpar,Ypar,P_ele,triangle,checkele)
         endif
         if(triangle .NE. 0) then
@@ -5204,7 +5191,8 @@ CONTAINS
         triangle = 0
         if(v_Adjacent(oP_ele,i,k).NE.0) then
            checkele = v_Adjacent(oP_ele,i,k)
-           call gridcell(v_kwele(k),vytmp,vxtmp, &
+           call gridcell(v_kwele(k),v_kwele_y(:,1:v_kwele(k),k),               &
+                       v_kwele_x(:,1:v_kwele(k),k), &
                        Xpar,Ypar,P_ele,triangle,checkele)
         endif
         if(triangle .NE. 0) then
@@ -5232,24 +5220,28 @@ CONTAINS
       !write(*,*)'Searching containing elements among all elements ',&
       !          ' because particle change of vertical level'
       endif
+      !write(*,*)'Searching among all elements'
       error=0
       !Find rho element in which particle is located
       P_r_ele=0
       triangle=0
-      call gridcell(rho_kwele(k),rytmp,rxtmp,Xpar,Ypar,P_r_ele,triangle)
+      call gridcell(rho_kwele(k),r_kwele_y(:,1:rho_kwele(k),k),                &
+            r_kwele_x(:,1:rho_kwele(k),k),Xpar,Ypar,P_r_ele,triangle)
       if (triangle.EQ.0) error = 1
 
       !Find u element in which particle is located
       P_u_ele=0
       triangle=0
-      call gridcell(u_kwele(k),uytmp,uxtmp,                               &
+      call gridcell(u_kwele(k),u_kwele_y(:,1:u_kwele(k),k),                    &
+                    u_kwele_x(:,1:u_kwele(k),k),                               &
                     Xpar,Ypar,P_u_ele,triangle)
       if (triangle.EQ.0) error = 2
 
       !Find v element in which particle is located
       P_v_ele=0
       triangle=0
-      call gridcell(v_kwele(k),vytmp,vxtmp,                              &
+      call gridcell(v_kwele(k),v_kwele_y(:,1:v_kwele(k),k),                    &
+                     v_kwele_x(:,1:v_kwele(k),k),                              &
                      Xpar,Ypar,P_v_ele,triangle)
       if (triangle.EQ.0) error = 3
       if(error>0 .and. num.ge.3)then
@@ -5271,9 +5263,10 @@ CONTAINS
        P_u_element(n)=P_u_ele
        P_v_element(n)=P_v_ele
       endif
+    !ELSE
+    !  write(*,*)'Found in neighbor elements'
+    ENDIF ! if fst
 
-
-    ENDIF
     if(num.ne.2 .and. &
     (P_r_element(n)==0 .or. P_v_element(n)==0 .or. P_u_element(n)==0) )then
      if(error.eq.0) error=7
@@ -5377,7 +5370,6 @@ CONTAINS
 
     EndIf
 
-    DEALLOCATE(rxtmp,rytmp,uxtmp,uytmp,vxtmp,vytmp)
     if(PRESENT(err)) err = error
 
   END SUBROUTINE setEle
