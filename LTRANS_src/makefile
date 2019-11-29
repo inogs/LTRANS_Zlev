@@ -9,15 +9,15 @@
 #                         USER-DEFINED OPTIONS                            =
 #==========================================================================
 OMP := on   # turn on to enable openmp (turn it off to have a sequential executable)
-Debug :=    # turn on to activate debug flags
+Debug :=     # turn on to activate debug flags
 #
 #    Turn one of the following on to link the libraries and flags specific to a given cluster:
 IFORT_UMCES :=     
 GFORTRAN_UMCES :=    
 GFORTRAN_USGS :=   
 PGI_USGS   :=
-Fluxus :=   
-Galileo := on  
+Fluxus := on  
+Galileo :=   
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
@@ -149,10 +149,10 @@ ifdef FOPENMP
   else
     FOPENMP_FLAG = -fopenmp
   endif
-  LTRANSEXE=LTRANS_vZ_OMP.exe
+  LTRANSEXE=LTRANS_Zlev_OMP.exe
 else
   FOPENMP_FLAG =
-  LTRANSEXE=LTRANS_vZ_SEQ.exe
+  LTRANSEXE=LTRANS_Zlev_SEQ.exe
 endif
 
 COMPILINGMESSAGE1= "Executable is ../$(LTRANSEXE)"
