@@ -1860,9 +1860,9 @@ CONTAINS
        if(Zgrid)then
          !write(*,*)'open MITgcm datafile: ',TRIM(filenm)
          if(filegiven)then
-           write(*,'(2a)') 'initHydro : file name to open and read is ',TRIM(filenm)
+           write(*,'(3a)') 'initHydro : file name to open and read is ',TRIM(filenm),' with swaped conversion (little-big endian)'
            open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
-                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios)          !--- CL-OGS: all var are read with dim vi !
+                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='swap')          !--- CL-OGS: all var are read with dim vi !
             if ( ios /= 0 ) then
                 do waiting=1,10
                         rand15=int( 15.0*genrand_real1() )
@@ -1871,7 +1871,7 @@ CONTAINS
                                   ' failed . New trial after sleep ',rand15
                         open(unit=110,file=TRIM(filenm),form='unformatted',    &
                           status='old', action='read',access='direct',         &
-                          recl=hydrobytes*vi, iostat=ios)
+                          recl=hydrobytes*vi, iostat=ios,convert='swap')
                         if ( ios == 0 ) exit
                 enddo
             endif
@@ -2261,7 +2261,15 @@ CONTAINS
               do j=startr(2),startr(2)+countr(2)-1
                 read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
                 !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 4 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romU(1:ui,j,(us-k+1),nf+t-startr(4))=tmpvec(2:vi)
               enddo
               enddo
@@ -2276,7 +2284,15 @@ CONTAINS
                 !(',k,',',j,'):',ktlev+j,' of size ni stored in k=',(us-k+1)
                 read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
                 !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 8 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romU(1:ui,j,(us-k+1),nf+t-startr(4))=dbltmpvec(2:vi)     
               enddo
               enddo
@@ -4102,7 +4118,15 @@ CONTAINS
               do j=startr(2),startr(2)+countr(2)-1
                 read(FID,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
                 !(vi instead of ui as U output is on ui+1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 4 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romUf(1:ui,j,(us-k+1),1)=tmpvec(2:vi) ! 2:vi as U output is on u-nodes+1 for MITgcm
             enddo
             enddo
@@ -4112,7 +4136,15 @@ CONTAINS
               do j=startr(2),startr(2)+countr(2)-1
                 read(FID,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
                 !(vi instead of ui as U output is on ui+1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 8 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romUf(1:ui,j,(us-k+1),1)=dbltmpvec(2:vi) ! 2:vi as U output is on u-nodes+1 for MITgcm
             enddo
             enddo
