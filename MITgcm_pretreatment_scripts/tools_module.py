@@ -121,6 +121,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           waitforend=False
           waitforfrequency=False
           delXYZ=''
+          PRECISION=''
           nXYZ=''
        	  countline=0
           words=['','']
@@ -133,7 +134,8 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
              for i in range(1,len(words)):
                #if(foundarrow or words[i-1]=='>'):foundarrow=True
                #else:continue
-               word=words[i]         
+               word=words[i]
+               if(word[0]=='#' or word[min(len(word)-1,1)]=='#' or word[min(len(word)-1,2)]=='#'): break         
                if(waitforend):
                   #print 'waitforend at line ',countline,' among::: ',line,' ; checking ',word
                   if(word[1:4]=='END'):
@@ -187,6 +189,14 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                         waitforend=True
                 	#print string,' :: RUN'
                         break
+                  elif(word[0:15]=='writeBinaryPrec'):
+                	string=(''.join(words[i:]))[:-1]
+                        try:
+                          intprec=int(string[16:-1])
+                          PRECISION=PRECISION+string+' \n'
+                        except:
+                          break
+                        break
                   elif(word=='Nx' or word=='Ny'):
                 	string=(''.join(words[i:i+3]))
                         string='n'+string[1]+'rho_in'+string[2:] #  'Nx -> nxrho_in'
@@ -203,6 +213,8 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           print '----------'
           fw.write(delXYZ)
           print delXYZ
+          fw.write(PRECISION)
+          print PRECISION
           nXYZ=nXYZ+'nzrho_in=len(delZ) \n'+'nzrho_in_cut=nzrho_in \n'
           fw.write(nXYZ)
           print nXYZ

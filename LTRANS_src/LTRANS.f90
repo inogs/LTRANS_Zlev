@@ -1,3 +1,6 @@
+!
+! LTRANS-Zlev version 0(beta)
+!
 ! **********************************************************************
 ! **********************************************************************
 ! **      Original LTRANS v.2b source code : Copyright (c) 2013       **
@@ -3174,6 +3177,8 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     INTEGER :: nf,nfilesin
 
     write(*,*) ' ******************** Model Info ******************** '
+    write(*,*) ' '
+    write(*,*) ' LTRANS-Zlev version 0(beta)'
     write(*,*) ' '
 
     write(*,*) ' Run Name:              = ',TRIM(RunName)

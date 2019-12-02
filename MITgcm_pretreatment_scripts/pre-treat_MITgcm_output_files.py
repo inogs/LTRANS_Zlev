@@ -7,16 +7,16 @@ writeUniformIniParlocFile=True
 MITgcmdirectory=PACKAGEDIRECTORY+'/MITgcm_outputs/'
 f_Eta='Eta.'
 f_RHOA='RHOAnoma.'
-f_U='U.'
-f_V='V.'
-f_W='W.'
+f_U='U_hr_ave.'
+f_V='V_hr_ave.'
+f_W='W_hr_ave.'
 f_S='S.'
 f_T='T.'
 f_KPPdiffS='KPPdiffS.'
 f_EXFuwind='EXFuwind.'
 f_EXFvwind='EXFvwind.'
-PRECISION=4
-identifier='boxes_NiNj64'
+identifier='boxes_NiNj256'
+BATI_PREC=32
 #############################################################
 import numpy as np
 import os,sys
@@ -209,6 +209,11 @@ nzrho_in_cut=nzrho_in  # can be modified to extract only upper levels of the gri
 nzrho_in_cut=min(nzrho_in_cut,nzrho_in)
 nzrho_in_w=nzrho_in+1
 nzrho_in_w_cut=nzrho_in_cut+1
+PRECISION=writeBinaryPrec/8
+if(BATI_PREC!=32 and BATI_PREC!=64):
+  BATI_PREC=PRECISION
+else:
+  BATI_PREC=BATI_PREC/8
 print 'nxrho_in= '+str(nxrho_in)
 print 'nyrho_in= '+str(nyrho_in)
 print 'nzrho_in= '+str(nzrho_in)
@@ -244,11 +249,11 @@ for nf in range(0,numgridfiles):
           nk=1
           full_nk=1
         print g_filenames[nf][max(0,len(g_filenames[nf])-5):]
-        if(PRECISION==8):  myfmt='d'*full_nk*full_nyrho_in*full_nxrho_in
-        elif(PRECISION==4):myfmt='f'*full_nk*full_nyrho_in*full_nxrho_in
+        if(BATI_PREC==8):  myfmt='d'*full_nk*full_nyrho_in*full_nxrho_in
+        elif(BATI_PREC==4):myfmt='f'*full_nk*full_nyrho_in*full_nxrho_in
         else:
-             print 'ERROR PRECISION should be 4 or 8, instead it was set to ',PRECISION
-        dataread= struct.unpack(myfmt,f.read(PRECISION*full_nk*full_nyrho_in*full_nxrho_in))
+             print 'ERROR BATI_PRECISION should be 4 or 8, instead it was set to ',BATI_PREC
+        dataread= struct.unpack(myfmt,f.read(BATI_PREC*full_nk*full_nyrho_in*full_nxrho_in))
 	var=np.zeros((full_nk,full_nyrho_in,full_nxrho_in),dtype=float)
 	for k in range(0,full_nk):
 		for j in range(0,full_nyrho_in):

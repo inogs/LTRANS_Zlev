@@ -1860,9 +1860,9 @@ CONTAINS
        if(Zgrid)then
          !write(*,*)'open MITgcm datafile: ',TRIM(filenm)
          if(filegiven)then
-           write(*,'(2a)') 'initHydro : file name to open and read is ',TRIM(filenm)
+           write(*,'(3a,i8)') 'initHydro : file name to open and read is ',TRIM(filenm),' with little endian'
            open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
-                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios)          !--- CL-OGS: all var are read with dim vi !
+                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
             if ( ios /= 0 ) then
                 do waiting=1,10
                         rand15=int( 15.0*genrand_real1() )
@@ -1871,7 +1871,7 @@ CONTAINS
                                   ' failed . New trial after sleep ',rand15
                         open(unit=110,file=TRIM(filenm),form='unformatted',    &
                           status='old', action='read',access='direct',         &
-                          recl=hydrobytes*vi, iostat=ios)
+                          recl=hydrobytes*vi, iostat=ios,convert='little_endian')
                         if ( ios == 0 ) exit
                 enddo
             endif
@@ -1919,11 +1919,6 @@ CONTAINS
                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
                  stop " ERROR READING ZETA "
               endif
-              if(j==startz(2))then
-                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-                             TRIM(filenm)
-                  write(*,'(33f7.4)')tmpvec(51:84)
-              endif
               romZ(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
             enddo
             enddo
@@ -1936,11 +1931,6 @@ CONTAINS
               if ( ios /= 0 ) then
                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
                  stop " ERROR READING ZETA "
-              endif
-              if(j==startz(2))then
-                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-                            TRIM(filenm)
-                  write(*,'(33f7.4)')dbltmpvec(51:84)
               endif
               romZ(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
             enddo
@@ -2261,7 +2251,15 @@ CONTAINS
               do j=startr(2),startr(2)+countr(2)-1
                 read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
                 !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 4 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romU(1:ui,j,(us-k+1),nf+t-startr(4))=tmpvec(2:vi)
               enddo
               enddo
@@ -2276,7 +2274,15 @@ CONTAINS
                 !(',k,',',j,'):',ktlev+j,' of size ni stored in k=',(us-k+1)
                 read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
                 !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 8 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romU(1:ui,j,(us-k+1),nf+t-startr(4))=dbltmpvec(2:vi)     
               enddo
               enddo
@@ -4102,7 +4108,15 @@ CONTAINS
               do j=startr(2),startr(2)+countr(2)-1
                 read(FID,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
                 !(vi instead of ui as U output is on ui+1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 4 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romUf(1:ui,j,(us-k+1),1)=tmpvec(2:vi) ! 2:vi as U output is on u-nodes+1 for MITgcm
             enddo
             enddo
@@ -4112,7 +4126,15 @@ CONTAINS
               do j=startr(2),startr(2)+countr(2)-1
                 read(FID,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
                 !(vi instead of ui as U output is on ui+1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING U "
+                if ( ios /= 0 )then 
+                   write(*,"(11(a,i6),a)") &
+                   " ERROR READING U array of length ",vi,"* 8 Byte at pos ",ktlev+j,&
+                   " for t=",t," in [",&
+                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
+                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
+                   startr(2),',',startr(2)+countr(2)-1,"], "
+                   stop
+                endif
                 romUf(1:ui,j,(us-k+1),1)=dbltmpvec(2:vi) ! 2:vi as U output is on u-nodes+1 for MITgcm
             enddo
             enddo
@@ -5064,8 +5086,6 @@ CONTAINS
     LOGICAL :: fst
     INTEGER :: i,triangle,checkele,P_r_ele,P_u_ele,P_v_ele,oP_ele,P_ele,error,k
     INTEGER :: updatednode ,j,err_in
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: rxtmp,rytmp,uxtmp,uytmp,vxtmp,vytmp
-
     err_in=0
     if(PRESENT(err)) then
        err_in= err
@@ -5107,28 +5127,16 @@ CONTAINS
       write(*,*)'run routine setEle searching among every single triangle element '
       fst=.True. 
     ENDIF
-  
-   ALLOCATE(rxtmp(4,rho_kwele(k)))
-   ALLOCATE(rytmp(4,rho_kwele(k)))
-   ALLOCATE(uxtmp(4,u_kwele(k)))
-   ALLOCATE(uytmp(4,u_kwele(k)))
-   ALLOCATE(vxtmp(4,v_kwele(k)))
-   ALLOCATE(vytmp(4,v_kwele(k)))
-    rxtmp=r_kwele_x(:,1:rho_kwele(k),k)
-    rytmp=r_kwele_y(:,1:rho_kwele(k),k)
-    uxtmp=u_kwele_x(:,1:u_kwele(k),k)
-    uytmp=u_kwele_y(:,1:u_kwele(k),k)
-    vxtmp=v_kwele_x(:,1:v_kwele(k),k)
-    vytmp=v_kwele_y(:,1:v_kwele(k),k)
 
-   IF(.not.fst)THEN
+    IF(.not.fst)THEN !if not the first iteration 
       !Find rho element in which particle is located
       oP_ele = P_r_element(n)
       do i=1,10
         triangle = 0
         if(r_Adjacent(oP_ele,i,k).NE.0) then
            checkele = r_Adjacent(oP_ele,i,k)
-           call gridcell(rho_kwele(k),rytmp,rxtmp, &
+           call gridcell(rho_kwele(k),r_kwele_y(:,1:rho_kwele(k),k),           &
+                      r_kwele_x(:,1:rho_kwele(k),k), &
                     Xpar,Ypar,P_ele,triangle,checkele)
         endif
         if(triangle .NE. 0) then
@@ -5149,7 +5157,8 @@ CONTAINS
         triangle = 0
         if(u_Adjacent(oP_ele,i,k).NE.0)then
            checkele = u_Adjacent(oP_ele,i,k)
-           call gridcell(u_kwele(k),uytmp,uxtmp, &
+           call gridcell(u_kwele(k),u_kwele_y(:,1:u_kwele(k),k),               &
+                       u_kwele_x(:,1:u_kwele(k),k), &
                        Xpar,Ypar,P_ele,triangle,checkele)
         endif
         if(triangle .NE. 0) then
@@ -5172,7 +5181,8 @@ CONTAINS
         triangle = 0
         if(v_Adjacent(oP_ele,i,k).NE.0) then
            checkele = v_Adjacent(oP_ele,i,k)
-           call gridcell(v_kwele(k),vytmp,vxtmp, &
+           call gridcell(v_kwele(k),v_kwele_y(:,1:v_kwele(k),k),               &
+                       v_kwele_x(:,1:v_kwele(k),k), &
                        Xpar,Ypar,P_ele,triangle,checkele)
         endif
         if(triangle .NE. 0) then
@@ -5196,28 +5206,40 @@ CONTAINS
       write(*,*)'Searching containing elements among all elements ',&
                 ' because part not found in neighbor elements, probably ',&
                 ' due to the non respect of the CFL condition, try to decrease idt.'
+        write(*,'(a,3f10.4,a,i3)')                                             &
+      'OLD position was lon,lat=',x2lon(Xpar_at_setEle(n),Ypar_at_setEle(n)),  &
+      y2lat(Ypar_at_setEle(n)),Zpar_at_setEle(n),' level ',P_klev_old(n)
+        write(*,'(a,i4,3(a,i10))')'n=',n,', found new P_r_ele=',P_r_ele       ,&
+             ', P_u_ele=',P_u_ele       ,', P_v_ele=',P_v_ele      
+        write(*,'(a,3f10.4,a,i3)')                                             &
+            'while tested position is lon,lat=',x2lon(Xpar,Ypar),  &
+            y2lat(Ypar),Zpar,' level ',k
       !else
       !write(*,*)'Searching containing elements among all elements ',&
       !          ' because particle change of vertical level'
       endif
+      !write(*,*)'Searching among all elements'
       error=0
       !Find rho element in which particle is located
       P_r_ele=0
       triangle=0
-      call gridcell(rho_kwele(k),rytmp,rxtmp,Xpar,Ypar,P_r_ele,triangle)
+      call gridcell(rho_kwele(k),r_kwele_y(:,1:rho_kwele(k),k),                &
+            r_kwele_x(:,1:rho_kwele(k),k),Xpar,Ypar,P_r_ele,triangle)
       if (triangle.EQ.0) error = 1
 
       !Find u element in which particle is located
       P_u_ele=0
       triangle=0
-      call gridcell(u_kwele(k),uytmp,uxtmp,                               &
+      call gridcell(u_kwele(k),u_kwele_y(:,1:u_kwele(k),k),                    &
+                    u_kwele_x(:,1:u_kwele(k),k),                               &
                     Xpar,Ypar,P_u_ele,triangle)
       if (triangle.EQ.0) error = 2
 
       !Find v element in which particle is located
       P_v_ele=0
       triangle=0
-      call gridcell(v_kwele(k),vytmp,vxtmp,                              &
+      call gridcell(v_kwele(k),v_kwele_y(:,1:v_kwele(k),k),                    &
+                     v_kwele_x(:,1:v_kwele(k),k),                              &
                      Xpar,Ypar,P_v_ele,triangle)
       if (triangle.EQ.0) error = 3
       if(error>0 .and. num.ge.3)then
@@ -5239,9 +5261,10 @@ CONTAINS
        P_u_element(n)=P_u_ele
        P_v_element(n)=P_v_ele
       endif
+    !ELSE
+    !  write(*,*)'Found in neighbor elements'
+    ENDIF ! if fst
 
-
-    ENDIF
     if(num.ne.2 .and. &
     (P_r_element(n)==0 .or. P_v_element(n)==0 .or. P_u_element(n)==0) )then
      if(error.eq.0) error=7
@@ -5345,7 +5368,6 @@ CONTAINS
 
     EndIf
 
-    DEALLOCATE(rxtmp,rytmp,uxtmp,uytmp,vxtmp,vytmp)
     if(PRESENT(err)) err = error
 
   END SUBROUTINE setEle
@@ -7761,10 +7783,7 @@ CONTAINS
                               "Position and characteristics of particles")
         IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
 
-        STATUS = NF90_PUT_ATT(NCID,NF90_GLOBAL,"title","LTRANS v.Zlev output")
-        IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
-
-        STATUS = NF90_PUT_ATT(NCID, NF90_GLOBAL, "author", "Zachary Schlag")
+        STATUS = NF90_PUT_ATT(NCID,NF90_GLOBAL,"title","LTRANS-Zlev v0(beta)")
         IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
 
         STATUS = NF90_PUT_ATT(NCID, NF90_GLOBAL, "svn", SVN_Version)
