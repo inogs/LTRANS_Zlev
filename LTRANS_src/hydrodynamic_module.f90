@@ -1860,7 +1860,7 @@ CONTAINS
        if(Zgrid)then
          !write(*,*)'open MITgcm datafile: ',TRIM(filenm)
          if(filegiven)then
-           write(*,'(3a,i8)') 'initHydro : file name to open and read is ',TRIM(filenm),' with little endian, rec length is ',hydrobytes*vi
+           write(*,'(3a,i8)') 'initHydro : file name to open and read is ',TRIM(filenm),' with little endian'
            open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
                  action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
             if ( ios /= 0 ) then
@@ -1919,11 +1919,6 @@ CONTAINS
                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
                  stop " ERROR READING ZETA "
               endif
-              if(j==startz(2))then
-                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-                             TRIM(filenm)
-                  write(*,'(33f7.4)')tmpvec(51:84)
-              endif
               romZ(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
             enddo
             enddo
@@ -1936,11 +1931,6 @@ CONTAINS
               if ( ios /= 0 ) then
                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
                  stop " ERROR READING ZETA "
-              endif
-              if(j==startz(2))then
-                  write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-                            TRIM(filenm)
-                  write(*,'(33f7.4)')dbltmpvec(51:84)
               endif
               romZ(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
             enddo
@@ -5216,6 +5206,14 @@ CONTAINS
       write(*,*)'Searching containing elements among all elements ',&
                 ' because part not found in neighbor elements, probably ',&
                 ' due to the non respect of the CFL condition, try to decrease idt.'
+        write(*,'(a,3f10.4,a,i3)')                                             &
+      'OLD position was lon,lat=',x2lon(Xpar_at_setEle(n),Ypar_at_setEle(n)),  &
+      y2lat(Ypar_at_setEle(n)),Zpar_at_setEle(n),' level ',P_klev_old(n)
+        write(*,'(a,i4,3(a,i10))')'n=',n,', found new P_r_ele=',P_r_ele       ,&
+             ', P_u_ele=',P_u_ele       ,', P_v_ele=',P_v_ele      
+        write(*,'(a,3f10.4,a,i3)')                                             &
+            'while tested position is lon,lat=',x2lon(Xpar,Ypar),  &
+            y2lat(Ypar),Zpar,' level ',k
       !else
       !write(*,*)'Searching containing elements among all elements ',&
       !          ' because particle change of vertical level'
@@ -7785,10 +7783,7 @@ CONTAINS
                               "Position and characteristics of particles")
         IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
 
-        STATUS = NF90_PUT_ATT(NCID,NF90_GLOBAL,"title","LTRANS v.Zlev output")
-        IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
-
-        STATUS = NF90_PUT_ATT(NCID, NF90_GLOBAL, "author", "Zachary Schlag")
+        STATUS = NF90_PUT_ATT(NCID,NF90_GLOBAL,"title","LTRANS-Zlev v0(beta)")
         IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
 
         STATUS = NF90_PUT_ATT(NCID, NF90_GLOBAL, "svn", SVN_Version)

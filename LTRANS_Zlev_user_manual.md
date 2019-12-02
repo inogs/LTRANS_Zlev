@@ -1,20 +1,22 @@
 # LTRANS-Zlev : User Manual
 
-The present manual consists in a guide detailing the options and setup instructions that are specific to the Zlev version. For this reason, the user should refer to the original v.2b publications and user guide for the options and setup instructions that are in common among the versions, and for details about the methods implemented. For further details on the methods implemented in the OilSpill module, the user should refer to the documents published for the OILTRANS model: [Berry et al., 2012](https://oar.marine.ie/handle/10793/837). 
+*C. Laurent, 2019*, v.0 (beta)
 
-For any issue with LTRANS-Zlev, the users can contact Célia Laurent : **claurent@inogs.it** for assistance.
+The present manual consists of a guide detailing the options and setup instructions that are specific to the Zlev version of LTRANS. For this reason, the user should refer to the original v.2b publications and user guide for the options and setup instructions that are in common between the versions, and for details about the methods implemented. More details are given in section 1.1. Users of LTRANS with the OILTRANS oil spill module can find details on the methods implemented in the OilSpill module in the reference cited section 1.2. 
 
 Users should make reference to the following article relative to the present Zlev version:
 
-> Laurent, C. , Querin, S. Solidoro, C., Melaku Canu, D., "Modelling marine particle dynamics with LTRANS-Zlev: implementation and validation" (in preparation)
+> Laurent, C. , Querin, S. Solidoro, C., Melaku Canu, D., "Modelling marine particle dynamics with LTRANS-Zlev: implementation and validation" (under review)
+
+For any issue relative to the present version of the software, the users can write to : **claurent@inogs.it**
 
 ### 1. Materials of the original LTRANS code
 
 #### 1.1 The LTRANS v.2b version
 
-This user manual is a complement to the original user manual provided by the developers of the v.2b version, available at the address https://github.com/LTRANS/LTRANSv.2b/blob/master/LTRANSv2_UsersGuide_6Jan12.pdf.
+This user manual is an integration of the original user manual provided by the developers of the v.2b version, available at the address https://github.com/LTRANS/LTRANSv.2b/blob/master/LTRANSv2_UsersGuide_6Jan12.pdf.
 
-The original LTRANS v.2b web page is : http://northweb.hpl.umces.edu/LTRANS.htm, it contains the code and instructions as well as grids, hydrodynamic fields and input files to test the v.2b version on a ROMS sigma coordinates domain. The LTRANS v.2b updated source code can be found in https://github.com/LTRANS/LTRANSv.2b . The materials provided by the LTRANS v.2b authors at these addresses provide instructions to install the netcdf and hdf5 external libraries as well as informations regarding two proprietary programs used by LTRANS that require particular permissions if employed for commercial use. 
+The original LTRANS v.2b web page is: http://northweb.hpl.umces.edu/LTRANS.htm; it contains the code and instructions as well as grids, hydrodynamic fields and input files to test the v.2b version on a ROMS sigma coordinates domain. The LTRANS v.2b updated source code can be found in https://github.com/LTRANS/LTRANSv.2b . The materials provided by the LTRANS v.2b authors at these addresses provide instructions to install the netcdf and hdf5 external libraries as well as information regarding two proprietary programs used by LTRANS that require particular permissions if employed for commercial use. 
 
 - **Mersenne Twister random number generator**
 - **TSPACK: tension spline curve-fitting package**
@@ -23,7 +25,7 @@ Note that the use of TSPACK can be deactivated in the Zlev version.
 
 The code structure and algorithms presented in **section I of the LTRANS v.2b user guide** (https://github.com/LTRANS/LTRANSv.2b/blob/master/LTRANSv2_UsersGuide_6Jan12.pdf) provide a complete overview of the original version of the code.
 
-The use of the Zlev version relays on dependencies to the same libraries as the original v.2b version, the user can have detailed instructions on their set-up in **section II of the LTRANS v.2b user guide** (https://github.com/LTRANS/LTRANSv.2b/blob/master/LTRANSv2_UsersGuide_6Jan12.pdf)
+The use of the Zlev version relays on dependencies to the same libraries as the original v.2b version; the user can have detailed instructions on their set-up in **section II of the LTRANS v.2b user guide** (https://github.com/LTRANS/LTRANSv.2b/blob/master/LTRANSv2_UsersGuide_6Jan12.pdf)
 
 Users of LTRANS should make reference to the following papers and User's Guide:
 
@@ -35,7 +37,7 @@ Users of LTRANS should make reference to the following papers and User's Guide:
 
 #### 1.2 The OILTRANS oil spill model
 
-The most current official versions of the OILTRANS oil module and associated tools and documentation are available from the authors by e-mail:  ocean.modelling@marine.ie . Users of LTRANS  with the oil spill module should make reference to the following paper:
+Users of LTRANS with the oil spill module should make reference to the following paper:
 
 > Berry, A., Dabrowski, T., Lyons, K., "The oil spill model OILTRANS and its application to the Celtic Sea", Marine Pollution Bulletin, Volume 64, Issue 11, pp. 2489-2501, http://dx.doi.org/10.1016/j.marpolbul.2012.07.036, 	http://hdl.handle.net/10793/837
 
@@ -91,19 +93,19 @@ LTRANS_Zlev/
 
 ### 3. Source code and compilation of LTRANS_Zlev 
 
-The source code is in the directory `LTRANS_Zlev/LTRANS_src`,  a `makefile` is provided. It can be parameterized in the following way:
+The source code is in the directory `LTRANS_Zlev/LTRANS_src`, where a `makefile` is provided. It can be parameterized in the following way:
 
 ##### 3.1 OpenMP
 
-To activate the use of OpenMp in the compilation,  the user should activate the OMP flag:
+To activate the use of OpenMp in the compilation, the user should activate the OMP flag:
 
 ```
 OMP := on
 ```
 
-which leads to the creation of an executable (`LTRANS_Zlev/LTRANS_vZ_OMP.exe`) that allows the parallelization of the simulation for a number of threads that the user should specify at run-time (See section 5.2 of the present manual).
+which leads to the creation of an executable (`LTRANS_Zlev/LTRANS_Zlev_OMP.exe`) that allows the parallelization of the simulation for a number of threads that the user should specify at run-time (See section 5.2 of the present manual).
 
-Otherwise, to create a sequential executable (`LTRANS_Zlev/LTRANS_vZ_SEQ.exe`) :
+Otherwise, to create a sequential executable (`LTRANS_Zlev/LTRANS_Zlev_SEQ.exe`) :
 
 ```
 OMP :=
@@ -111,7 +113,7 @@ OMP :=
 
 ##### 3.2 Debugging or optimized executable
 
-The user can choose to create a non-optimized executable with debugging flags activated at compile time, by activating the Debug flag (at this time, the option is parameterized for Fluxus and Galileo clusters only):
+The user can choose to create a non-optimized executable with debugging flags activated at compile time, by activating the Debug flag (at this time, the option is parameterized for “Fluxus” and “Galileo” clusters only):
 
 ```
 Debug := on
@@ -125,7 +127,7 @@ Debug :=
 
 ##### 3.3 Choosing a cluster's configuration
 
-The makefile is already configured to run on one of the following clusters. 
+The makefile is already configured to run on one of the following clusters/systems. 
 
 ```
 IFORT_UMCES
@@ -136,13 +138,15 @@ Fluxus
 Galileo
 ```
 
-If the user is using one of these clusters, it only needs to activate it, per example: 
+If the user is using one of these clusters, it only needs to activate it, for example: 
 
 ```
 Galileo := on
 ```
 
-Otherwise, a new configuration can be added to the makefile to include any other cluster, linking the netcdf and hdf5 libraries as well as compilator and flags chosen by the user.
+Otherwise, a new configuration can be added to the makefile to include any other cluster, linking the netcdf and hdf5 libraries as well as compiler and flags chosen by the user. 
+
+WARNING, when adding the configuration of a new system using an <u>intel compiler</u>, the compilation flag `-assume byterecl ` should be employed, otherwise by default the MITgcm binary files will be read assuming by defaults a record unit of 4 bytes while the record length indicated in the hydrodynamic module is based on a unit of 1 byte.
 
 ##### 3.4 Compiling
 
@@ -172,29 +176,28 @@ $ make
   
   Compilation Successfully Completed
   
-  Executable is ../LTRANS_vZ_OMP.exe
-  - Compilation included OPENMP flags. To compile instead in sequential deactivate the OMP flag in the makefile
-  - No debugging flags used for the compilation, the executable is optimised. To create instead a debugging executable please activate the Debug flag in the makefile
+  The executable is ../LTRANS_Zlev_OMP.exe
+  - Compilation included OPENMP flags. To compile instead in sequential mode, deactivate the OMP flag in the makefile
+  - When no debugging flags are used for the compilation, the executable is optimised. To create instead a debugging executable, activate the Debug flag in the makefile
   
 ################################################################################
 ```
 
 ### 4. Building the grids and input files from MITgcm outputs
 
-##### 4.1 Setting the address of the packade directory
+##### 4.1 Setting the address of the package directory
 
 The user should update the address of the LTRANS package directory  writing its own `PACKAGE_ADDRESS`, in `LTRANS_Zlev/MITgcm_pretreatment_scripts/pre-treat_MITgcm_output_files.py`:
 
 ```python
-PACKAGEDIRECTORY="PACKAGE_ADDRESS/LTRANS_Zlev/"
+PACKAGEDIRECTORY="PATH_TO_PACKAGE/LTRANS_Zlev/"
 ```
 
-##### 4.2 Example test case using the outputs of a MITgcm simulation on a squared domain of size 64x64:
+##### 4.2 Example test case using the outputs of a MITgcm simulation on a squared domain of size 256x256:
 
-An example test case can be provided, due to the to large size of the files preventing the upload on github, to get them the user should send a request to claurent@inogs.it.
-The files should then be stored in the MITgcm output directory `LTRANS_Zlev/MITgcm_outputs`. The input files include the grids and a few hydrodynamic files (`U,V,W`):
+An example test case is provided, it can be downloaded at the address https://zenodo.org/record/3560264#.XeVsuvd7k3E. The files that is contains should be downloaded and unzipped in the MITgcm output directory `LTRANS_Zlev/MITgcm_outputs`. The following grids and a few hydrodynamic files (`U,V,W`) are provided :
 
-Note that <u>the MITgcm output directory should necessarily include a STDOUT.000 file</u>, as the pre-treatment script uses it to setup the grid and hydrodynamic characteristics of the binary files to be read.
+Note that <u>the MITgcm output directory should necessarily include a STDOUT.0000 file</u>, since the pre-treatment script uses it to setup the grid and general features of the binary files to be read.
 
 ```
 LTRANS_Zlev/MITgcm_outputs
@@ -205,9 +208,16 @@ LTRANS_Zlev/MITgcm_outputs
    ├── Computational_YC
    ├── Computational_YG
    ├── STDOUT.0000
-   ├── U.dat
-   ├── V.dat
-   └── W.dat
+   ├── U_hr_ave.0000001224.data
+   ├── V_hr_ave.0000001224.data
+   ├── W_hr_ave.0000001224.data
+   ├── U_hr_ave.0000001260.data
+   ├── V_hr_ave.0000001260.data
+   ├── W_hr_ave.0000001260.data
+       [...]
+   ├── U_hr_ave.0000002196.data
+   ├── V_hr_ave.0000002196.data
+   └── W_hr_ave.0000002196.data
 ```
 
 ##### 4.2 Building the provided example grids
@@ -224,33 +234,33 @@ results in the creation of the following LTRANS input files:
 ```
 LTRANS_Zlev/
 ├── plot_scripts
-│   └── setup_boxes_NiNj64.py
+│   └── setup_boxes_NiNj256.py
 └── SIM
     ├── LTRANS_input_file_example.data
     ├── input
-    │   ├── Adjacentelements-boxes_NiNj64-c1.data
-    │   ├── GridforLTRANS-boxes_NiNj64-c1.nc
-    │   ├── Iniparloc_boxes_NiNj64_every_5-i_5-j_rhowaternode.csv
-    │   └── Polygon_boxes_NiNj64_global.csv
-    ├── output_boxes_NiNj64
-    │   ├── boxes_NiNj64-endfile.csv
-    │   ├── boxes_NiNj64.nc
+    │   ├── Adjacentelements-boxes_NiNj256-c1.data
+    │   ├── GridforLTRANS-boxes_NiNj256-c1.nc
+    │   ├── Iniparloc_boxes_NiNj256_every_5-i_5-j_rhowaternode.csv
+    │   └── Polygon_boxes_NiNj256_global.csv
+    ├── output_boxes_NiNj256
+    │   ├── boxes_NiNj256-endfile.csv
+    │   ├── boxes_NiNj256.nc
     │   └── metadata
-    │       ├── BottomHitsboxes_NiNj64.csv
-    │       ├── boxes_NiNj64PartErrors.py
-    │       ├── boxes_NiNj64PartinEle.py
-    │       ├── ErrorLogboxes_NiNj64.txt
-    │       └── LandHitsboxes_NiNj64.csv
-    ├── rundir_boxes_NiNj64
-        ├── LTRANS_boxes_NiNj64.batch
-        └── LTRANS_boxes_NiNj64.data
+    │       ├── BottomHitsboxes_NiNj256.csv
+    │       ├── boxes_NiNj256PartErrors.py
+    │       ├── boxes_NiNj256PartinEle.py
+    │       ├── ErrorLogboxes_NiNj256.txt
+    │       └── LandHitsboxes_NiNj256.csv
+    ├── rundir_boxes_NiNj256
+        ├── LTRANS_boxes_NiNj256.batch
+        └── LTRANS_boxes_NiNj256.data
 ```
 
 ##### 4.3 Parameterize the pre-treatment script for any MITgcm grids and fields
 
 The automatized pre-processing script `LTRANS_Zlev/MITgcm_pretreatment_scripts/pre-treat_MITgcm_output_files.py` contains the address of the directory containing the MITgcm output files.
 
-Note that any MITgcm output directory can be provided here, and the name of the simulation (in this case chosen to be `boxes_NiNj64`) can be changed to create new directories for simulations on distinct water domains.
+Note that any MITgcm output directory can be provided here, and the name of the simulation (in this case set as `boxes_NiNj256`) can be changed to create new directories for simulations on distinct water domains.
 
 - To personalize the domain, the user should modify the values of the following variables :
 
@@ -276,62 +286,60 @@ f_EXFuwind='EXFuwind.'
 f_EXFvwind='EXFvwind.'
 ```
 
-The `f_VAR` strings should be modified if the names of the corresponding MITgcm flow field files are different, and that, <u>even though only the U,V and W files are present, the user should leave the name of the missing files indicated as it is in the example</u>.
+The `f_VAR` strings should be modified if the names of the corresponding MITgcm flow field files are different, and note that, <u>even though only the U,V and W files are present, the user should leave the name of the missing files indicated as in the example</u>.
 
-The user shall not specify the suffix (in this case,  `dat`) .
+The user shall not specify the suffix (in this case, `dat`).
 
-- The user should indicate if the binary files were written in single or double precision:
+- If the grid and bathymetry files (those named `Computational_[...]` in the above example) were provided by another MITgcm simulation using a different precision while writing the binary files, then the user should indicate if the binary files were written in single (`BATI_PREC=32`) or double (`BATI_PREC=32`) precision:
 
 ```
-PRECISION=4 
+BATI_PREC=32
 ```
 
-Use `PRECISION=4 ` if the binary files created by the MITgcm are in single precision.
-
-Change to `PRECISION=8 ` if the binary files created by the MITgcm are in double precision.
+Use `BATI_PREC=0 ` if the grid and hyrodynamic files were all created by the same simulation, so that the `BATI_PREC` value will be set to be equal to the precision read in STDOUT
 
 - Setting a string identifying the computational domain:
 
 ```python
-identifier='boxes_NiNj64'
+identifier='boxes_NiNj256'
 ```
 
-The user may specify any string (whithout empty spaces) as an `identifier`. This string is used to identify a computational domain, it will be used to name the input files, grid files and directories created by the pre-treatment procedure.
+The user may specify any string (without empty spaces) as an `identifier`. This string is used to identify a computational domain: it will be used to name the input files, grid files and directories created by the pre-treatment procedure.
 
 ##### 4.4 Parameterize the creation of the file containing particle release positions
 
-The automatized pre-processing script `LTRANS_Zlev/MITgcm_pretreatment_scripts/pre-treat_MITgcm_output_files.py` contains the following lines that can be modified by the user:
+The automatized pre-processing script `LTRANS_Zlev/MITgcm_pretreatment_scripts/pre-treat_MITgcm_output_files.py` contains the following lines that can be modified by the user to create the file of initial release positions of the particles :
 
 ```python
 (io,i_f,istep)=(0,0,1) 
 (jo,j_f,jstep)=(0,0,1)
 ```
 
-To create the file of initial release positions of the particles,. Setting both to `(0,0,1)`, particles will be released at every cell center of the horizontal grid. These two lines can be modified by the user to indicate a restricted range of `i` or `j` indexes or to set a `step` between release positions, i.e. how many cells to skip between every release position (in the `i` and `j` directions respectively). Per example, for the `i` index, the numbers on the right hand side indicate which range of grid cell centers should be used to define the release positions, using `(10,50,5)` uses one grid cell center every 5 grid cells centers for `i` indexes varying between 10 and 50.
+Setting both to `(0,0,1)`, particles will be released at every cell center of the horizontal grid. These two lines can be modified by the user to indicate a restricted range of `i` or `j` indexes or to set a `step` between release positions, i.e. how many cells to skip between every release position (in the `i` and `j` directions respectively). For example, for the `i` index, the numbers on the right hand side indicate which range of grid cell centers should be used to define the release positions, using `(10,50,5)` uses one grid cell center every 5 grid cells centers for `i` indexes varying between 10 and 50.
 
 ### 5. Executing LTRANS_Zlev with the example test-case
 
 The user should then move to the directory containing the `.data` file created by the pre-treatment script
 
 ```
-$ cd LTRANS_Zlev/SIM/rundir_boxes_NiNj64
+$ cd LTRANS_Zlev/SIM/rundir_boxes_NiNj256
 ```
 
 ##### 5.1 Running LTRANS using the sequential executable
 
-Then, the code can be executed (in sequential) by the command:
+Then, the code can be executed (in sequential mode) by using the command:
 
 ```
-$ ../../LTRANS_vZ_SEQ.exe LTRANS_boxes_NiNj64.data
+$ ../../LTRANS_Zlev_SEQ.exe LTRANS_boxes_NiNj256.data
 ```
 
 ##### 5.2 Running LTRANS in parallel
 
-Or in parallel, setting `OMP_NUM_THREADS` to the number of threads requested, per example for 2 threads:
+The code can be executed in parallel mode, setting `OMP_NUM_THREADS` to the number of threads requested, for example for 2 threads:
 
 ```
 $ export OMP_NUM_THREADS=2
-$ ../../LTRANS_vZ_OMP.exe LTRANS_boxes_NiNj64.data
+$ ../../LTRANS_Zlev_OMP.exe LTRANS_boxes_NiNj256.data
 ```
 
 Which will produce the following output files:
@@ -341,17 +349,17 @@ LTRANS_Zlev/
 └── SIM
     ├── LTRANS_input_file_example.data
     ├── input
-    │   ├── Adjacentelements-boxes_NiNj64-c1.data
-    ├── output_boxes_NiNj64
-   |    ├── boxes_NiNj64-endfile.csv
-        ├── boxes_NiNj64.nc
+    │   ├── Adjacentelements-boxes_NiNj256-c1.data
+    ├── output_boxes_NiNj256
+    |   ├── boxes_NiNj256-endfile.csv
+    |   ├── boxes_NiNj256.nc
     |   └── metadata
-    |       ├── BottomHitsboxes_NiNj64.csv
-    |       ├── boxes_NiNj64PartErrors.py
-    |       ├── boxes_NiNj64PartinEle.py
-    |       ├── ErrorLogboxes_NiNj64.txt
-    |       └── LandHitsboxes_NiNj64.csv
-    |── rundir_boxes_NiNj64
+    |       ├── BottomHitsboxes_NiNj256.csv
+    |       ├── boxes_NiNj256PartErrors.py
+    |       ├── boxes_NiNj256PartinEle.py
+    |       ├── ErrorLogboxes_NiNj256.txt
+    |       └── LandHitsboxes_NiNj256.csv
+    |── rundir_boxes_NiNj256
             ├── LandBoundaryMidpoints.csv
             ├── llbounds.bln
             ├── OpenOceanBoundaryMidpoints.csv
@@ -363,7 +371,7 @@ LTRANS_Zlev/
 
 ```
 
-After the first run, to save time the user should  modify the file `LTRANS_boxes_NiNj64.data` to avoid re-creating, at every new simulation,  `SIM/input/Adjacentelements-boxes_NiNj64-c1.data`  and the diagnostic files in `SIM/rundir_boxes_NiNj64` (`LandBoundaryMidpoints.csv llbounds.bln OpenOceanBoundaryMidpoints.csv  rho_kwele.csv  u_kwele.csv  v_kwele.csv  water_rho_nodes.csv  xybounds.bln`) :
+After the first run, in order to save time, the user should modify the file `LTRANS_boxes_NiNj256.data` to avoid re-creating, at every new simulation,  `SIM/input/Adjacentelements-boxes_NiNj256-c1.data` and the diagnostic files in `SIM/rundir_boxes_NiNj256` (`LandBoundaryMidpoints.csv llbounds.bln OpenOceanBoundaryMidpoints.csv  rho_kwele.csv  u_kwele.csv  v_kwele.csv  water_rho_nodes.csv  xybounds.bln`) :
 
 ```
  ADJele_file= .TRUE.
@@ -372,9 +380,9 @@ After the first run, to save time the user should  modify the file `LTRANS_boxes
 
 ### 6. Customize the LTRANS Zlev simulations
 
-To customize the simulation the `.data`  file read by LTRANS can be customized by the user, together with the input files whose addresses are indicated inside the `.data` file.
+To customize the simulation, the `.data`  file read by LTRANS can be modified by the user, together with the input files, whose addresses are indicated in the `.data` file.
 
-An example of such input file is provided :
+An example of such an input file is provided :
 
 ```
 LTRANS_Zlev/
@@ -382,7 +390,7 @@ LTRANS_Zlev/
     └── LTRANS_input_file_example.data
 ```
 
-The `.data` input file consists in sets of parameters organized by namelists according to their thematic field. The content of this file is given in the subsections 6.[...], looking at one thematic field at a time, and some details on the parameters developed in the Zlev version are given. The comments that the authors of LTRANS v.2b included in the original input file provided with the v.2b version were kept and new comments were added next to every new parameter of the Zlev version.
+The `.data` input file consists of different sets of parameters organized by namelists, according to their thematic field. The content of this file is given in subsections 6.[...], by looking at one thematic field at a time. Some details on the parameters developed in the Zlev version are also given. The comments that the authors of LTRANS v.2b included in the original input file provided with the v.2b version were kept and new comments were added next to every new parameter of the Zlev version.
 
 ##### 6.1 Number of particles
 
@@ -390,7 +398,7 @@ The number of particles indicated should correspond to the number of lines provi
 
 ```fortran
 $numparticles
-  numpar =  169            ! Number of particles (total number for whole simulation)
+  numpar =  2601           ! Number of particles (total number for whole simulation)
                            ! numpar should equal the number of rows in the particle 
                            ! locations input file
 $end
@@ -404,15 +412,15 @@ $timeparam
   iprint =  3600         ! Print interval for LTRANS output (s); 3600 = every hour
   iprinto=     0         ! Initial delay in printing after Ext0, (in seconds)
                          ! (leave iprinto=0 to start printing at Ext0) 
-  dt =      432000       ! External time step=duration between hydro model predictions (s) 
+  dt =      3600         ! External time step=duration between hydro model predictions (s) 
   idt    =  120          ! Internal (particle tracking) time step (s)
   Ext0   =  0            ! Initial time t0 (in seconds)
 $end
 ```
 
-`iprinto` and `Ext0` are specific to the Zlev version, they allow a relative interpretation of the time of release of the particles defined in the `Iniparloc_[...].csv` files and permit to print this relative time in the output files of the model.
+`iprinto` and `Ext0` are specific to the Zlev version: they allow a relative interpretation of the time of release of the particles defined in the `Iniparloc_[...].csv` files and permit to print this relative time in the output files of the model.
 
-Another new possibility is the possibility to provide negative `dt` and  `idt` for backward tracking, which can be enable for (non-merged-in-time) hydrodynamic files if the user provides a negative `filestep` (see section 6.10).
+Another new feature is the possibility to provide negative `dt` and `idt` for backward tracking, which can be enabled for (non-merged-in-time) hydrodynamic files, if the user provides a negative `filestep` (see section 6.10).
 
 ##### 6.3 Hydrodynamic parameters
 
@@ -425,7 +433,8 @@ $hydroparam
                                  ! previous time steps in the hydro file: recordnum=1)
   hc         = 0.2               ! Min Depth - used in ROMS S-level transformations
   z0         = 0.0005            ! ROMS bottom roughness parameter (Zob).
-             !   Bottom layer is considered  to be between z0 and BottomLayerThickness
+                                 ! Bottom layer is considered  to be 
+                                 ! between z0 and BottomLayerThickness
   Vtransform = 0                 ! 0: z-coordinate ; 1: WikiRoms Eq. 1 ; 
                                  ! 2: WikiRoms Eq. 2 ; 
                                  ! 3: Song/Haidvogel 1994 Eq. 0-sigma coordinate system
@@ -588,9 +597,9 @@ $behavparam
 $end
 ```
 
-- Behaviors `8, 9, 10, 11` were developped to model respectively  
-  - Nephrops Norvegicus, 
-  - Solea
+- Behaviors `8, 9, 10, 11` were developed to model respectively  
+  - Nephrops Norvegicus 
+  - Solea Solea
   - Mullus Barbatus
   - Parametrizable larvae
 
@@ -599,11 +608,11 @@ $end
   - Keep the particles at a constant depth under zero 
   - Keep the particles at a constant depth under zeta
 
-  in both cases, if particles happen to be lifted by a sea bottom elevation, they will turn back at their target depth as soon as they enter in an area where the bottom depth turns back to be sufficent.
+  in both cases, if particles happen to be lifted by a sea bottom elevation, they will return back at their target depth as soon as they enter an area where the bottom depth is suitable.
 
-- The `rise` velocity was defined to setup, for particles released at the bottom of the sea ,the speed of rising of this larvae during the first life stage, and the speed of their vertical motion during the DVM phase when swimming upward to reach the target DVM layer.
+- The `rise` velocity was defined to set, for particles released at the sea bottom, the rising speed of this larvae during the first life stage, and the speed of their vertical motion during the DVM phase, when swimming upward to reach the target DVM layer.
 
--  `GrainSize_fname`, `read_GrainSize` enable to read a file containing a grain size map to define if the settlement conditions are fullfilled.
+-  `GrainSize_fname`, `read_GrainSize` enable to read a file containing a grain size map to define if the settlement conditions are fulfilled.
 
 - `DVMtime` defines the maximum time that the particles can spend running Dial Vertical Migration.
 
@@ -613,11 +622,11 @@ $end
 
 - `SeabedRelease` and `SeabedRelease_meters` are used to release particles at a given height above the seabed, they can be used for any behavior type.
 
-- `Seabed_layerheight` defines the height above the bottom where larvae-particles are confined when searching for the adequate sediment for settlement, in the last larval stage before settlement.
+- `Seabed_layerheight` defines the height above the bottom, where larvae-particles are confined when searching for the adequate sediment for settlement, in the last larval stage before settlement.
 
--  `Write_Temp_min_max_ins`,  `Write_Salt_min_max_ins`  allow to write  in the netcdf output file either the min, or max, or instantaneous values of temperature and salinity encountered since the last output extraction, to make more accurate the post-processing of the success to settlement.
+-  `Write_Temp_min_max_ins`,  `Write_Salt_min_max_ins`  allow to write in the netcdf output file either the min, or max, or instantaneous values of temperature and salinity encountered since the last output extraction, to make a more accurate post-processing of the success in settling.
 
--  `Write_coastdist` enables the creation of the Coast Distance field in the netcdf output file to track for every particle its distance to the coast and enable post-processing of the success to settlement.
+-  `Write_coastdist` enables the creation of the Coast Distance field in the netcdf output file to track for every particle its distance from the coast and enable post-processing of the success in settling.
 
 ##### 6.6 Dial Vertical Migration parameters
 
@@ -678,7 +687,7 @@ $settleparam
 $end
 ```
 
-Among the settlement parameters, those specific to the Zlev version of LTRANS, those relative to the stranding  allow to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `strandingmaxdepth` and the height of the particle above the bottom is not more than `strandingmaxdistfromdepth`. Finally, the `storedincolor` flag was created to allow the output of quantities useful for debugging issues.
+Among the settlement parameters specific to the Zlev version of LTRANS, those relative to stranding allow to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `strandingmaxdepth` and the height of the particle above the bottom is not bigger than `strandingmaxdistfromdepth`. Finally, the `storedincolor` flag was created to allow the output of quantities useful for debugging issues.
 
 ##### 6.8 Conversion parameters
 
@@ -688,9 +697,9 @@ $convparam
   Earth_Radius = 6378000        ! Equatorial radius of Earth (m)
   SphericalProjection = .TRUE.  ! Spherical Projection from ROMS if TRUE. 
                                 ! If FALSE, mercator projection is used. 
-  latmin = 40.953125            ! Minimum longitude value, only used
+  latmin = 40.94140625          ! Minimum longitude value, only used
                                 ! if SphericalProjection is .TRUE.
-  lonmin = 16.953125            ! Minimum  latitude value, only used
+  lonmin = 16.94140625          ! Minimum  latitude value, only used
                                 ! if SphericalProjection is .TRUE.
 $end
 ```
@@ -699,13 +708,13 @@ $end
 
 ```fortran
 $hydromodelgrid
-  NCgridfile='[...]/LTRANS_Zlev/SIM/input/GridforLTRANS-boxes_NiNj64-c1.nc'  ! Name of the grid file created by the pre-processing tool
+  NCgridfile='[...]/LTRANS_Zlev/SIM/input/GridforLTRANS-boxes_NiNj256-c1.nc'  ! Name of the grid file created by the pre-processing tool
   Zgrid = .TRUE.                    ! If .TRUE. read in MITgcm z-coordinate grid
                                     ! and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.        ! If .TRUE. interpolates depth to make the Z grid
                                     ! bathymetry
                                     ! smoother (for Zgrid bathymetry only) 
-  ADJele_fname= '[...]/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
+  ADJele_fname= '[...]/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj256-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.               ! set to True if file already exists
 $end
 
@@ -715,7 +724,7 @@ In the `hydromodelgrid` list, the parameters:
 
 - `Zgrid` should be activated if the grid is based on a vertical discretization based on the Z coordinate
 
-- `Zgrid_depthinterp` enables the setup of a *smooth-interpolated* batiymetry instead of the sharp non-interpolated boundary for a Z grid.
+- `Zgrid_depthinterp` enables the setup of a *smooth-interpolated* bathymetry instead of the sharp non-interpolated boundary for a Z grid.
 - `ADJele_fname` and `ADJele_file` were developed in the Zlev version to store the lists of adjacent elements and enable a quicker restart without recomputing this list at every new simulation.
 
 ##### 6.10 Hydrodynamic fields
@@ -725,7 +734,7 @@ $hydromodeloutput
   dirin='[...]/LTRANS_Zlev/MITgcm_outputs/'
   !Filename = prefix + filenum + suffix
   !First indicate the NetCDF Input Filename prefix (keep same order and leave names of the missing file):               
-  prefix= 'U','V','W','Eta.','RHOAnoma.','S.','T.','KPPdiffS.','EXFuwind.','EXFvwind.'   
+  prefix= 'U_hr_ave','V_hr_ave','W_hr_ave','Eta.','RHOAnoma.','S.','T.', 'KPPdiffS.','EXFuwind.','EXFvwind.'   
   numdigits = 0                 ! Number of digits in number portion of file name 
   	                            ! (with leading zeros)
   suffix='.dat'                 ! NetCDF Input Filename suffix
@@ -746,7 +755,7 @@ Note that `filestep` should be set to a negative value to enable backtracking.
 
 ```fortran
 $parloc
-  parfile  = '[...]/LTRANS_Zlev/SIM/input/Iniparloc_boxes_NiNj64_every_5-i_5-j_rhowaternode.csv'    ! Particle location file
+  parfile  = '[...]/LTRANS_Zlev/SIM/input/Iniparloc_boxes_NiNj256_every_5-i_5-j_rhowaternode.csv'    ! Particle location file
 $end
 ```
 
@@ -754,7 +763,7 @@ $end
 
 ```fortran
 $habpolyloc
-  habitatfile = '[...]/LTRANS_Zlev/SIM/input/Polygon_boxes_NiNj64_global.csv' !Habitat polygons
+  habitatfile = '[...]/LTRANS_Zlev/SIM/input/Polygon_boxes_NiNj256_global.csv' !Habitat polygons
   holefile    = '[...]/LTRANS_Zlev/SIM/input/End_holes.csv'     !Holes in habitat polygons
 $end
 ```
@@ -765,10 +774,10 @@ $end
 $output
 
   !NOTE: Full path must already exist.  Model can create files, but not directories.
-  outpath = '[...]/LTRANS_Zlev/SIM/output_boxes_NiNj64//' ! Location to write output .csv
+  outpath = '[...]/LTRANS_Zlev/SIM/output_boxes_NiNj256//' ! Location to write output .csv
                                  ! and/or .nc files. Use outpath = './' to write 
                                  ! in same folder as the executable
-  NCOutFile = 'boxes_NiNj64'     ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'boxes_NiNj256'     ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files
@@ -781,10 +790,10 @@ $output
   SVN_Version  = 'https://cmgsoft.repositoryhosting.com/svn/cmgsoft_ltrans/trunk'
   RunName      = 'LTRANS vZlev with Partial Bottom Cells'
   ExeDir       = '.'
-  OutDir       = '[...]/LTRANS_Zlev/SIM/output_boxes_NiNj64//metadata'
+  OutDir       = '[...]/LTRANS_Zlev/SIM/output_boxes_NiNj256/metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
-  StartedOn    = '19th of November 2019'
+  StartedOn    = '1st of December 2019'
 $end
 ```
 
@@ -824,11 +833,11 @@ $other
 $end
 ```
 
-New parameters specific to the current version were developed for debugging purposes they incude:
+New parameters specific to the current version were developed for debugging purposes; they incude:
 
-- `BndOut` that enables a verbose output of during the boundary creation
--  `WriteParfile`  which writes a csv file with particle's locations at every external time step
-- `WriteCurrents` which writes a csv file with the currents interpolated at the particle's locations at every external time step
+- `BndOut` enables a verbose output during the boundary creation
+-  `WriteParfile` writes a csv file with particle's locations at every external time step
+- `WriteCurrents` writes a csv file with the currents interpolated at the particle's locations at every external time step
 
 The `OilOn` flag and the parameters detailed in section 6.15 were developed by the authors of the **OILTRANS** module.
 
@@ -896,4 +905,4 @@ $windswaves
 $end
 ```
 
-### 
+
