@@ -1,6 +1,6 @@
 # LTRANS-Zlev : User Manual
 
-*C. Laurent, 2019*, v.0 (beta)
+*C. Laurent, 2019*, v.0 (beta) https://github.com/inogs/LTRANS_Zlev
 
 The present manual consists of a guide detailing the options and setup instructions that are specific to the Zlev version of LTRANS. For this reason, the user should refer to the original v.2b publications and user guide for the options and setup instructions that are in common between the versions, and for details about the methods implemented. More details are given in section 1.1. Users of LTRANS with the OILTRANS oil spill module can find details on the methods implemented in the OilSpill module in the reference cited section 1.2. 
 
