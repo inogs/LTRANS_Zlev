@@ -120,6 +120,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           filecontent = f.readlines()
           waitforend=False
           waitforfrequency=False
+          waitforprecision=False
           delXYZ=''
           PRECISION=''
           nXYZ=''
@@ -190,13 +191,26 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                 	#print string,' :: RUN'
                         break
                   elif(word[0:15]=='writeBinaryPrec'):
-                	string=(''.join(words[i:]))[:-1]
-                        try:
-                          intprec=int(string[16:-1])
-                          PRECISION=PRECISION+string+' \n'
-                        except:
-                          break
+                        string=(''.join(words[i:]))[:-1]
+                        print 'searching for PRECISION ',PRECISION
+                        if(string[16:17]!='/*' and string[16]!='#' and string[16:17]!='//'):
+                          try:
+                            intprec=int(string[16:-1])
+                            PRECISION="writeBinaryPrec="+str(intprec)+' \n'
+                          except:
+                            waitingforprecision=True
+                        else:
+                            waitingforprecision=True
                         break
+                  elif(waitingforprecision):
+                        print word
+                        print words
+                        try:
+                          intprec=int(word)
+                          PRECISION="writeBinaryPrec="+str(intprec)+' \n'
+                          waitingforprecision=False
+                        except:
+                          continue
                   elif(word=='Nx' or word=='Ny'):
                 	string=(''.join(words[i:i+3]))
                         string='n'+string[1]+'rho_in'+string[2:] #  'Nx -> nxrho_in'
