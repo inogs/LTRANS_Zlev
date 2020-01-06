@@ -1015,7 +1015,7 @@ contains
 
        call OilModel(2,par(:,:2),nParLeft,nParbeached, &
             sqrt(UAvWind**2+VAvWind**2)*WindWeatherFac,AvTemp, &
-            Angle_wrtEast(UAvWind,VAvWind),AvWaterDepth)
+            Angle_wrtEast(UAvWind,VAvWind),abs(AvWaterDepth))
 
        nParbeached    = 0                              !reset no of particles beached for this timestep
       end if                                                   ! OilOn
@@ -2449,7 +2449,7 @@ contains
         endif
       endif
       if(settlementon) then
-        if(inpoly>0.and.isStranded(n))write(*,*)'it=',it,' n=',n,' is in poly',inpoly
+        !if(inpoly>0.and.isStranded(n))write(*,*)'it=',it,' n=',n,' is in poly',inpoly
         if (inpoly .GT. 0 .and. (isSettled(n) .or. isStranded(n)) ) then
           if(isStranded(n)) then
             par(n,pnZ) = par(n,pZ) 

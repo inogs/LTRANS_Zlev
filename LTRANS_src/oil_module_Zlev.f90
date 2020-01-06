@@ -188,7 +188,7 @@ MODULE OIL_MOD
 
         IF(SPILLSTARTED.eqv..False. .and. oil_time >= TIMESPILLSTARTS) THEN
            
-            write(*,*)'CALLING EMISSION'
+           ! write(*,*)'CALLING EMISSION'
             CALL Emission(Phase1Time,radius)
 
             DO n=1,numpar
@@ -431,7 +431,7 @@ MODULE OIL_MOD
         SlickThickness = OilThickness                        !(m) Initial thickness of oil slick at end of inertial spreading
         VolumeOil      = VolumeSpill                            !(m3)
         MassOil         = MassSpill                            !(kg)
-        write(*,*) 'Phase1Time=',Phase1Time
+       ! write(*,*) 'Phase1Time=',Phase1Time
         ResinOil = Oil_Resin
         AsphOil = Oil_Asph 
    END SUBROUTINE Emission
@@ -823,27 +823,27 @@ MODULE OIL_MOD
         IMPLICIT NONE
         !NewViscosity     = RefViscosity * exp(dViscTemp + dViscEvap) * xViscEmul
         !                = RefViscosity * exp(dViscTemp) * exp(dViscEvap) * xViscEmul
-        write(*,*)'Visc t=',ViscOil
+       ! write(*,*)'Visc t=',ViscOil
         IF (Dyn_Visc > 0.0) THEN
             ViscOil = 1000 * Dyn_Visc * exp(ViscCt * ((1.0/(WaterTempInst+273.15)) - (1.0/Dyn_Visc_RefT)))    !Dynamic (kg/ms -> cP)
-          write(*,*)'Visc using Dyn_Visc',ViscOil,Dyn_Visc,ViscCt,WaterTempInst,Dyn_Visc_RefT
+         ! write(*,*)'Visc using Dyn_Visc',ViscOil,Dyn_Visc,ViscCt,WaterTempInst,Dyn_Visc_RefT
         ELSE
             ViscOil = 1000 * Kin_Visc * exp(ViscCt * ((1.0/(WaterTempInst+273.15)) - (1.0/Kin_Visc_RefT)))    !Kinematic (m2/s -> cSt)
             ViscOil = ViscOil * RhoOil !Dynamic (cP)
-          write(*,*)'Visc using Kin_Visc',ViscOil,Kin_Visc,ViscCt,WaterTempInst,Kin_Visc_RefT,RhoOil
+         ! write(*,*)'Visc using Kin_Visc',ViscOil,Kin_Visc,ViscCt,WaterTempInst,Kin_Visc_RefT,RhoOil
           END IF
 
         IF (Evaporation) THEN !(Mackay,1980)
            ViscOil = ViscOil * exp((Evap_C4 * (MassEvap / MassSpill)))
-          write(*,*)'Visc post Evap',ViscOil,Evap_C4,MassEvap,MassSpill    
+         ! write(*,*)'Visc post Evap',ViscOil,Evap_C4,MassEvap,MassSpill    
          END IF
 
         IF (Emulsification) THEN !(Fingas 2011)
            ViscOil = ViscOil * xViscEmul
-          write(*,*)'Visc post Emul',ViscOil,xViscEmul
+         ! write(*,*)'Visc post Emul',ViscOil,xViscEmul
 
          END IF
-        write(*,*)'Visc t+1 =',ViscOil
+       ! write(*,*)'Visc t+1 =',ViscOil
 
 
         RETURN
@@ -958,7 +958,7 @@ MODULE OIL_MOD
     IF (FirstAP) THEN
     !Fingas,M.,2011, "Models for Water-in-Oil Emulsion Formation" in
     !Chpt. 10 of Oil Spill Science and Technology, 2011. Gulf Professional Publishing, UK. ISBN:978-1-85617-943-0
-         write(*,*)'FirstAp',FirstAP,' initialize emulsification'
+        ! write(*,*)'FirstAp',FirstAP,' initialize emulsification'
                         !  | U     E      M      S   |
          Fingas_Class = reshape((/ 0.06,  0.42,  0.64,  0.76, &     ! DayWaterContent <- Figure 10.4
                             0.06,  0.37,  0.32,  0.76, &     ! WeekWaterContent <- Figure 10.4
@@ -970,9 +970,9 @@ MODULE OIL_MOD
                              0.0, 18300., 49100.,  7520. /), &    ! FormTimeParamB <- Table 10.5
                              shape(Fingas_Class))
 
-        do Ctemp=1,4
-           write(*,*)'Fingas_Class(',Ctemp,',:)=',Fingas_Class(Ctemp,:)
-        enddo
+        !do Ctemp=1,4
+        !   write(*,*)'Fingas_Class(',Ctemp,',:)=',Fingas_Class(Ctemp,:)
+        !enddo
         WaterContent = 0.06
         xViscEmul = 1.0
         VolumeSlick = 0.0
@@ -982,7 +982,7 @@ MODULE OIL_MOD
     END IF
 
     IF(ClassIndex < 4 ) THEN        !check until stable emulsion forms
-        write(*,*)'EMUL ClassIndex < 4'
+       ! write(*,*)'EMUL ClassIndex < 4'
         !Fingas,M.,2011, "Models for Water-in-Oil Emulsion Formation" in
         !Chpt. 10 of Oil Spill Science and Technology, 2011. Gulf Professional Publishing, UK. ISBN:978-1-85617-943-0
 
@@ -1053,7 +1053,7 @@ MODULE OIL_MOD
                 ClassIndex = 1    !Unstable
             END IF
         ELSE
-!            write(*,*)'Unresolved Emulsion Class - assume UNSTABLE'
+!           ! write(*,*)'Unresolved Emulsion Class - assume UNSTABLE'
             ClassIndex = 1
         END IF
 
@@ -1087,21 +1087,21 @@ MODULE OIL_MOD
 
     !Calculate incremental increase in viscosity and water content per DT based on times above.
     IF (StartClass == 0) THEN
-        write(*,*)'EMUL ClassIndex ==0'
+       ! write(*,*)'EMUL ClassIndex ==0'
         WaterContent = WaterContent
         xViscEmul = 1.0
     ELSE
-        write(*,*)'StartTime=',StartTime,' ElapsedTime=',ElapsedTime,' FingasDay=', FingasDay,'FingasWeek=',FingasWeek
-        do Ctemp=1,4
-           write(*,*)'Fingas_Class(',Ctemp,',:)=',Fingas_Class(Ctemp,:)
-        enddo
+       ! write(*,*)'StartTime=',StartTime,' ElapsedTime=',ElapsedTime,' FingasDay=', FingasDay,'FingasWeek=',FingasWeek
+        !do Ctemp=1,4
+        !  ! write(*,*)'Fingas_Class(',Ctemp,',:)=',Fingas_Class(Ctemp,:)
+        !enddo
         IF (ElapsedTime <= FingasDay) THEN !emulsion time <= FormTime + 1 Day
-            write(*,*)'CP watCont using ',StartClass,WaterContent, &
-             Fingas_Class(StartClass, 1),IDT,(FingasDay - StartTime)
+           ! write(*,*)'CP watCont using ',StartClass,WaterContent, &
+            ! Fingas_Class(StartClass, 1),IDT,(FingasDay - StartTime)
             WaterContent = min(WaterContent + (( Fingas_Class(StartClass, 1)  &
                 / (FingasDay - StartTime) ) * IDT), Fingas_Class(StartClass,1))
-            write(*,*)'CP xViscEmul using ',StartClass,xViscEmul, &
-             Fingas_Class(StartClass, 4),IDT,(FingasDay - StartTime)
+           ! write(*,*)'CP xViscEmul using ',StartClass,xViscEmul, &
+           !  Fingas_Class(StartClass, 4),IDT,(FingasDay - StartTime)
             xViscEmul = min(xViscEmul + (( (Fingas_Class(StartClass, 4) - 1.0) &
                  / (FingasDay - StartTime) ) * IDT), Fingas_Class(StartClass,4))
         ELSEIF (ElapsedTime <= FingasWeek) THEN !Form Time + 1 Day <= emulsion time <= 1 Week
@@ -1122,7 +1122,7 @@ MODULE OIL_MOD
             WaterContent = Fingas_Class(StartClass,3)
             xViscEmul = Fingas_Class(StartClass,6)
         END IF
-        write(*,*)StartClass,'EMUL ClassIndex else WatCont=',WaterContent,' xViscEmul=',xViscEmul
+       ! write(*,*)StartClass,'EMUL ClassIndex else WatCont=',WaterContent,' xViscEmul=',xViscEmul
     END IF
 
     RETURN
@@ -1205,7 +1205,7 @@ MODULE OIL_MOD
             MassEvap = MassSpill * (PercentEvap / 100.0)
             VolumeEvap = MassEvap / RhoOil
 
-            write(*,*)'ResinOil<',Oil_Resin,MassEvap,MassSpill
+           ! write(*,*)'ResinOil<',Oil_Resin,MassEvap,MassSpill
             ResinOil = Oil_Resin / (1.0 - (MassEvap/MassSpill))    !Increase in resin % (Assuming no evaporation)
             AsphOil = Oil_Asph / (1.0 - (MassEvap/MassSpill))    !Increase in asphaltene % (Assuming no evaporation)
 
@@ -1256,7 +1256,7 @@ MODULE OIL_MOD
             MassEvap = MassSpill * CumPercentEvap  ! changed by OGS as Mass is conserved, not volume 
             VolumeEvap  = MassEvap / RhoOil        ! and all variables depend on mass variations  
 
-            write(*,*)'ResinOil<',Oil_Resin,MassEvap,MassSpill
+           ! write(*,*)'ResinOil<',Oil_Resin,MassEvap,MassSpill
             ResinOil = Oil_Resin / (1.0 - (MassEvap/MassSpill))    !Increase in resin % (Assuming no evaporation of resins)
             AsphOil = Oil_Asph / (1.0 - (MassEvap/MassSpill))    !Increase in asphaltene % (Assuming no evaporation of asphaltenes)
 
@@ -1477,14 +1477,14 @@ MODULE OIL_MOD
         !for each droplet interval, calculate centred droplet diameter, Do
         DropDiam(i) = ((2.0 * Rmin) + (0.5 * DeltaDiam)) + (DeltaDiam * (i-1))
         !calculate entrainment rate for each droplet size class
-    write(*,*)'Disp',ViscOil,Dbwe,FracWave,WindSpeed,'|', &
-            waveperiod,RhoWater,Gravity,Hbreak
+    !write(*,*)'Disp',ViscOil,Dbwe,FracWave,WindSpeed,'|', &
+    !        waveperiod,RhoWater,Gravity,Hbreak
          Qd(i) = Cstar * Dbwe * FracOil * FracWave * DropDiam(i)**0.7 * DeltaDiam !(kg/ms)
         !sum over all droplet classes for total entrainment rate
         Qdtotal = Qdtotal + Qd(i)
     END DO
     !calculate mass dispered (kg) and volume dispersed (m3)
-    write(*,*)' Dispersion :',MassDisp,Qdtotal,AreaOil,RhoOil
+    !write(*,*)' Dispersion :',MassDisp,Qdtotal,AreaOil,RhoOil
     MassDisp = MassDisp + (Qdtotal * AreaOil * idt)
     VolumeDisp = MassDisp / RhoOil
 
@@ -1622,10 +1622,10 @@ MODULE OIL_MOD
         INTEGER :: ElapsedTime        !time in seconds
 
         ElapsedTime = iT * idt - Phase1Time                    !Time since Phase1Time reached (s)
-        write(*,*)'-----------------------------------------------------'
-        write(*,*)'*** output Wind =',WindSpeed,' Temp=',WaterTempInst, &
-                  ' Angle=',AvWindAngle,'  ***'
-        write(*,*)'-----------------------------------------------------'
+       ! write(*,*)'-----------------------------------------------------'
+       ! write(*,*)'*** output Wind =',WindSpeed,' Temp=',WaterTempInst, &
+       !           ' Angle=',AvWindAngle,'  ***'
+       ! write(*,*)'-----------------------------------------------------'
            ! -------------------------------
            if(outpathGiven)then
              Ratesfilename  = TRIM(outpath) //'/'//TRIM(NCOutFile)//'-OilRates.csv'

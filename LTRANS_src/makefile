@@ -16,8 +16,8 @@ IFORT_UMCES :=
 GFORTRAN_UMCES :=    
 GFORTRAN_USGS :=   
 PGI_USGS   :=
-Fluxus :=   
-Galileo := on   
+Fluxus :=  on 
+Galileo :=    
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
