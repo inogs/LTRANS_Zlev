@@ -169,7 +169,7 @@ CONTAINS
       !Calculate slope and intercept for age-dependent linear swimming speed
       P_swim(n,1) = (swimfast - swimslow)/(P_pediage(n) - swimstart) !slope
       P_swim(n,2) = swimfast - P_swim(n,1)*P_pediage(n)              !intercept
-      P_swim(n,3) = 0.0                                   !swimming speed (m/s)
+      P_swim(n,3) = 0.0                                  !swimming speed (m/s)
       IF(Behavior.eq.8) then  ! Nephrops Norvegicus
          LarvSize(n) = 6.0
          P_behave(n) = 0
@@ -298,8 +298,12 @@ CONTAINS
 
     !   ***************** Update vertical swimming speeds based on particle age
     IF(Behavior.lt.8)THEN
-      if(P_age .GE. swimstart) P_swim(n,3) = P_swim(n,1)*P_age+P_swim(n,2)
-      if(P_age .GE. P_pediage(n)) P_swim(n,3) = swimfast
+      if(Behavior.le.4)then
+        P_swim(n,3) = swimfast
+      else
+        if(P_age .GE. swimstart) P_swim(n,3) = P_swim(n,1)*P_age+P_swim(n,2)
+        if(P_age .GE. P_pediage(n)) P_swim(n,3) = swimfast
+      endif
     
      !   ***************** Prepare for TYPE 4 & 5 (Oyster Larvae) Behaviors
       !Update pediveliger behavior/status and timer
@@ -341,7 +345,7 @@ CONTAINS
     
     parBehav = 0.0
 
-    IF(Behavior.GE.8 .or. Behavior.LE.11) THEN
+    IF(Behavior.GE.8 .and. Behavior.LE.11) THEN
      IF(Behavior.EQ.10 .AND. P_behave(n).lt.2) THEN
          timer(n) =  timer(n)+DBLE(idt)
      ENDIF 
