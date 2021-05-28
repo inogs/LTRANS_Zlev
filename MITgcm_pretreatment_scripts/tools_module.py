@@ -90,8 +90,8 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
            f_KPPdiffS='KPPdiffS.',f_EXFuwind='EXFuwind.',f_EXFvwind='EXFvwind.',plotdir='./'):
 
         FilesNamesContain=[f_Eta,f_RHOA,f_U,f_V,f_W,f_S,f_T,f_KPPdiffS,f_EXFuwind,f_EXFvwind]
-        Freqcy_List=np.zeros((100),dtype=float)
-        VarNam_List=np.empty((100),dtype="S15")
+        Freqcy_List=np.zeros((1000),dtype=float)
+        VarNam_List=np.empty((1000),dtype="S15")
         VarNam_List[:]=''
 	try:
 		LIST = glob.glob(directory+'/STDOUT*')
@@ -149,8 +149,9 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                 	string=''.join(words[i:])
                         delXYZ=delXYZ+string 
                 	break
-               elif(waitforfrequency and  countline-linestartwait<200):
+               elif(waitforfrequency):
                    if(word[0:9]=='frequency'):
+                        
                         for p1,char in enumerate(word[9:]):
                            if char=='(':
                               for p2,charend in enumerate(word[9+p1+1:]):
@@ -164,7 +165,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                                    if charend==')':
                                        num=int(word[8+p1+1:8+p1+1+p2])
                                VarNam_List[num]=words[i+2][:-1]
-                   if(word[1:4]=='END'):
+                   if(word[1:4]=='END' or word[1:5]=='&END'):
                         for i in range(1,len(VarNam_List)):
                           if(VarNam_List[i]==''):break
 			  print 'output frequency(',VarNam_List[i],')=',Freqcy_List[i]

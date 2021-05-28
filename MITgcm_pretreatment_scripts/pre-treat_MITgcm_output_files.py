@@ -1,10 +1,10 @@
-PACKAGEDIRECTORY="/galileo/home/userexternal/clauren1/LTRANS_Zlev/"
+PACKAGEDIRECTORY="/home/claurent/LTRANS_Zlev_inogs/"
 #
 writeUniformIniParlocFile=True  
 (io,i_f,istep)=(0,0,5)
 (jo,j_f,jstep)=(0,0,5)
 #
-MITgcmdirectory=PACKAGEDIRECTORY+'/MITgcm_outputs/'
+MITgcmdirectory='/share/scratch/squerin/MIT_run/CADEAU/version_V4/results_merged_760p_CADEAU_V4_2017/'
 f_Eta='Eta.'
 f_RHOA='RHOAnoma.'
 f_U='U_hr_ave.'
@@ -15,7 +15,7 @@ f_T='T.'
 f_KPPdiffS='KPPdiffS.'
 f_EXFuwind='EXFuwind.'
 f_EXFvwind='EXFvwind.'
-identifier='boxes_NiNj256'
+identifier='CADEAU_760p'
 BATI_PREC=32
 #############################################################
 import numpy as np
@@ -33,10 +33,11 @@ griddirout=PACKAGEDIRECTORY+'/SIM/input/'
 LTRANSrundir=PACKAGEDIRECTORY+'/SIM/rundir_'+identifier+'/'
 OUTPUTDIR=PACKAGEDIRECTORY+'/SIM/output_'+identifier+'/'
 #############################################################
+if ( not os.path.exists(PACKAGEDIRECTORY+'plot_scripts/') ) : os.system('mkdir '+PACKAGEDIRECTORY+'plot_scripts/')
 if(True):
         SETUPEXISTS=False
         print 'creating '+PACKAGEDIRECTORY+'plot_scripts/setup_'+identifier+'.py and '+LTRANSrundir+'LTRANS_'+identifier+'.data by calling tools.getgridparamsfromSTDOUT(',MITgcmdirectory,',',identifier,')'
-        if(not tools.is_non_zero_file(LTRANSrundir)):os.system('mkdir '+LTRANSrundir)
+        if(not os.path.exists(LTRANSrundir) ):os.system('mkdir '+LTRANSrundir)
         #tools.runcommand('cp LTRANS_model_file.batch '+LTRANSrundir+'LTRANS_'+identifier+'.batch')
         #tools.runcommand('sed -i s/PACKAGEDIRECTORY/'+str(PACKAGEDIRECTORY.replace('/','!?'))+'/ '+LTRANSrundir+'LTRANS_'+identifier+'.batch')
         #tools.runcommand('sed -i s/LTRANSRUNDIR/'+str(LTRANSrundir.replace('/','!?'))+'/ '+LTRANSrundir+'LTRANS_'+identifier+'.batch')
@@ -57,9 +58,9 @@ if(True):
         setupwriter.write("boundsfile=rundir+'llbounds.bln' \n")
         setupwriter.write('k_rho='+str(nzrho_in)+' \n')
 
-
-os.system('mkdir '+OUTPUTDIR)
-os.system('mkdir '+OUTPUTDIR+'metadata') 
+if ( not os.path.exists(OUTPUTDIR) ):
+  os.system('mkdir '+OUTPUTDIR)
+  os.system('mkdir '+OUTPUTDIR+'metadata') 
 ################################################################################
 def fstr(value):
     return "%.8f" % value
