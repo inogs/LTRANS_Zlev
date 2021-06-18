@@ -1780,6 +1780,7 @@ CONTAINS
 !      ***** END IMIOM *****
         
         fprefix=TRIM(prefix(nvarf) )
+        filegiven=.FALSE.
         if(Zgrid)then
           !isSwdown=.FALSE.
           isZeta=.FALSE.
@@ -1790,7 +1791,6 @@ CONTAINS
           isV=.FALSE.
           isW=.FALSE.
           isAks=.FALSE.
-          filegiven=.FALSE.
           isUwind=.FALSE.
           isVwind=.FALSE.
           isIwind=.FALSE.
@@ -3494,6 +3494,7 @@ CONTAINS
       fprefix=TRIM(prefix(nvarf) )
       
       
+      filegiven=.FALSE.
       if (Zgrid)then
         isZeta=.FALSE.
         isSalt=.FALSE.
@@ -3507,7 +3508,6 @@ CONTAINS
         isVwind=.FALSE.
         isIwind=.FALSE.
         !isSwdown=.FALSE.
-        filegiven=.FALSE.
         if(TRIM(fprefix(1:8)) .eq. 'EXFuwind') then
                 isUwind=.TRUE.
                 if(readUwind)filegiven=.TRUE.
@@ -5421,7 +5421,7 @@ CONTAINS
 
     error = 0
     p = 0
-
+    n1=0
     do n=1,numpar
       if(DeadOrOut(n)) cycle   
       n1=n

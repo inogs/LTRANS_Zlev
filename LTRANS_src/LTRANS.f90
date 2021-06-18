@@ -158,7 +158,7 @@ IMPLICIT NONE
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: PartAtSurf
 !   ***** END Oil Module *****
 
-    DOUBLE PRECISION :: UAvWind,VAvWind,AvTemp,AvWaterDepth !--- CL-OGS: added for OIL transport module
+    DOUBLE PRECISION :: AvUwind,AvVwind,AvTemp,AvWaterDepth !--- CL-OGS: added for OIL transport module
     INTEGER :: numpartinAvWind,numpartinAvTemp,numpartinAvWaterDepth      !--- CL:OGS
 
 !   *************************************************************************
@@ -849,15 +849,15 @@ contains
     numpartinAvWaterDepth=0                                                              !--- CL-OGS: for OILtrans
 
     AvWaterDepth=0.0
-    UAvWind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
-    VAvWind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
+    AvUwind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
+    AvVwind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
     AvTemp=0.0 !constTemp
     !write(*,*)' Set Initial Wind and Temperature '
     !write(*,*)'setAvWindAvTemp_forallparts A',numpartinAvWind,numpartinAvTemp
     call setAvWindAvTemp_forallparts()
     !write(*,*)' Set Initial Wind and Temperature DONE'
-    !write(*,*)'UAvWind=',UAvWind
-    !write(*,*)'VAvWind=',VAvWind
+    !write(*,*)'AvUwind=',AvUwind
+    !write(*,*)'AvVwind=',AvVwind
     !write(*,*)'AvTemp=',AvTemp
 
 
@@ -868,11 +868,11 @@ contains
           nParLeft = numpar
          
           CALL InitOilModel(AvTemp,pTS)
-          !call OilModel(2,par(:,:2),nParLeft,nParbeached,sqrt(UAvWind**2+VAvWind**2)*WindWeatherFac,&
-          !      AvTemp,Angle_wrtEast(UAvWind,VAvWind))
+          !call OilModel(2,par(:,:2),nParLeft,nParbeached,sqrt(AvUwind**2+AvVwind**2)*WindWeatherFac,&
+          !      AvTemp,Angle_wrtEast(AvUwind,AvVwind))
               
                write(*,*)'!--- CL-OGS: Oil Model initiated'
-               write(*,*)'!--- CL-OGS: AvWind=',sqrt(UAvWind**2+VAvWind**2),'*',WindWeatherFac, &
+               write(*,*)'!--- CL-OGS: AvWind=',sqrt(AvUwind**2+AvVwind**2),'*',WindWeatherFac, &
                                      ' AvTemp=',AvTemp
                write(*,*)'!--- CL-OGS: OILTRANS initialization made at the first iteration, t=',ix(2)
         End If
@@ -1009,13 +1009,13 @@ contains
       !*     Irish Marine Institute Oil Model                               *
       !**********************************************************************
       if(OilOn .and.nParLeft>0)then
-       !write(*,*)'call Oil, AvWind,Angle,Temp=',sqrt(UAvWind**2+VAvWind**2), &
-       !    Angle_wrtEast(UAvWind,VAvWind),AvTemp,numpartinAvWind,numpartinAvTemp
+       !write(*,*)'call Oil, AvWind,Angle,Temp=',sqrt(AvUwind**2+AvVwind**2), &
+       !    Angle_wrtEast(AvUwind,AvVwind),AvTemp,numpartinAvWind,numpartinAvTemp
        nParLeft       = nParLeft - nParBeached            !no of particles left in simulation
 
        call OilModel(2,par(:,:2),nParLeft,nParbeached, &
-            sqrt(UAvWind**2+VAvWind**2)*WindWeatherFac,AvTemp, &
-            Angle_wrtEast(UAvWind,VAvWind),abs(AvWaterDepth))
+            sqrt(AvUwind**2+AvVwind**2)*WindWeatherFac,AvTemp, &
+            Angle_wrtEast(AvUwind,AvVwind),abs(AvWaterDepth))
 
        nParbeached    = 0                              !reset no of particles beached for this timestep
       end if                                                   ! OilOn
@@ -1267,14 +1267,14 @@ contains
     numpartinAvWind=0                                                              !--- CL-OGS: for OILtrans
     numpartinAvTemp=0                                                              !--- CL-OGS: for OILtrans
     numpartinAvWaterDepth=0                                                              !--- CL-OGS: for OILtrans
-    UAvWind = 0.0                                                                       !--- CL-OGS: for OILtrans
-    VAvWind = 0.0
+    AvUwind = 0.0                                                                       !--- CL-OGS: for OILtrans
+    AvVwind = 0.0
     AvTemp=0.0                                                                       !--- CL-OGS: for OILtrans
     AvWaterDepth=0.0                                                                       !--- CL-OGS: for OILtrans
 
 
    !$OMP PARALLEL &
-   !$OMP& SHARED(UAvWind,VAvWind,AvTemp,numpartinAvWind,numpartinAvTemp) &
+   !$OMP& SHARED(AvUwind,AvVwind,AvTemp,numpartinAvWind,numpartinAvTemp) &
    !$OMP& SHARED(AvWaterDepth,numpartinAvWaterDepth) &
    !$OMP& FIRSTPRIVATE (times,rank), &
    !$OMP& FIRSTPRIVATE (i,deplvl, klev,Fstlev,NumInterpLvl,ixnum,nklev,k), &
@@ -1313,8 +1313,8 @@ contains
    !$OMP& FIRSTPRIVATE (kn3_uw,kn3_vw,kn4_uw,kn4_vw), &
    !$OMP& FIRSTPRIVATE (ElapsedTime ,posfactor             )
    !$OMP DO  & 
-   !$OMP& REDUCTION(+:UAvWind) &    
-   !$OMP& REDUCTION(+:VAvWind) &    
+   !$OMP& REDUCTION(+:AvUwind) &    
+   !$OMP& REDUCTION(+:AvVwind) &    
    !$OMP& REDUCTION(+:AvTemp) &
    !$OMP& REDUCTION(+:numpartinAvWind) &    
    !$OMP& REDUCTION(+:numpartinAvTemp) &
@@ -1808,8 +1808,8 @@ contains
                 else 
                   !write(*,*)n,' Uwind=',(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)),&
                   !            ' Vwind=',(P_Uw*sin(P_angle) + P_Vw*cos(P_angle))
-                  UAvWind=UAvWind+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle))      !--- CL-OGS
-                  VAvWind=VAvWind+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle))
+                  AvUwind=AvUwind+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle))      !--- CL-OGS
+                  AvVwind=AvVwind+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle))
                   numpartinAvWind= numpartinAvWind+1                           !--- CL-OGS
                 endif  
 
@@ -2486,9 +2486,9 @@ contains
    !$OMP END DO          
    !$OMP END PARALLEL 
       IF(numpartinAvWind.ge.1)then
-         UAvWind=UAvWind/float(numpartinAvWind)
-         VAvWind=VAvWind/float(numpartinAvWind)
-         !write(*,*)'***** AvUwd=',UAvWind,' AvVwd=',VAvWind
+         AvUwind=AvUwind/float(numpartinAvWind)
+         AvVwind=AvVwind/float(numpartinAvWind)
+         !write(*,*)'***** AvUwd=',AvUwind,' AvVwd=',AvVwind
       ENDIF
       IF(numpartinAvTemp.ge.1)then
            AvTemp=AvTemp/float(numpartinAvTemp)
@@ -3788,8 +3788,8 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
        AvWaterDepth=AvWaterDepth/float(numpartinAvWaterDepth)
     ENDIF
     IF(numpartinAvWind.eq.0 .and. Wind)THEN
-      UAvWind=0.0
-      VAvWind=0.0
+      AvUwind=0.0
+      AvVwind=0.0
       DO n=1,numpar
         Xpar = par(n,pX)
         Ypar = par(n,pY)
@@ -3865,18 +3865,18 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
                       + (P_Uw*sin(P_angle) + P_Vw*cos(P_angle))**2.0)    !v rectified to N-S orientation
 !        
        
-          UAvWind=UAvWind+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
-          VAvWind=VAvWind+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
+          AvUwind=AvUwind+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
+          AvVwind=AvVwind+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
           numpartinAvWind= numpartinAvWind+1                           !--- CL-OGS
 
       ENDDO 
 
-      IF(numpartinAvWind>=10 .and. abs(UAvWind)+abs(VAvWind)>0.0001)then
-         UAvWind=UAvWind/float(numpartinAvWind)
-         VAvWind=VAvWind/float(numpartinAvWind)
+      IF(numpartinAvWind>=10 .and. abs(AvUwind)+abs(AvVwind)>0.0001)then
+         AvUwind=AvUwind/float(numpartinAvWind)
+         AvVwind=AvVwind/float(numpartinAvWind)
       ELSE
-         UAvWind = constUwind
-         VAvWind = constVwind    !v rectified to N-S orientation
+         AvUwind = constUwind
+         AvVwind = constVwind    !v rectified to N-S orientation
       ENDIF
 
 
@@ -3995,28 +3995,28 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
       IF(abs(VecX)<10e-10)THEN
             if(VecY.gt.0)then
                 alpha = pi/2.0
-            elseif(VecY.eq.0)then
-                alpha = 0.0
             elseif(VecY.lt.0)then
                 alpha = pi * (3.0/2.0)
+            else
+                alpha = 0.0
             end if
       ELSE
         alpha=atan( (VecY / VecX ) )
         if(Vecx .gt. 0)then
             if(VecY.gt.0)then
                 alpha = alpha
-            elseif(VecY.eq.0)then
-                alpha = 0.0
             elseif(VecY.lt.0)then
                 alpha = 2.0*pi + alpha                    !was alpha = 2.0*pi + alpha and pi * alpha
+            else
+                alpha = 0.0
             end if
         else if(Vecx .lt. 0)then
             if(VecY.gt.0)then
                 alpha = pi + alpha        !                    was alpha = pi + alpha and 2pi * alpha
-            elseif(VecY.eq.0)then
-                alpha = pi
             elseif(VecY.lt.0)then
                 alpha = pi + alpha
+            else
+                alpha = pi
             end if
         end if
       ENDIF 

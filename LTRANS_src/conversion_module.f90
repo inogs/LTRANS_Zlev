@@ -125,6 +125,7 @@ CONTAINS
 
       else
         write(*,*) "Problem lon2x: spherical projection without lat value"
+        rlon2x=0
       endif
     else
       rlon2x = lon / RCF * Earth_Radius
@@ -169,6 +170,7 @@ CONTAINS
 
       else
         write(*,*) "Problem lon2x: spherical projection without lat value"
+        dlon2x = 0
       endif
     else
       dlon2x = lon / RCF * Earth_Radius
@@ -276,6 +278,7 @@ CONTAINS
                                                         / (cos(lat)*cos(lat)) ) 
       else
         write(*,*) "Problem x2lon: Spherical projection without y value"
+        rx2lon = 0
       endif
 
     else
@@ -302,6 +305,7 @@ CONTAINS
                                                         / (cos(lat)*cos(lat)) ) 
       else
         write(*,*) "Problem x2lon: Spherical projection without y value"
+        dx2lon = 0
       endif
 
     else

@@ -858,11 +858,11 @@ MODULE OIL_MOD
 
         IMPLICIT NONE
 
-        IF (API < 17.5 ) THEN
+        IF (API <= 17.5 ) THEN
             APIThickness = 1.0E-04    !(m)
         ELSEIF ((API > 17.5 ) .AND. (API < 45.0 )) THEN
             APIThickness = 1.5727E-04 - 3.2727E-06 * API
-        ELSEIF (API > 45.0 ) THEN
+        ELSE !ELSEIF (API > 45.0 ) THEN
             APIThickness = 1.0E-05    !(m)
         END IF
 
@@ -1433,7 +1433,7 @@ MODULE OIL_MOD
         Hbreak = 0.2185 * (waveperiod**2.0)
     ELSE IF (RelDepth > 0.50) THEN                            !Shallow Water
         Hbreak = 0.78 * WaterDepth
-    ELSEIF (RelDepth <= 0.50 .AND. RelDepth >= 0.05)THEN    !Intermediate waters
+    ELSE !ELSEIF (RelDepth <= 0.50 .AND. RelDepth >= 0.05)THEN    !Intermediate waters
         Hbreak = 1.5 * waveheight                            !Default values used in SeatrackWeb technical documentation
     END IF
 

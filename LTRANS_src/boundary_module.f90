@@ -2701,7 +2701,7 @@ END SUBROUTINE getNext
               if(dist1.LT.dist2) then
                 rPxyzX= rx1
                 rPxyzY= ry1
-              elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
+              else !elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
                 rPxyzX= rx2
                 rPxyzY= ry2
               endif
@@ -2725,7 +2725,7 @@ END SUBROUTINE getNext
               if(dist1.LT.dist2) then
                 rPxyzX= rx1
                 rPxyzY= ry1
-              elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
+              else !elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
                 rPxyzX= rx2
                 rPxyzY= ry2
               endif
@@ -2751,7 +2751,7 @@ END SUBROUTINE getNext
               if(dist1.LT.dist2) then
                 rPxyzX= rx1
                 rPxyzY= ry1
-              elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
+              else !elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
                 rPxyzX= rx2
                 rPxyzY= ry2
               endif
@@ -2788,7 +2788,7 @@ END SUBROUTINE getNext
               if(dist1.LT.dist2) then
                 rPxyzX= rx1
                 rPxyzY= ry1
-              elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
+              else !elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
                 rPxyzX= rx2
                 rPxyzY= ry2
               endif
@@ -2825,7 +2825,7 @@ END SUBROUTINE getNext
                 if(dist1.LT.dist2) then
                   rPxyzX= rx1
                   rPxyzY= ry1
-                elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
+                else !elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
                   rPxyzX= rx2
                   rPxyzY= ry2
                 endif
@@ -2855,7 +2855,7 @@ END SUBROUTINE getNext
                 if(dist1.LT.dist2) then
                   rPxyzX= rx1
                   rPxyzY= ry1
-                elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
+                else !elseif(dist1.GE.dist2) then ! BEUG corrected:GT->GE (CL)
                   rPxyzX= rx2
                   rPxyzY= ry2
                 endif

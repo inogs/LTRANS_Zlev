@@ -294,7 +294,7 @@ CONTAINS
     XBehav = 0.0
     YBehav = 0.0
     ZBehav = 0.0
-
+    P_S= -9999
 
     !   ***************** Update vertical swimming speeds based on particle age
     IF(Behavior.lt.8)THEN
@@ -369,6 +369,8 @@ CONTAINS
      P_size=LarvSize(n)
 
      !--------------- TYPE 8. Nephrops, 9. Solea Solea and 10. Mullus Barbatus and 11. OTHERS ----------
+     targetlayerLOWERdepth=(P_zetac-abs(surflayer_lowerdepth))
+     targetlayerUPPERdepth=(P_zetac-abs(surflayer_upperdepth))
      if(P_behave(n).lt.3)then ! Determine targetlayerLOWERdepth and targetlayerUPPERdepth
                if(swdown_ASCII )then  !.or. readNetCdfSwdown
                 !if(readNetCdfSwdown)then
