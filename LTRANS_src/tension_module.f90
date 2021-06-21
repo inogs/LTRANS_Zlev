@@ -1369,12 +1369,16 @@ CONTAINS
     !$OMP PARALLEL
      !$OMP MASTER 
       !$ numthreads=OMP_GET_NUM_THREADS ()
-      !$ write(*,*)'tension module OMP_NUM_THREADS=',numthreads
+      !$ write(*,*)'in tension_module OMP_NUM_THREADS=',numthreads
      !$OMP END MASTER
     !$OMP END PARALLEL
     ALLOCATE(OMP_IL(numthreads))   
     OMP_IL(:)=1
   END SUBROUTINE
 
+
+  SUBROUTINE finTensionModule()
+    DEALLOCATE(OMP_IL)   
+  END SUBROUTINE
 
 END MODULE TENSION_MOD

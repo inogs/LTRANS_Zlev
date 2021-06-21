@@ -1058,9 +1058,11 @@ contains
     use convert_mod, only: x2lon,y2lat
     use hydro_mod, only: finHydro
     use boundary_mod, only: finBoundary
+    use random_mod,   only: fin_genrand
+    use tension_mod, only : finTensionModule
 
     !OUTPUT ENDFILE NAME CONSTRUCTION VARIABLE
-    CHARACTER(LEN=100) :: efile
+    CHARACTER(LEN=200) :: efile
 
     integer :: n,d,h,m,ios
     real :: fintime,s
@@ -1073,7 +1075,7 @@ contains
     IF(writeCSV)THEN
 
       if(outpathGiven)then
-        efile = TRIM(outpath) // '/'//TRIM(NCOutFile)//'-endfile.csv'
+        efile = TRIM(outpath)//'/'//TRIM(NCOutFile)//'-endfile.csv'
       else
         efile = TRIM(NCOutFile)//'-endfile.csv'
       endif 
@@ -1122,8 +1124,11 @@ contains
     IF(ALLOCATED(P_coastdist)) DEALLOCATE(P_coastdist)
     IF(ALLOCATED(parIniDepth )) DEALLOCATE(parIniDepth)
     IF(ALLOCATED(PartAtSurf )) DEALLOCATE(PartAtSurf)
+    IF(ALLOCATED(P_oldLev)) DEALLOCATE(P_oldLev)     
 
     !DEALLOCATE MODULE VARIABLES
+    call fin_genrand()
+    call finTensionModule()
     call finBehave()
     call finHydro()
     call finBoundary()
@@ -2058,7 +2063,7 @@ contains
       newXpos = par(n,pX) + AdvectX + TurbHx
       newYpos = par(n,pY) + AdvectY + TurbHy
       newZpos = par(n,pZ) + AdvectZ + TurbV
-      write(*,*)it,n,AdvectZ,kn1_u,kn2_u,kn3_u,kn4_u,kn1_v,kn2_v,kn3_v,kn4_v,kn1_w,kn2_w,kn3_w,kn4_w
+      !write(*,*)it,n,AdvectZ,kn1_u,kn2_u,kn3_u,kn4_u,kn1_v,kn2_v,kn3_v,kn4_v,kn1_w,kn2_w,kn3_w,kn4_w
            
   !IF (Behavior.eq.8 .and.( P_Size(n)>14 &
       !     .and.abs(par(n,pZ)-P_depth)<2)) then
@@ -2177,10 +2182,8 @@ contains
          !  if(nklev<klev)then
          !   CALL setEle(newXpos,newYpos,par(n,pZ),n,3,ele_err)
          !   if(ele_err.ne.0)then
-              write(*,*)'setEle error at newZpos=',newZpos,&
-               ' for n, it= ',n,it
-              write(*,*)'setEle error at oldZpos=',par(n,pZ), &
-                            ', killing particle ',n,it
+              write(*,'(2(a,f8.2),2(a,i6))')'setEle error at newZpos=',newZpos,&
+               ' oldZpos=',par(n,pZ),' for n=',n,' it=',it
          !   endif
          !  else
          !    write(*,*)'setEle error at newZpos=',newZpos,&
@@ -3733,11 +3736,13 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
 
   SUBROUTINE   setAvWindAvTemp_forallparts()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
-                         numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi  !--- CL-OGS
+                         numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
+                         OilOn,settlementon,mortality,OpenOceanBoundary
     USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
                          getSlevel,getWlevel,setInterp,getInterp
     USE INT_MOD,    ONLY: polintd
-    use behavior_mod, only: die
+    use behavior_mod, only: die,isOut,isDead
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
     IMPLICIT NONE
 
@@ -3763,6 +3768,23 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     IF(numpartinAvWaterDepth.eq.0)THEN
       AvWaterDepth=0.0
       DO n=1,numpar
+
+        if(settlementon)then
+          if ( isSettled(n) ) cycle
+        endif
+        if(settlementon)then
+          if(isStranded(n)) cycle
+        endif
+        if(mortality)then
+          if ( isDead(n) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(n)) cycle
+        endif
+        if(OilOn)then
+            if(par(n,pStatus) == 2) cycle !beached
+        end if
+ 
         Xpar = par(n,pX)
         Ypar = par(n,pY)
         Zpar = par(n,pZ)
@@ -3792,6 +3814,23 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
       AvUwind=0.0
       AvVwind=0.0
       DO n=1,numpar
+
+        if(settlementon)then
+          if ( isSettled(n) ) cycle
+        endif
+        if(settlementon)then
+          if(isStranded(n)) cycle
+        endif
+        if(mortality)then
+          if ( isDead(n) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(n)) cycle
+        endif
+        if(OilOn)then
+            if(par(n,pStatus) == 2) cycle !beached
+        end if
+ 
         Xpar = par(n,pX)
         Ypar = par(n,pY)
         Zpar = par(n,pZ)
@@ -3894,6 +3933,23 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
       ALLOCATE(Pwc_wzc(ws))
       ALLOCATE(Pwc_wzf(ws))
       DO n=1,numpar ! loop for each particle
+
+        if(settlementon)then
+          if ( isSettled(n) ) cycle
+        endif
+        if(settlementon)then
+          if(isStranded(n)) cycle
+        endif
+        if(mortality)then
+          if ( isDead(n) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(n)) cycle
+        endif
+        if(OilOn)then
+            if(par(n,pStatus) == 2) cycle !beached
+        end if
+ 
           Xpar = par(n,pX)
           Ypar = par(n,pY)
           Zpar = par(n,pZ)
@@ -3968,10 +4024,11 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
        abs(AvTemp/float(numpartinAvTemp))<50.)then
          AvTemp=AvTemp/float(numpartinAvTemp)
       ELSE
-         write(*,*)'USING constTemp=',constTemp, &
+         AvTemp=constTemp
+         if(SaltTempOn) &
+         write(*,*)'SaltTempOn is True, USING constTemp=',constTemp, &
         ' instead of computed AvTemp=',AvTemp/float(numpartinAvTemp),&
         ' numpartinAvTemp=',numpartinAvTemp
-         AvTemp=constTemp
       ENDIF
 
       DEALLOCATE(Pwc_zb)

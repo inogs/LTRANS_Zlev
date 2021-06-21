@@ -23,10 +23,11 @@ CONTAINS
   ! is considered to be in the grid cell.  If the optional argument
   ! checkele is present, then it only checks one particular element, 
   ! otherwise it checks all the elements on the given grid.
-  SUBROUTINE gridcell(elements,ele_y,ele_x,Xpos,Ypos,P_ele,triangle,checkele)
+  SUBROUTINE gridcell(elements,ele_y,ele_x,Xpos,Ypos,P_ele,triangle,checkele,tt)
     IMPLICIT NONE
 
     INTEGER, INTENT(IN)  :: elements
+    INTEGER, INTENT(IN), OPTIONAL :: tt
     INTEGER, INTENT(OUT) :: P_ele,triangle
     INTEGER, INTENT(IN), OPTIONAL :: checkele
     DOUBLE PRECISION, INTENT(IN)  :: ele_x(4,elements),ele_y(4,elements), &
@@ -34,7 +35,7 @@ CONTAINS
 
     INTEGER :: i,p,counter(4),total,elestart,eleend
     DOUBLE PRECISION :: slope,xintersect,by1,by2,bx1,bx2,blowy,bhighy
-
+    !if(PRESENT(tt))write(*,*)Xpos,Ypos,'ele_y',ele_y
     if( present(checkele) )then   !if the variable checkele is present:
       elestart = checkele         !  initialize elestart and eleend to checkele
       eleend = checkele           !  so checkele is the only element checked

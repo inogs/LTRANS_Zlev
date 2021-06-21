@@ -205,7 +205,7 @@ CONTAINS
     !$OMP PARALLEL
      !$OMP MASTER 
       !$ numthreads=OMP_GET_NUM_THREADS ()
-      !$ write(*,*)'OMP_NUM_THREADS=',numthreads
+      !$ write(*,*)'in hydrodynamic_module OMP_NUM_THREADS=',numthreads
      !$OMP END MASTER
     !$OMP END PARALLEL
     ALLOCATE(OMP_ruv(4,3,numthreads))
@@ -5438,6 +5438,10 @@ CONTAINS
     !Find rho element in which first particle is located 
     P_r_ele=0
     triangle=0
+   !write(*,*)'hydro:5441 : ',rho_kwele(k),r_kwele_y(:,1:rho_kwele(k),k),      &
+   !              r_kwele_x(:,1:rho_kwele(k),k),                               &
+   !              Xpar(n1),Ypar(n1),P_r_ele,triangle
+
     call gridcell(rho_kwele(k),r_kwele_y(:,1:rho_kwele(k),k),                  &
                   r_kwele_x(:,1:rho_kwele(k),k),                               &
                   Xpar(n1),Ypar(n1),P_r_ele,triangle)
