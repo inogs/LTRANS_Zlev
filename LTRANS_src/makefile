@@ -16,8 +16,8 @@ IFORT_UMCES :=
 GFORTRAN_UMCES :=    
 GFORTRAN_USGS :=   
 PGI_USGS   :=
-Fluxus :=  on 
-Galileo :=    
+Fluxus := 
+Galileo := on     
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
@@ -107,7 +107,7 @@ ifdef Galileo
    F90C = ifort
    CC = icc
    ifdef Debug
-     DEBUGFLAGS= -g -traceback -check all -debug all
+     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB
    endif
   else
    FC = gfortran
