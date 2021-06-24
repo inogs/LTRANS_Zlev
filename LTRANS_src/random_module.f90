@@ -113,9 +113,12 @@ CONTAINS
     INTEGER, INTENT(IN) :: s
 
     numthreads=1                           ! CL-OGS :: for OMP
-    !$OMP PARALLEL 
-    !$ numthreads=OMP_GET_NUM_THREADS()    ! CL-OGS :: for OMP
-    !$OMP END PARALLEL 
+    !$OMP PARALLEL
+     !$OMP MASTER 
+      !$ numthreads=OMP_GET_NUM_THREADS ()
+      !$ write(*,*)'in random_module OMP_NUM_THREADS=',numthreads
+     !$OMP END MASTER
+    !$OMP END PARALLEL
     write(*,*)' in random module numthreads is ',numthreads
     ALLOCATE(mti_threadprivate(numthreads) )
 
@@ -130,7 +133,6 @@ CONTAINS
     initialized=DONE
 
   END SUBROUTINE init_genrand
-
 
 !-----------------------------------------------------------------------
 !     initialize by an array with array-length
@@ -299,5 +301,12 @@ CONTAINS
     mag01(1)=MATRIX_A
 
   END SUBROUTINE mt_initln
+
+!-----------------------------------------------------------------------
+!     finalize
+!-----------------------------------------------------------------------
+  SUBROUTINE fin_genrand()
+    DEALLOCATE(mti_threadprivate)
+  END SUBROUTINE fin_genrand
 
 END MODULE RANDOM_MOD

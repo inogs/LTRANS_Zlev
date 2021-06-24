@@ -182,11 +182,12 @@ contains
     ! *************************************************************************
     use param_mod, only: days,dt,  &
                          outpathGiven,outpath,NCOutFile, &      !--- CL-OGS: for file name management
-                         OilOn                                  !--- CL-OGS
+                         OilOn,WriteCurrents,numpar            !--- CL-OGS
 
-    integer :: seconds,stepT
+    integer :: seconds,stepT,n
     character(10) :: realtime                                   !--- CL-OGS: computational time tracking
     character(250)::OilPropfilename                             !--- CL-OGS: for OIL transport module
+    character(LEN=40) :: fstring                                     !--- CL:OGS
     realtime='-'
     !call date_and_time(TIME=realtime)                           !--- CL-OGS: computational time tracking
     !write(*,*)' before ini_LTRANS time is ',realtime(1:2),'h',realtime(3:4),'m',realtime(5:6),'s'
@@ -195,6 +196,13 @@ contains
     call ini_LTRANS()
       call date_and_time(TIME=realtime)                       !--- CL-OGS: computational time tracking
       write(*,*)' after ini_LTRANS time is ',realtime(1:2),'h',realtime(3:4),'m',realtime(5:6),'s'
+      if(WriteCurrents)then
+       DO n=1,numpar
+        write(fstring,'(a,i5.5,a)')'Currents',n,''//TRIM(NCOutFile)//'.csv'
+        OPEN(110,FILE=trim(fstring),POSITION='APPEND',status='replace')
+        CLOSE(110)
+       ENDDO
+      endif 
 
       write(*,'(/,A)') '****** BEGIN ITERATIONS *******'
 
@@ -1050,9 +1058,11 @@ contains
     use convert_mod, only: x2lon,y2lat
     use hydro_mod, only: finHydro
     use boundary_mod, only: finBoundary
+    use random_mod,   only: fin_genrand
+    use tension_mod, only : finTensionModule
 
     !OUTPUT ENDFILE NAME CONSTRUCTION VARIABLE
-    CHARACTER(LEN=100) :: efile
+    CHARACTER(LEN=200) :: efile
 
     integer :: n,d,h,m,ios
     real :: fintime,s
@@ -1065,7 +1075,7 @@ contains
     IF(writeCSV)THEN
 
       if(outpathGiven)then
-        efile = TRIM(outpath) // '/'//TRIM(NCOutFile)//'-endfile.csv'
+        efile = TRIM(outpath)//'/'//TRIM(NCOutFile)//'-endfile.csv'
       else
         efile = TRIM(NCOutFile)//'-endfile.csv'
       endif 
@@ -1114,8 +1124,11 @@ contains
     IF(ALLOCATED(P_coastdist)) DEALLOCATE(P_coastdist)
     IF(ALLOCATED(parIniDepth )) DEALLOCATE(parIniDepth)
     IF(ALLOCATED(PartAtSurf )) DEALLOCATE(PartAtSurf)
+    IF(ALLOCATED(P_oldLev)) DEALLOCATE(P_oldLev)     
 
     !DEALLOCATE MODULE VARIABLES
+    call fin_genrand()
+    call finTensionModule()
     call finBehave()
     call finHydro()
     call finBoundary()
@@ -1147,14 +1160,104 @@ contains
 
   end subroutine fin_LTRANS
 
-  
-
-
-
-
- 
 
   subroutine update_particles()
+    USE PARAM_MOD,      ONLY: numpar,us,ws,OilOn
+   !$ use OMP_LIB
+
+    IMPLICIT NONE
+
+    DOUBLE PRECISION, DIMENSION(us) :: Pwc_zb,Pwc_zc,Pwc_zf
+    DOUBLE PRECISION, DIMENSION(ws) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
+    DOUBLE PRECISION private_AvTDW_value(4)
+    INTEGER private_AvTDWBL_numpart(5)
+    INTEGER n
+    private_AvTDWBL_numpart(:)=0
+    private_AvTDW_value(:)=0
+
+    numpartinAvWind=0         !--- CL-OGS: for OILtrans
+    numpartinAvTemp=0         !--- CL-OGS: for OILtrans
+    numpartinAvWaterDepth=0   !--- CL-OGS: for OILtrans
+    AvUwind = 0.0             !--- CL-OGS: for OILtrans
+    AvVwind = 0.0             !--- CL-OGS: for OILtrans
+    AvTemp=0.0                !--- CL-OGS: for OILtrans
+    AvWaterDepth=0.0          !--- CL-OGS: for OILtrans
+
+   !$OMP PARALLEL DEFAULT(NONE) &
+   !$OMP SHARED(numpar,par) &
+   !$OMP PRIVATE(Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf) &
+   !$OMP FIRSTPRIVATE (private_AvTDW_value,private_AvTDWBL_numpart)  &
+   !$OMP REDUCTION(+:AvUwind) &    
+   !$OMP REDUCTION(+:AvVwind) &    
+   !$OMP REDUCTION(+:AvTemp) &
+   !$OMP REDUCTION(+:numpartinAvWind) &    
+   !$OMP REDUCTION(+:numpartinAvTemp) &
+   !$OMP REDUCTION(+:AvWaterDepth) & 
+   !$OMP REDUCTION(+:numpartinAvWaterDepth) &
+   !$OMP REDUCTION(+:nParBeached) &
+   !$OMP REDUCTION(+:nParLeft)
+
+   !$OMP DO PRIVATE(n)  
+    DO n=1,numpar
+      call update_single_particle(n,private_AvTDW_value,private_AvTDWBL_numpart, &
+                                  Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf)
+      par(n,ppX) = par(n,pX)
+      par(n,ppY) = par(n,pY)
+      par(n,ppZ) = par(n,pZ)
+      par(n,pX)  = par(n,pnX) 
+      par(n,pY)  = par(n,pnY)
+      par(n,pZ)  = par(n,pnZ)
+       if ((isnan(par(n,pX)) .or. isnan(par(n,pY)) )          &
+        .or.  (  isnan(par(n,pnX)).or.isnan(par(n,pnY)) ) )then
+         write(*,*)'n=',n
+         write(*,*)'Xpar=',par(n,pX),par(n,pnX)
+         write(*,*)'Ypar=',par(n,pY),par(n,pnY)
+         write(*,*)'Zpar=',par(n,pZ),par(n,pnZ)
+         stop 'found NaN in updateparloc'
+       endif
+    ENDDO !end loop for each particle
+   !$OMP END DO          
+
+   !DEALLOCATE(Pwc_zb,Pwc_zc,Pwc_zf)
+   !DEALLOCATE(Pwc_wzb,Pwc_wzc,Pwc_wzf)
+
+    AvTemp=AvTemp+private_AvTDW_value(1)
+    AvWaterDepth=AvWaterDepth+private_AvTDW_value(2)
+    AvUwind=AvUwind+private_AvTDW_value(3)
+    AvVwind=AvVwind+private_AvTDW_value(4)
+    numpartinAvTemp=numpartinAvTemp+private_AvTDWBL_numpart(1)
+    numpartinAvWaterDepth=numpartinAvWaterDepth+private_AvTDWBL_numpart(2)
+    numpartinAvWind=numpartinAvWind+private_AvTDWBL_numpart(3)
+    nParBeached=nParBeached+private_AvTDWBL_numpart(4) 
+    nParLeft=nParLeft+private_AvTDWBL_numpart(5) 
+
+   !$OMP END PARALLEL 
+
+      IF(numpartinAvWind.ge.1)then
+         AvUwind=AvUwind/float(numpartinAvWind)
+         AvVwind=AvVwind/float(numpartinAvWind)
+         !write(*,*)'***** AvUwd=',AvUwind,' AvVwd=',AvVwind
+      ENDIF
+      IF(numpartinAvTemp.ge.1)then
+           AvTemp=AvTemp/float(numpartinAvTemp)
+      ENDIF
+
+    !IMIOM
+    if(OilOn)then  !set oil particle vertical location to surface
+      do n=1,numpar
+        par(n,ppZ) = 0.0
+        par(n,pZ) = 0.0
+      end do
+    end if
+    !END IMIOM
+
+
+  end subroutine update_particles
+
+  !-----------------------------------------------------------------------
+
+  subroutine update_single_particle(n,AvTDW_value,AvTDWBL_numpart, &
+                                  Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf)
 
     USE PARAM_MOD,      ONLY: numpar,us,ws,idt,HTurbOn,VTurbOn,settlementon,   &
                               Behavior,SaltTempOn,OpenOceanBoundary,Swimdepth, &
@@ -1189,15 +1292,20 @@ contains
     use oil_mod,  only: STOKESDRIFT
 
     !$ use OMP_LIB
+
     IMPLICIT NONE
 
+    DOUBLE PRECISION, DIMENSION(us) :: Pwc_zb,Pwc_zc,Pwc_zf
+    DOUBLE PRECISION, DIMENSION(ws) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
+    DOUBLE PRECISION AvTDW_value(4)
+    INTEGER AvTDWBL_numpart(5)
+    INTEGER n
+
     ! Iteration Variables
-    INTEGER :: i,deplvl,n,rank
+    INTEGER :: i,deplvl
     INTEGER :: klev,Fstlev,NumInterpLvl,ixnum,nklev,k                     !--- CL:OGS
 
     ! Particle tracking
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_zb,Pwc_zc,Pwc_zf
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
     DOUBLE PRECISION :: Xpar,Ypar,Zpar,newXpos,newYpos,newZpos,P_zb,P_zc,P_zf, &
       nP_depth,P_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf,ey(3),        &
       AdvecUwind,AdvecVwind
@@ -1241,89 +1349,16 @@ contains
     DOUBLE PRECISION :: PTemptmp
     !P_swdown = 0.0
 
-    rank=-1
-     
-    !Allocate Dynamic Variables
-    ALLOCATE(Pwc_zb(us))
-    ALLOCATE(Pwc_zc(us))
-    ALLOCATE(Pwc_zf(us))
-    ALLOCATE(Pwc_wzb(ws))
-    ALLOCATE(Pwc_wzc(ws))
-    ALLOCATE(Pwc_wzf(ws))
-
-     
     dbg=.FALSE.
     col(1)='b'
     col(2)='g'
     col(3)='r'
     col(4)='k'
-      if((p==1 .and. it==1) .and. WriteCurrents)then
-       DO n=1,numpar
-        write(fstring,'(a,i5.5,a)')'Currents',n,''//TRIM(NCOutFile)//'.csv'
-        OPEN(110,FILE=trim(fstring),POSITION='APPEND',status='replace')
-        CLOSE(110)
-       ENDDO
-      endif 
-    numpartinAvWind=0                                                              !--- CL-OGS: for OILtrans
-    numpartinAvTemp=0                                                              !--- CL-OGS: for OILtrans
-    numpartinAvWaterDepth=0                                                              !--- CL-OGS: for OILtrans
-    AvUwind = 0.0                                                                       !--- CL-OGS: for OILtrans
-    AvVwind = 0.0
-    AvTemp=0.0                                                                       !--- CL-OGS: for OILtrans
-    AvWaterDepth=0.0                                                                       !--- CL-OGS: for OILtrans
 
-
-   !$OMP PARALLEL &
-   !$OMP& SHARED(AvUwind,AvVwind,AvTemp,numpartinAvWind,numpartinAvTemp) &
-   !$OMP& SHARED(AvWaterDepth,numpartinAvWaterDepth) &
-   !$OMP& FIRSTPRIVATE (times,rank), &
-   !$OMP& FIRSTPRIVATE (i,deplvl, klev,Fstlev,NumInterpLvl,ixnum,nklev,k), &
-   !$OMP& FIRSTPRIVATE (m_nestdeg,i_nestdeg), &
-   !$OMP& FIRSTPRIVATE (Pwc_zb,Pwc_zc,Pwc_zf), &
-   !$OMP& FIRSTPRIVATE (Pwc_wzb,Pwc_wzc,Pwc_wzf ), &
-   !$OMP& FIRSTPRIVATE (Xpar,Ypar,Zpar,newXpos,newYpos,newZpos), &
-   !$OMP& FIRSTPRIVATE (P_zb,P_zc,P_zf), &
-   !$OMP& FIRSTPRIVATE (P_depth,nP_depth,P_angle,P_zeta), &
-   !$OMP& FIRSTPRIVATE (P_zetab,P_zetac,P_zetaf,ey), &
-   !$OMP& FIRSTPRIVATE (AdvecUwind,AdvecVwind), &
-   !$OMP& FIRSTPRIVATE (TurbHx,TurbHy,TurbV,Behav), &
-   !$OMP& FIRSTPRIVATE (XBehav,YBehav,ZBehav,LarvSize), &       
-   !!!!!!!P_swdown), &
-   !$OMP& FIRSTPRIVATE (intersectf,skipbound,in_island,inbounds), &
-   !$OMP& FIRSTPRIVATE (reflects,inpoly,reflectsup,reflectinf), &
-   !$OMP& FIRSTPRIVATE (saveintersectf,fintersectX,fintersectY), &
-   !$OMP& FIRSTPRIVATE (freflectX,freflectY,pushedup), &
-   !$OMP& FIRSTPRIVATE ( Xpos,Ypos,nXpos,nYpos,island,mainbound,coastdist), &
-   !$OMP& FIRSTPRIVATE (isWater,waterFlag ), &
-   !$OMP& FIRSTPRIVATE (AdvectX,AdvectY,AdvectZ,maxpartdepth,minpartdepth), &
-   !$OMP& FIRSTPRIVATE (kn1_u,kn1_v,kn1_w,kn2_u,kn2_v,kn2_w), &
-   !$OMP& FIRSTPRIVATE (kn3_u,kn3_v,kn3_w,kn4_u,kn4_v,kn4_w), &
-   !$OMP& FIRSTPRIVATE ( P_V,P_U,P_W,UAD,VAD,WAD), &
-   !$OMP& FIRSTPRIVATE (x1,x2,x3,y1,y2,y3,z1,z2,z3), &
-   !$OMP& FIRSTPRIVATE (slope,length,Ttemp), &
-   !$OMP& FIRSTPRIVATE (bott,  ele_err, conflict,conflict_tmp ), &
-   !$OMP& FIRSTPRIVATE ( fstring , bndintersect), &
-   !$OMP& FIRSTPRIVATE (foundsetEleproblem , col), &
-   !$OMP& FIRSTPRIVATE (ErrorName,annotate ,  docycle), &
-   !$OMP& FIRSTPRIVATE (P_hsig,P_tm01,P_Uwind,P_Vwind), &
-   !$OMP& FIRSTPRIVATE (P_pdir,P_wlen,UWindDrift), &
-   !$OMP& FIRSTPRIVATE (VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw), &
-   !$OMP& FIRSTPRIVATE (UStokesDrift,VStokesDrift), &
-   !$OMP& FIRSTPRIVATE (kn1_uw,kn1_vw,kn2_uw,kn2_vw), &
-   !$OMP& FIRSTPRIVATE (kn3_uw,kn3_vw,kn4_uw,kn4_vw), &
-   !$OMP& FIRSTPRIVATE (ElapsedTime ,posfactor             )
-   !$OMP DO  & 
-   !$OMP& REDUCTION(+:AvUwind) &    
-   !$OMP& REDUCTION(+:AvVwind) &    
-   !$OMP& REDUCTION(+:AvTemp) &
-   !$OMP& REDUCTION(+:numpartinAvWind) &    
-   !$OMP& REDUCTION(+:numpartinAvTemp) &
-   !$OMP& REDUCTION(+:AvWaterDepth) & 
-   !$OMP& REDUCTION(+:numpartinAvWaterDepth)
-    DO n=1,numpar
-      !$ rank=OMP_GET_THREAD_NUM ()
-      !write(*,*) 'I am rank ',rank,' n=',n, OMP_IN_PARALLEL ()
+      !$OMP MASTER
       IF(WriteModelTiming) call CPU_TIME(times(2))
+      !$OMP END MASTER
+
       ! *********************************************************
       ! *                                                       *
       ! *        Update Particle Age and Characteristics        *
@@ -1339,14 +1374,14 @@ contains
           par(n,pnX) = par(n,pX)
           par(n,pnY) = par(n,pY)
           par(n,pnZ) = par(n,pZ)
-          cycle
+          return
         endif
       else !--- CL-OGS: for backward run
         if(ix(3) > par(n,pDOB))then 
           par(n,pnX) = par(n,pX)
           par(n,pnY) = par(n,pY)
           par(n,pnZ) = par(n,pZ)
-          cycle
+          return
         endif
       endif
       !Update particle age
@@ -1357,28 +1392,28 @@ contains
 
       !If particle settled or dead, skip tracking
       if(settlementon)then
-        if ( isSettled(n) ) cycle
+        if ( isSettled(n) ) return
       endif
  
 !--- CL-OGS:   !If particle stranded, skip tracking
       if(settlementon)then
-        if(isStranded(n)) cycle
+        if(isStranded(n)) return
       endif
 
       if(mortality)then
-        if ( isDead(n) ) cycle
+        if ( isDead(n) ) return
       endif
 
       !If there are open ocean boundaries and the current
       !  particle has exited the model domain via them, skip it
       if(OpenOceanBoundary)then
-        if(isOut(n)) cycle
+        if(isOut(n)) return
       endif
 
       !IMIOM
       if(OilOn)then
           if(par(n,pStatus) == 2) then
-              cycle                               !if beached
+              return                               !if beached
         end if
       end if
       !END IMIOM
@@ -1412,7 +1447,7 @@ contains
         call handleERROR('setEle    ',1,ele_err,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      par(n,pX),par(n,pY),par(n,pZ),docycle  )
-        if(docycle) cycle
+        if(docycle) return
       ENDIF
 
       
@@ -1438,13 +1473,13 @@ contains
                      par(n,pX),par(n,pY),par(n,pZ), &
                      Xpar,Ypar,par(n,pZ),docycle)
            call die(n)
-          if(docycle) cycle 
+          if(docycle) return 
         elseif(conflict.ne.1)then
           call handleERROR('dDepth    ',1,conflict,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      Xpar,Ypar,par(n,pZ),docycle)
            call die(n)
-           if(docycle) cycle 
+           if(docycle) return 
         endif
         P_angle=0
       endif
@@ -1537,7 +1572,11 @@ contains
       ! *                                                       *
       ! *********************************************************
 
+
+      !$OMP MASTER
       IF(WriteModelTiming) call CPU_TIME(times(3))
+      !$OMP END MASTER
+      
 
       !-------------------------------
       ! Check if particle location above or below boundary  
@@ -1931,8 +1970,9 @@ contains
       ! *                                                       *
       ! *********************************************************
 
-      IF (WriteModelTiming) call CPU_TIME(times(4))
-
+      !$OMP MASTER
+      IF(WriteModelTiming) call CPU_TIME(times(4))
+      !$OMP END MASTER
 
         IF (HTurbOn) CALL HTurb(TurbHx,TurbHy)
 
@@ -1943,7 +1983,10 @@ contains
       ! *                                                       *
       ! ********************************************************* 
 
-      IF (WriteModelTiming) call CPU_TIME(times(5))
+
+      !$OMP MASTER
+      IF(WriteModelTiming) call CPU_TIME(times(5))
+      !$OMP END MASTER
 
       IF (VTurbOn) CALL VTurb(P_zc,P_depth,P_zetac,p,ex,ix,Pwc_wzb,Pwc_wzc,    &
                               Pwc_wzf,Xpar,Ypar,TurbV)
@@ -1955,7 +1998,11 @@ contains
       ! *                                                       *
       ! *********************************************************
 
-      IF (WriteModelTiming) call CPU_TIME(times(6))
+
+      !$OMP MASTER
+      IF(WriteModelTiming) call CPU_TIME(times(6))
+      !$OMP END MASTER
+      
       IF((Behavior.ge.8.and.Behavior.le.11).and.read_GrainSize)then
        P_GrainSize(n)=max(P_GrainSize(n),getInterp(Xpar,Ypar,"GrainSize",klev))
        !if(readNetcdfSwdown)P_swdown = getInterp(Xpar,Ypar,"swdown",klev)
@@ -1998,7 +2045,9 @@ contains
       ! *                                                       *
       ! *********************************************************
 
+      !$OMP MASTER
       IF(WriteModelTiming) call CPU_TIME(times(7))
+      !$OMP END MASTER
 
       newXpos = 0.0
       newYpos = 0.0
@@ -2014,7 +2063,8 @@ contains
       newXpos = par(n,pX) + AdvectX + TurbHx
       newYpos = par(n,pY) + AdvectY + TurbHy
       newZpos = par(n,pZ) + AdvectZ + TurbV
-
+      !write(*,*)it,n,AdvectZ,kn1_u,kn2_u,kn3_u,kn4_u,kn1_v,kn2_v,kn3_v,kn4_v,kn1_w,kn2_w,kn3_w,kn4_w
+           
   !IF (Behavior.eq.8 .and.( P_Size(n)>14 &
       !     .and.abs(par(n,pZ)-P_depth)<2)) then
       !   newXpos = par(n,pX) + AdvectX*0.1  + TurbHx
@@ -2085,7 +2135,7 @@ contains
                       nXpos,nYpos,par(n,pZ),docycle)
           waterFlag = .TRUE.
           exit
-          if(docycle) cycle
+          if(docycle) return
         endif
 
         Xpos = fintersectX
@@ -2096,7 +2146,7 @@ contains
        ENDIF
       enddo
       
-      if(waterFlag) cycle
+      if(waterFlag) return
 
       newXpos = nXpos
       newYpos = nYpos
@@ -2132,10 +2182,8 @@ contains
          !  if(nklev<klev)then
          !   CALL setEle(newXpos,newYpos,par(n,pZ),n,3,ele_err)
          !   if(ele_err.ne.0)then
-              write(*,*)'setEle error at newZpos=',newZpos,&
-               ' for n, it= ',n,it
-              write(*,*)'setEle error at oldZpos=',par(n,pZ), &
-                            ', killing particle ',n,it
+              write(*,'(2(a,f8.2),2(a,i6))')'setEle error at newZpos=',newZpos,&
+               ' oldZpos=',par(n,pZ),' for n=',n,' it=',it
          !   endif
          !  else
          !    write(*,*)'setEle error at newZpos=',newZpos,&
@@ -2149,7 +2197,7 @@ contains
            call handleERROR('setEle    ',2,ele_err,n,     &
                         par(n,pX),par(n,pY),par(n,pZ), &
                         newXpos,newYpos,par(n,pZ),docycle  )
-           if(docycle) cycle
+           if(docycle) return
         endif
       Endif !ele_err
 
@@ -2173,7 +2221,7 @@ contains
             call handleERROR('Fstlev    ',2,conflict_tmp,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      newXpos,newYpos,newZpos,docycle)
-            if(docycle) cycle 
+            if(docycle) return 
          endif
         Endif
         If(conflict_tmp.ne.1)then
@@ -2181,7 +2229,7 @@ contains
                      par(n,pX),par(n,pY),par(n,pZ), &
                      newXpos,newYpos,newZpos,docycle)
           call die(n)
-           if(docycle) cycle 
+           if(docycle) return 
         Else
               P_depth=nP_depth
         Endif
@@ -2247,7 +2295,7 @@ contains
         PartAtSurf(n,3)= par(n,pZ)
         PartAtSurf(n,4)= ix(3)
         call die(n)
-       cycle
+       return
       endif
       !if(NewZpos .GT. minpartdepth) NewZpos = minpartdepth - DBLE(0.000001)
       !if(NewZpos .LT. maxpartdepth) NewZpos = maxpartdepth + DBLE(0.000001)
@@ -2310,7 +2358,7 @@ contains
                      par(n,pX),par(n,pY),par(n,pZ), &
                      newXpos,newYpos,newZpos,docycle  )
         write(*,*)'-------------------------------'
-        if(docycle) cycle
+        if(docycle) return
       Endif !ele_err
 
       if(ele_err.ne.0)then
@@ -2324,7 +2372,7 @@ contains
         call handleERROR('mbounds   ',1,ele_err,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      newXpos,newYpos,newZpos,docycle  )
-        if(docycle) cycle
+        if(docycle) return
       endif
 
        if ((isnan(par(n,pX)) .or. isnan(par(n,pY)) )          &
@@ -2372,7 +2420,7 @@ contains
         call handleERROR('ibounds   ',1,ele_err,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      newXpos,newYpos,newZpos,docycle  )
-        if(docycle) cycle
+        if(docycle) return
        endif
       endif
 
@@ -2461,7 +2509,7 @@ contains
           ! When n is settled or stranded, color(n)= -99999:
           ! W hen n is settled or stranded, color(n)= -1*polynumber:
           if(.not.OilOn ) par(n,pStatus) = - inpoly
-          cycle
+          return
         endif
       endif
 !--- CL-OGS: END OF SETTLEMENT SECTION !-----------------------------------------------
@@ -2471,6 +2519,7 @@ contains
       ! *                      End of Particle Loop                     *
       ! *****************************************************************
 
+      !$OMP MASTER
       IF(WriteModelTiming) then
         call CPU_TIME(times(8))
 
@@ -2481,53 +2530,8 @@ contains
         timeCounts(6) = timeCounts(6) + (times(7)-times(6))
         timeCounts(7) = timeCounts(7) + (times(8)-times(7))
       ENDIF
-
-    ENDDO !end loop for each particle
-   !$OMP END DO          
-   !$OMP END PARALLEL 
-      IF(numpartinAvWind.ge.1)then
-         AvUwind=AvUwind/float(numpartinAvWind)
-         AvVwind=AvVwind/float(numpartinAvWind)
-         !write(*,*)'***** AvUwd=',AvUwind,' AvVwd=',AvVwind
-      ENDIF
-      IF(numpartinAvTemp.ge.1)then
-           AvTemp=AvTemp/float(numpartinAvTemp)
-      ENDIF
-    ! *********************************************************
-    ! *               Update particle locations               *
-    ! *********************************************************
-
-    do n=1,numpar
-      par(n,ppX) = par(n,pX)
-      par(n,ppY) = par(n,pY)
-      par(n,ppZ) = par(n,pZ)
-      par(n,pX)  = par(n,pnX) 
-      par(n,pY)  = par(n,pnY)
-      par(n,pZ)  = par(n,pnZ)
-       if ((isnan(par(n,pX)) .or. isnan(par(n,pY)) )          &
-        .or.  (  isnan(par(n,pnX)).or.isnan(par(n,pnY)) ) )then
-         write(*,*)'n=',n,'it=',it
-         write(*,*)'Xpar=',par(n,pX),par(n,pnX)
-         write(*,*)'Ypar=',par(n,pY),par(n,pnY)
-         write(*,*)'Zpar=',par(n,pZ),par(n,pnZ)
-         stop 'found NaN in updateparloc'
-       endif
-    enddo
-
-    !IMIOM
-    if(OilOn)then  !set oil particle vertical location to surface
-      do n=1,numpar
-        par(n,ppZ) = 0.0
-        par(n,pZ) = 0.0
-      end do
-    end if
-    !END IMIOM
-
-    DEALLOCATE(Pwc_zb,Pwc_zc,Pwc_zf)
-    DEALLOCATE(Pwc_wzb,Pwc_wzc,Pwc_wzf)
-
-  end subroutine update_particles
-
+      !$OMP END MASTER
+  end subroutine update_single_particle
 
   SUBROUTINE find_currents(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,   &
     Pwc_wzc,Pwc_wzf,P_zb,P_zc,P_zf,ex,ix,p,version,Uad,Vad,Wad,&
@@ -3732,11 +3736,13 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
 
   SUBROUTINE   setAvWindAvTemp_forallparts()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
-                         numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi  !--- CL-OGS
+                         numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
+                         OilOn,settlementon,mortality,OpenOceanBoundary
     USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
                          getSlevel,getWlevel,setInterp,getInterp
     USE INT_MOD,    ONLY: polintd
-    use behavior_mod, only: die
+    use behavior_mod, only: die,isOut,isDead
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
     IMPLICIT NONE
 
@@ -3762,6 +3768,23 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     IF(numpartinAvWaterDepth.eq.0)THEN
       AvWaterDepth=0.0
       DO n=1,numpar
+
+        if(settlementon)then
+          if ( isSettled(n) ) cycle
+        endif
+        if(settlementon)then
+          if(isStranded(n)) cycle
+        endif
+        if(mortality)then
+          if ( isDead(n) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(n)) cycle
+        endif
+        if(OilOn)then
+            if(par(n,pStatus) == 2) cycle !beached
+        end if
+ 
         Xpar = par(n,pX)
         Ypar = par(n,pY)
         Zpar = par(n,pZ)
@@ -3791,6 +3814,23 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
       AvUwind=0.0
       AvVwind=0.0
       DO n=1,numpar
+
+        if(settlementon)then
+          if ( isSettled(n) ) cycle
+        endif
+        if(settlementon)then
+          if(isStranded(n)) cycle
+        endif
+        if(mortality)then
+          if ( isDead(n) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(n)) cycle
+        endif
+        if(OilOn)then
+            if(par(n,pStatus) == 2) cycle !beached
+        end if
+ 
         Xpar = par(n,pX)
         Ypar = par(n,pY)
         Zpar = par(n,pZ)
@@ -3893,6 +3933,23 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
       ALLOCATE(Pwc_wzc(ws))
       ALLOCATE(Pwc_wzf(ws))
       DO n=1,numpar ! loop for each particle
+
+        if(settlementon)then
+          if ( isSettled(n) ) cycle
+        endif
+        if(settlementon)then
+          if(isStranded(n)) cycle
+        endif
+        if(mortality)then
+          if ( isDead(n) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(n)) cycle
+        endif
+        if(OilOn)then
+            if(par(n,pStatus) == 2) cycle !beached
+        end if
+ 
           Xpar = par(n,pX)
           Ypar = par(n,pY)
           Zpar = par(n,pZ)
@@ -3967,10 +4024,11 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
        abs(AvTemp/float(numpartinAvTemp))<50.)then
          AvTemp=AvTemp/float(numpartinAvTemp)
       ELSE
-         write(*,*)'USING constTemp=',constTemp, &
+         AvTemp=constTemp
+         if(SaltTempOn) &
+         write(*,*)'SaltTempOn is True, USING constTemp=',constTemp, &
         ' instead of computed AvTemp=',AvTemp/float(numpartinAvTemp),&
         ' numpartinAvTemp=',numpartinAvTemp
-         AvTemp=constTemp
       ENDIF
 
       DEALLOCATE(Pwc_zb)
