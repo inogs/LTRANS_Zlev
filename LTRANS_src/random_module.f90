@@ -118,6 +118,7 @@ CONTAINS
       !$ numthreads=OMP_GET_NUM_THREADS ()
       !$ write(*,*)'in random_module OMP_NUM_THREADS=',numthreads
      !$OMP END MASTER
+     !$write(*,*)"this is thread",OMP_GET_THREAD_NUM(),"out of",numthreads
     !$OMP END PARALLEL
     write(*,*)' in random module numthreads is ',numthreads
     ALLOCATE(mti_threadprivate(numthreads) )
@@ -184,7 +185,7 @@ CONTAINS
     INTEGER :: rank                    ! CL-OGS :: for OMP 
     rank=0                             ! CL-OGS :: for OMP 
     !$ rank=OMP_GET_THREAD_NUM ()      ! CL-OGS :: for OMP 
-    !write(*,*)'in random module rank is ',rank    
+    !$ write(*,*)'in random module thread rank is ',rank    
     if(initialized.ne.DONE)then
       CALL init_genrand(21641)
     endif

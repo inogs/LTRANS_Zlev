@@ -1325,6 +1325,7 @@ CONTAINS
 !    DATA IL/1/
     rank=1
     !$ rank=OMP_GET_THREAD_NUM () +1
+    !$write(*,*)"INTRVL this is thread",rank
     IL=OMP_IL(rank)
     TT = T
     FLAG = .TRUE.
@@ -1371,6 +1372,7 @@ CONTAINS
       !$ numthreads=OMP_GET_NUM_THREADS ()
       !$ write(*,*)'in tension_module OMP_NUM_THREADS=',numthreads
      !$OMP END MASTER
+     !$write(*,*)"this is thread",OMP_GET_THREAD_NUM(),"out of",numthreads
     !$OMP END PARALLEL
     ALLOCATE(OMP_IL(numthreads))   
     OMP_IL(:)=1
