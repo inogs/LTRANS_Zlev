@@ -97,7 +97,7 @@ MODULE OIL_MOD
                         MassEvapPrev,MassDispPrev,MassBeachedPrev
     !Timing variables 
     INTEGER :: Phase1Time
-    LOGICAL :: FIRSTAP
+    LOGICAL :: FirstAP
     INTEGER :: iT                                            !internal timestep counters
 
     !*** OIL CONSTANTS
@@ -249,7 +249,7 @@ MODULE OIL_MOD
             END IF    ! Emulsification
 
             IF (Evaporation) THEN
-                CALL Evaporate(ElapsedTime, FirstAP)
+                CALL Evaporate(ElapsedTime)
             END IF    ! Evaporation
 
             CALL Density
@@ -257,7 +257,7 @@ MODULE OIL_MOD
             CALL Viscosity
 
             IF (Dispersion) THEN
-                call Disperse(ElapsedTime, FirstAP,WaterDepth)
+                call Disperse(ElapsedTime,WaterDepth)
 
 
             END IF
@@ -456,7 +456,7 @@ MODULE OIL_MOD
 
         !When oil is denser than surrounding water, oil will sink => no spreading
         IF (RhoOil > RhoWater) THEN
-            WRITE(*,*)'Oil is denser than water => no surface spreading'
+            WRITE(*,*)'Oil has rho=',RhoOil,' denser than water rho=',RhoWater,' => no surface spreading'
             !INCLUDE CODE FOR VERTICAL MOVEMENT OF OIL PARTICLES
         END IF
 
@@ -573,9 +573,13 @@ MODULE OIL_MOD
          OilDensity = 0.0
          OilDensity_RefT = 0.0
         VolumeBeached = 0.0 ! Added by OGS
+        MassBeached=0.0
+        MassEvapPrev=0.0
+        MassDispPrev=0.0
+        MassBeachedPrev=0.0
 
         novalue = .FALSE.
-        FIRSTAP = .TRUE.                                    ! first time for oil model processes
+        FirstAP = .TRUE.                                    ! first time for oil model processes
         iT = 0                                                ! zero internal timestep counter
 
         !*******************************
@@ -1131,7 +1135,7 @@ MODULE OIL_MOD
     !*****************************
     !*     Subroutine Evaporate  *
     !*****************************
-    SUBROUTINE Evaporate(ElapsedTime,FirstAP)
+    SUBROUTINE Evaporate(ElapsedTime)
     USE PARAM_MOD, ONLY: Uwind_10,Vwind_10,EvapOption,idt,VolumeSpill,Oil_Resin,Oil_Asph, &
                          Fingas_B,Fingas_T,Fingas_TYP  ! c.laurent-OGS:  Fingas_B,Fingas_T,Fingas_TYP 
                          ! reintroduced to avoid using fingas with fixed coefficients 
@@ -1139,7 +1143,6 @@ MODULE OIL_MOD
 
     !I/O variables
     INTEGER, INTENT(IN):: ElapsedTime
-    LOGICAL, INTENT(IN):: FirstAP
 
     !Local variables
     DOUBLE PRECISION:: PercentEvap            !percent of oil evaporated in timestep
@@ -1164,6 +1167,7 @@ MODULE OIL_MOD
     IF (FirstAP) THEN
         CALL InitialEvap(dTdFe, InitBP, nPC)
         PercentEvap = 0.0
+        PrevPercentEvap = 0.0
         CumPercentEvap = 0.0
         MassEvap = 0.0
         VolumeEvap = 0.0
@@ -1369,7 +1373,7 @@ MODULE OIL_MOD
     !*****************************
     !*     Subroutine Disperse   *
     !*****************************
-    SUBROUTINE Disperse(ElapsedTime,FirstAP,WaterDepth)
+    SUBROUTINE Disperse(ElapsedTime,WaterDepth)
     !French-McKay, 2004
     !"Oil Spill Impact Modelling: Development and Validation"
     !Environmental Toxicology and Chemistry, Vol 23, No. 10, pp 2441-2456. SETAC, USA
@@ -1384,7 +1388,6 @@ MODULE OIL_MOD
 
     !I/O variables
     INTEGER, INTENT(IN):: ElapsedTime
-    LOGICAL, INTENT(IN):: FirstAP
     DOUBLE PRECISION, INTENT(IN):: WaterDepth
 
     !Local variables

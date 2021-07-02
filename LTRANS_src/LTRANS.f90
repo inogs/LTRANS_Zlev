@@ -861,8 +861,8 @@ contains
     AvVwind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
     AvTemp=0.0 !constTemp
     !write(*,*)' Set Initial Wind and Temperature '
-    !write(*,*)'setAvWindAvTemp_forallparts A',numpartinAvWind,numpartinAvTemp
-    call setAvWindAvTemp_forallparts()
+    !write(*,*)'setAvWindAvFields_forallparts A',numpartinAvWind,numpartinAvTemp
+    call setAvWindAvFields_forallparts()
     !write(*,*)' Set Initial Wind and Temperature DONE'
     !write(*,*)'AvUwind=',AvUwind
     !write(*,*)'AvVwind=',AvVwind
@@ -917,6 +917,8 @@ contains
       !Read in hydrodynamic model data 
       IF(p > 2) then
         CALL updateHydro()   !do not start updating until 3rd iteration
+      ENDIF
+
         npsetl=0
         npstrd=0
         npdead=0
@@ -936,8 +938,6 @@ contains
         ENDDO
         write(*,'(4(a,i8))')'Number of parts settled=',npsetl,' stranded=',npstrd,&
                     ' dead=',npdead,' out=',npout 
-      ENDIF
-
       IF(p>2 .and. WriteParfile)then
         write(namefile,'(A,A,A)')'Parfile_', &
         filenm(len(trim(filenm))-len(trim(suffix))-numdigits+1:len(trim(filenm))-len(trim(suffix))),'.csv'
@@ -1006,7 +1006,7 @@ contains
 
     call update_particles()
     if(( Wind .and. numpartinAvWind.eq.0) .or. (SaltTempOn .and.numpartinAvTemp.eq.0)) then
-          call setAvWindAvTemp_forallparts()
+          call setAvWindAvFields_forallparts()
            numpartinAvWind=1
            numpartinAvTemp=1
            numpartinAvWaterDepth=1
@@ -1438,12 +1438,20 @@ contains
         klev=1
       endif     
       !Determine which Rho, U, & V elements the particle is in
-      ele_err=-1
-      CALL setEle(Xpar,Ypar,Zpar,n,1,ele_err)
+      ele_err=-666
+      CALL setEle(Xpar,Ypar,Zpar,n,it,1,ele_err)
       !If the particle was not found to be within an element,
       !  write a message to the screen and discontinue the program
       IF(ele_err .ne.  0)THEN
         !write(ErrorName,'(a)')'setEle'
+              write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2))') &
+                  'ERROR it',it,'on 1st setEle call, error number is ',ele_err, &
+                 'local old, present and next depth is ',&
+                    par(n,pZ),P_depth,nP_depth, &
+                 'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
+                            Pwc_wzc(getKRlevel(par(n,pZ))),  &
+                  'at read Z=',Zpar  ,' ZW(',getKRlevel(Zpar),')=', &
+                            Pwc_wzc(getKRlevel(Zpar)) 
         call handleERROR('setEle    ',1,ele_err,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      par(n,pX),par(n,pY),par(n,pZ),docycle  )
@@ -2163,14 +2171,14 @@ contains
 
 
       IF(Zgrid)then
-       CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,2,ele_err)
+       CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,2,ele_err)
        nklev=getKRlevel(newZpos)
        if(ele_err.ne.0)then
         IF(OilOn.and. par(n,pStatus) ==2)then
           do posfactor=8,0,-1
             newXpos = Xpos+(fintersectX-Xpos)*posfactor/10.0 
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
-            CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,2,ele_err)
+            CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,2,ele_err)
             if(ele_err.eq.0)then
                write(*,*)'Beached particle ',n,' put at ',posfactor*10., &
                '% of the distance from the boundary for setEle reasons'
@@ -2182,8 +2190,6 @@ contains
          !  if(nklev<klev)then
          !   CALL setEle(newXpos,newYpos,par(n,pZ),n,3,ele_err)
          !   if(ele_err.ne.0)then
-              write(*,'(2(a,f8.2),2(a,i6))')'setEle error at newZpos=',newZpos,&
-               ' oldZpos=',par(n,pZ),' for n=',n,' it=',it
          !   endif
          !  else
          !    write(*,*)'setEle error at newZpos=',newZpos,&
@@ -2194,6 +2200,20 @@ contains
          !endif
          !If(ele_err .ne.  0)then 
          ! write(*,*) "pb setEle UNSOLVED !!! "
+              write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),10(a,f6.2),a)') &
+                  'ERROR it',it,'on 2nd setEle call, error number is ',ele_err, &
+                 'local old, present and next depth is ',&
+                    par(n,pZ),P_depth,nP_depth, &
+                 'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
+                            Pwc_wzc(getKRlevel(par(n,pZ))),  &
+                  'at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
+                            Pwc_wzc(getKRlevel(newZpos)) ,  &
+                  'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
+                  'm : newZ=',newZpos,              & 
+                  '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
+                   ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
+                   ']) +reflectsup[',reflectsup,']+ reflectinf[',reflectinf,&
+                   ']+ pushedup[',pushedup,']'
            call handleERROR('setEle    ',2,ele_err,n,     &
                         par(n,pX),par(n,pY),par(n,pZ), &
                         newXpos,newYpos,par(n,pZ),docycle  )
@@ -2208,7 +2228,29 @@ contains
           do posfactor=8,0,-1
             newXpos = Xpos+(fintersectX-Xpos)*posfactor/10.0 
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
-            CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,2,ele_err)
+            CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,3,ele_err)
+            If(ele_err .ne.  0)then 
+              write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),10(a,f6.2),a)') &
+                  'ERROR it',it,'on 3rd setEle call, error number is ',ele_err, &
+                 'local old, present and next depth is ',&
+                    par(n,pZ),P_depth,nP_depth, &
+                 'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
+                            Pwc_wzc(getKRlevel(par(n,pZ))),  &
+                  'at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
+                            Pwc_wzc(getKRlevel(newZpos)) ,  &
+                  'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
+                  'm : newZ=',newZpos,              & 
+                  '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
+                   ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
+                   ']) +reflectsup[',reflectsup,']+ reflectinf[',reflectinf,&
+                   ']+ pushedup[',pushedup,']'
+           
+              call handleERROR('setEle    ',3,ele_err,n,     &
+                           par(n,pX),par(n,pY),par(n,pZ), &
+                           newXpos,newYpos,newZpos,docycle  )
+              write(*,*)'-------------------------------'
+              if(docycle) return
+            Endif !ele_err
             call getDepth(newXpos,newYpos,n,it,nP_depth,Fstlev,conflict_tmp)
             if(Fstlev<=us)then
                write(*,*)'Beached particle ',n,' put at ',posfactor*10, &
@@ -2337,16 +2379,16 @@ contains
       ENDIF
       
       ! Check to make sure new position is within a rho, u and v element
-      CALL setEle(newXpos,newYpos,newZpos,n,4,ele_err)
+      CALL setEle(newXpos,newYpos,newZpos,n,it,4,ele_err)
       If(ele_err .ne.  0)then 
-        write(*,*)'ERROR on third setEle call, error number is ',ele_err
-        write(*,*)'local old, present and next depth is ',&
-              par(n,pZ),P_depth,nP_depth
-        write(*,*)'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
-                      Pwc_wzc(getKRlevel(par(n,pZ)))
-        write(*,*)'at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
-                      Pwc_wzc(getKRlevel(newZpos))
-        write(*,'((a,i5),10(a,f6.2),a)')       &
+        write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),10(a,f6.2),a)') &
+            'ERROR it',it,'on 4th setEle call, error number is ',ele_err, &
+           'local old, present and next depth is ',&
+              par(n,pZ),P_depth,nP_depth, &
+           'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
+                      Pwc_wzc(getKRlevel(par(n,pZ))),  &
+            'at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
+                      Pwc_wzc(getKRlevel(newZpos)) ,  &
             'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
             'm : newZ=',newZpos,              & 
             '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
@@ -3734,7 +3776,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
   !-----------------------------------------------------------------------------
 
 
-  SUBROUTINE   setAvWindAvTemp_forallparts()
+  SUBROUTINE   setAvWindAvFields_forallparts()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
                          numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
                          OilOn,settlementon,mortality,OpenOceanBoundary
@@ -3808,7 +3850,11 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
         AvWaterDepth=AvWaterDepth+P_depth
         numpartinAvWaterDepth= numpartinAvWaterDepth+1                           !--- CL-OGS
       ENDDO
+       if((numpartinAvWaterDepth)>0) then
        AvWaterDepth=AvWaterDepth/float(numpartinAvWaterDepth)
+       else
+       write(*,*)"In setAvWindAvFields numpartinAvWaterDepth=0"
+       endif
     ENDIF
     IF(numpartinAvWind.eq.0 .and. Wind)THEN
       AvUwind=0.0
@@ -3911,10 +3957,13 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
 
       ENDDO 
 
-      IF(numpartinAvWind>=10 .and. abs(AvUwind)+abs(AvVwind)>0.0001)then
+      IF(numpartinAvWind>0 .and. abs(AvUwind)+abs(AvVwind)>0.0001)then
          AvUwind=AvUwind/float(numpartinAvWind)
          AvVwind=AvVwind/float(numpartinAvWind)
       ELSE
+         write(*,'(2(a,f9.4),a,i4)')'In setAvWindAvFields, USING constWind=',constUWind, &
+        ConstVWind,' instead of computed AvWind because',&
+        ' numpartinAvWind=',numpartinAvWind
          AvUwind = constUwind
          AvVwind = constVwind    !v rectified to N-S orientation
       ENDIF
@@ -4026,8 +4075,9 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
       ELSE
          AvTemp=constTemp
          if(SaltTempOn) &
-         write(*,*)'SaltTempOn is True, USING constTemp=',constTemp, &
-        ' instead of computed AvTemp=',AvTemp/float(numpartinAvTemp),&
+         write(*,'(2(a,f9.4),a,i4)')'In setAvWindAvFields, USING constTemp=',constTemp, &
+
+        ' instead of computed AvTemp because',&
         ' numpartinAvTemp=',numpartinAvTemp
       ENDIF
 
@@ -4040,7 +4090,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     ENDIF
     !------
 
-  END SUBROUTINE  setAvWindAvTemp_forallparts
+  END SUBROUTINE  setAvWindAvFields_forallparts
 
   !-----------------------------------------------------------------------------
 
