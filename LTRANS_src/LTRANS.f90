@@ -3961,8 +3961,8 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
          AvUwind=AvUwind/float(numpartinAvWind)
          AvVwind=AvVwind/float(numpartinAvWind)
       ELSE
-         write(*,'(2(a,f9.4),a,i4)')'In setAvWindAvFields, USING constWind=',constUWind, &
-        ConstVWind,' instead of computed AvWind because',&
+         write(*,'(3(a,f9.4),a,i4)')'In setAvWindAvFields, USING constUWind=',constUWind, &
+        ' constVWind=',ConstVWind,' instead of computed AvWind because',&
         ' numpartinAvWind=',numpartinAvWind
          AvUwind = constUwind
          AvVwind = constVwind    !v rectified to N-S orientation
