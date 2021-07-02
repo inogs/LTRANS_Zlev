@@ -5080,7 +5080,7 @@ CONTAINS
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: Xpar,Ypar,Zpar
     INTEGER, INTENT(IN) :: n,num,it
-    INTEGER, INTENT(OUT), OPTIONAL :: err
+    INTEGER, INTENT(INOUT), OPTIONAL :: err
     LOGICAL, INTENT(IN), OPTIONAL :: first
 
     LOGICAL :: fst,same_vertical_level
@@ -5140,7 +5140,7 @@ CONTAINS
       ' ; ',P_klev_old(n), &
       ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
       ' ) ETYPE=invalid initial Xpar,Ypar,Zpar'
-      error=-1
+      error=-2
       return
     endif 
 
@@ -5445,7 +5445,7 @@ CONTAINS
                           ' composing r_element ',P_r_element(n), &
                           ' is not among hydro-nodes-buffer updated'
                   write(*,'(a)')'You might need to increase ijbuff '
-                  if(error==0) error=-1
+                  if(error==0) error=-3
           endif
           updatednode=0
           do j=1,uj
@@ -5506,7 +5506,9 @@ CONTAINS
 
     EndIf
 
-    if(PRESENT(err)) err = error
+    if(PRESENT(err))then
+            err = error
+    endif
 
   END SUBROUTINE setEle
 
