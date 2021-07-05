@@ -1348,6 +1348,7 @@ contains
     col(2)='g'
     col(3)='r'
     col(4)='k'
+    coastdist=9e12
 
       !$OMP MASTER
       IF(WriteModelTiming) call CPU_TIME(times(2))
@@ -2104,13 +2105,15 @@ contains
         if(intersectf == 0)exit
 
        IF(TrackCollisions) hitLand(n) = hitLand(n) + 1
+       
+       coastdist=0
+       P_coastdist(n)=0
        IF(OilOn .and. StrandingDist>=0)then
         nXpos = Xpos+(fintersectX-Xpos)*0.9 
         nYpos = Ypos+(fintersectY-Ypos)*0.9 
         par(n,pnZ) = newZpos
         par(n,pStatus) = 2
         call p_Stranding(n) ! Apply stranding in "is_Stranded"
-        P_coastdist(n)=0
         private_Average_Numpart(ID_STRANDED) =private_Average_Numpart(ID_STRANDED) + 1
         exit
        ELSE
@@ -2525,8 +2528,6 @@ contains
       if( (StrandingDist>0) .or. Write_coastdist )  then
           call Get_coastdist(newYpos,newXpos,us,P_coastdist(n))
           coastdist=P_coastdist(n)
-      else
-          coastdist=9e12
       endif
 
 
