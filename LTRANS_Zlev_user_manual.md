@@ -675,7 +675,7 @@ $settleparam
                              ! (pedges = number of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points 
                              ! (hedges= number of rows in holes file)
- StrandingDist= -999.        ! Stranding Distance in meters from land 
+ StrandingDist= -999         ! Stranding Distance in meters from land 
                              ! (Disabled if StrandingDist<=0)
  strandingmaxdepth =300.00      ! maximal depth at which stranding can occur               
  strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which 
@@ -880,7 +880,7 @@ $oilprocs
   Evaporation        = .True.
   EvapOption         = 'MACKAY'
   Emulsification     = .True.
-  Beaching           = .False.
+  Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
   Stokes             = .True.
