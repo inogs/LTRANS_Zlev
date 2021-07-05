@@ -1193,7 +1193,7 @@ contains
    !$OMP PRIVATE(Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf) &
    !$OMP FIRSTPRIVATE (frstpriv_Average_Value,frstpriv_Average_Numpart)  &
    !$OMP REDUCTION(+:Average_Value) &    
-   !$OMP REDUCTION(+:Average_Numpart) &
+   !$OMP REDUCTION(+:Average_Numpart) 
 
    !$OMP DO PRIVATE(n)  
     DO n=1,numpar
