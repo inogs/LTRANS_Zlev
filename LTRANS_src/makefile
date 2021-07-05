@@ -92,9 +92,9 @@ ifdef Fluxus
   NETCDF_INCDIR =  /usr/include -I/usr/lib64/gfortran/modules/ 
   NETCDF_LIBDIR = /usr/lib -L/usr/lib64  -lnetcdff -lnetcdf
   ifdef Debug 
-    FFLAGS =  -O0 -pg -g  -fbounds-check -fimplicit-none -ffpe-trap=invalid,overflow -pedantic -ffixed-line-length-132  $(F_HIDEUNUSED)   -I$(NETCDF_INCDIR) 
+    FFLAGS =  -O0 -pg -g  -fbounds-check -fimplicit-none -ffpe-trap=invalid,overflow -pedantic -ffixed-line-length-132 -cpp  $(F_HIDEUNUSED)   -I$(NETCDF_INCDIR) 
   else
-    FFLAGS =   -O3  -Wall  -Warray-bounds -fbacktrace -ffree-line-length-none $(F_HIDEUNUSED) -I$(NETCDF_INCDIR) 
+    FFLAGS =   -O3  -Wall  -Warray-bounds -fbacktrace -ffree-line-length-none -cpp $(F_HIDEUNUSED) -I$(NETCDF_INCDIR) 
   endif
 endif
 
@@ -107,21 +107,21 @@ ifdef Galileo
    F90C = ifort
    CC = icc
    ifdef Debug
-     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB
+     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB -cpp
    endif
   else
    FC = gfortran
    F90C = gfortran
    CC = gcc
    ifdef Debug
-     DEBUGFLAGS= -g -fsanitize=address -fbacktrace 
+     DEBUGFLAGS= -g -fsanitize=address -fbacktrace  -cpp
    endif
   endif
     NETCDF_INCDIR = /cineca/prod/opt/libraries/netcdf/4.6.1/intel--pe-xe-2018--binary/include -I/cineca/prod/opt/libraries/netcdff/4.4.4/intel--pe-xe-2018--binary/include 
     NETCDF_LIBDIR = /cineca/prod/opt/libraries/netcdf/4.6.1/intel--pe-xe-2018--binary/lib  -L/cineca/prod/opt/libraries/netcdff/4.4.4/intel--pe-xe-2018--binary/lib  -lnetcdf
     HDF5_LIBDIR = /cineca/prod/opt/libraries/hdf5/1.8.18/intel--pe-xe-2018--binary/lib 
   ifdef Debug 
-    FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -ggdb -g3 -I$(NETCDF_INCDIR) 
+    FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -ggdb -g3 -cpp -I$(NETCDF_INCDIR) 
   else
     FFLAGS = -O3 -fno-math-errno -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR)
   endif
