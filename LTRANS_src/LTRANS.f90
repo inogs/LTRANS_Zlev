@@ -2197,7 +2197,7 @@ contains
          !endif
          !If(ele_err .ne.  0)then 
          ! write(*,*) "pb setEle UNSOLVED !!! "
-              write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),10(a,f6.2),a)') &
+              write(*,'(a,i12,a,i2,a,3f7.2,3(a,f7.2,a,i3,a,f7.2),(a,i5),10(a,f6.2),a)') &
                   'ERROR it',it,'on 2nd setEle call, error number is ',ele_err, &
                  'local old, present and next depth is ',&
                     par(n,pZ),P_depth,nP_depth, &
