@@ -97,6 +97,7 @@
 !  curve-fitting package (TSPACK) which have their own
 ! licenses and are freely available for non-commercial uses. 
 
+
 PROGRAM main
 
 ! LTRANS.f90 contains the main structure of the particle-tracking program. 
@@ -113,6 +114,14 @@ PROGRAM main
 !   Celia Laurent: claurent@inogs.it - OGS (Zlev version)
 
 IMPLICIT NONE
+#define ID_TEMP 1
+#define ID_DEPTH 2
+#define ID_U_WIND 3
+#define ID_V_WIND 4
+#define NUM_ID_VALUES 4
+#define ID_STRANDED 5
+#define ID_ALIVE 6
+#define NUM_ID_NUMPARTS 6
 !   *************************************************************************
 !   *                                                                       *
 !   *                       Variable Declarations                           *
@@ -152,15 +161,9 @@ IMPLICIT NONE
   REAL :: timeCounts(8),times(9)
 
   DOUBLE PRECISION :: pTS   !pTS = Particle release Time of Spill (seconds) [for temporal/spatial spills]
-!        *****   Oil Module        *****
-  INTEGER:: nParBeached     
-  INTEGER :: nParLeft
+  INTEGER:: Average_Numpart(NUM_ID_NUMPARTS)     
+  DOUBLE PRECISION :: Average_Value(NUM_ID_VALUES)
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: PartAtSurf
-!   ***** END Oil Module *****
-
-    DOUBLE PRECISION :: AvUwind,AvVwind,AvTemp,AvWaterDepth !--- CL-OGS: added for OIL transport module
-    INTEGER :: numpartinAvWind,numpartinAvTemp,numpartinAvWaterDepth      !--- CL:OGS
-
 !   *************************************************************************
 !   *                                                                       *
 !   *                             Execution                                 *
@@ -333,8 +336,11 @@ contains
       ENDIF
     ENDIF
     
-    IF( (settlementon .and. StrandingDist>=0) .or.   &
-         (Write_coastdist) ) then
+    IF( StrandingDist>=0 .and. (.not.settlementon ))then
+      write(*,*)'error StrandingDist>=0 .and. (.not.settlementon )'
+      stop 'set sellementon to True or StrandingDist<0'
+    ENDIF
+    IF( StrandingDist>=0 .or. Write_coastdist )  then
       ALLOCATE(P_coastdist(numpar))
       P_coastdist= 0.0
     ENDIF
@@ -655,8 +661,7 @@ contains
           cycle
         endif
       endif
-      IF( (settlementon .and. StrandingDist>=0) .or.   &
-         (Write_coastdist) ) then
+      IF( StrandingDist>=0 .or. Write_coastdist ) then
       call Get_coastdist(par(n,pY),par(n,pX),us,P_coastdist(n))
       ENDIF
 
@@ -852,36 +857,30 @@ contains
     write(fpy,'(a)')'import numpy as np'
     write(fpy,'(a)')'#fig,ax=plt.subplots()'
     close(fpy)
-    numpartinAvWind=0                                                              !--- CL-OGS: for OILtrans
-    numpartinAvTemp=0                                                              !--- CL-OGS: for OILtrans
-    numpartinAvWaterDepth=0                                                              !--- CL-OGS: for OILtrans
-
-    AvWaterDepth=0.0
-    AvUwind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
-    AvVwind=0.0 !sqrt(constUwind**2.0 +constVwind**2.0)    !v rectified to N-S orientation
-    AvTemp=0.0 !constTemp
+    Average_Numpart(:)=0                                             
+    Average_Value(:)=0.0
     !write(*,*)' Set Initial Wind and Temperature '
-    !write(*,*)'setAvWindAvFields_forallparts A',numpartinAvWind,numpartinAvTemp
-    call setAvWindAvFields_forallparts()
+    call set_Average_Wind()
+    call set_Average_Temperature()
     !write(*,*)' Set Initial Wind and Temperature DONE'
-    !write(*,*)'AvUwind=',AvUwind
-    !write(*,*)'AvVwind=',AvVwind
-    !write(*,*)'AvTemp=',AvTemp
+    !write(*,*)'Average_Value(ID_U_WIND)=',Average_Value(ID_U_WIND)
+    !write(*,*)'Average_Value(ID_V_WIND)=',Average_Value(ID_V_WIND)
+    !write(*,*)'Average_Value(ID_TEMP)=',Average_Value(ID_TEMP)
 
 
 
 !        *****   IMIOM        *****
         IF(OilOn)then                                                                                                                                !Initialise oil properties and open output files to write headers
-          nParBeached = 0
-          nParLeft = numpar
+          Average_Numpart(ID_STRANDED) = 0
+          Average_Numpart(ID_ALIVE) = numpar
          
-          CALL InitOilModel(AvTemp,pTS)
-          !call OilModel(2,par(:,:2),nParLeft,nParbeached,sqrt(AvUwind**2+AvVwind**2)*WindWeatherFac,&
-          !      AvTemp,Angle_wrtEast(AvUwind,AvVwind))
+          CALL InitOilModel(Average_Value(ID_TEMP),pTS)
+          !call OilModel(2,par(:,:2),Average_Numpart(ID_ALIVE),Average_Numpart(ID_STRANDED),sqrt(Average_Value(ID_U_WIND)**2+Average_Value(ID_V_WIND)**2)*WindWeatherFac,&
+          !      Average_Value(ID_TEMP),Angle_wrtEast(Average_Value(ID_U_WIND),Average_Value(ID_V_WIND)))
               
                write(*,*)'!--- CL-OGS: Oil Model initiated'
-               write(*,*)'!--- CL-OGS: AvWind=',sqrt(AvUwind**2+AvVwind**2),'*',WindWeatherFac, &
-                                     ' AvTemp=',AvTemp
+               write(*,*)'!--- CL-OGS: AvWind=',sqrt(Average_Value(ID_U_WIND)**2+Average_Value(ID_V_WIND)**2),'*',WindWeatherFac, &
+                                     ' Average_Value(ID_TEMP)=',Average_Value(ID_TEMP)
                write(*,*)'!--- CL-OGS: OILTRANS initialization made at the first iteration, t=',ix(2)
         End If
 !        ***** END IMIOM *****
@@ -906,19 +905,11 @@ contains
                         filenm                                          !--- CL-OGS 
     USE BEHAVIOR_MOD,   ONLY: isOut,isDead                              !--- CL-OGS  
     USE SETTLEMENT_MOD, ONLY: isSettled,isStranded
-    integer :: stepIT,ios,n,npsetl,npdead,npout,npstrd                  !--- CL-OGS  
+    integer :: stepIT,ios  
     CHARACTER(len=200) :: namefile                                      !--- CL-OGS 
     real :: before,after
-
-      stepIT  = int(dt/idt)                     !number of internal time steps
-
-      IF(WriteModelTiming) call CPU_TIME(before)
-
-      !Read in hydrodynamic model data 
-      IF(p > 2) then
-        CALL updateHydro()   !do not start updating until 3rd iteration
-      ENDIF
-
+    integer :: n,nalive,npsetl,npdead,npout,npstrd                  !--- CL-OGS
+      
         npsetl=0
         npstrd=0
         npdead=0
@@ -936,8 +927,21 @@ contains
               if(isOut(n)) npout=npout+1
             endif
         ENDDO
-        write(*,'(4(a,i8))')'Number of parts settled=',npsetl,' stranded=',npstrd,&
+        nalive=numpar-npsetl-npstrd-npdead-npout
+        write(*,'(5(a,i8))')'Number of parts alive=',Average_Numpart(ID_ALIVE),' settled=',npsetl,' stranded=',npstrd,&
                     ' dead=',npdead,' out=',npout 
+       if(nalive/=Average_Numpart(ID_ALIVE))write(*,'(2(a,i8))')'Average_Numpart(ID_ALIVE)=',Average_Numpart(ID_ALIVE),'/=nalive=',nalive
+
+
+      stepIT  = int(dt/idt)                     !number of internal time steps
+
+      IF(WriteModelTiming) call CPU_TIME(before)
+
+      !Read in hydrodynamic model data 
+      IF(p > 2) then
+        CALL updateHydro()   !do not start updating until 3rd iteration
+      ENDIF
+
       IF(p>2 .and. WriteParfile)then
         write(namefile,'(A,A,A)')'Parfile_', &
         filenm(len(trim(filenm))-len(trim(suffix))-numdigits+1:len(trim(filenm))-len(trim(suffix))),'.csv'
@@ -993,7 +997,6 @@ contains
     use oil_mod, only: OilModel
 
     INTEGER :: Phase1Time,n,m,ElapsedTime,SprdCase
-
     !Prepare internal time step values to be used for 
     !  calculating Advection and Turbulence
     ix(1) = ex(2) + DBLE((it-2)*idt)
@@ -1005,28 +1008,36 @@ contains
     !********************************************************
 
     call update_particles()
-    if(( Wind .and. numpartinAvWind.eq.0) .or. (SaltTempOn .and.numpartinAvTemp.eq.0)) then
-          call setAvWindAvFields_forallparts()
-           numpartinAvWind=1
-           numpartinAvTemp=1
-           numpartinAvWaterDepth=1
-    endif
 
+       if(Average_Numpart(ID_ALIVE)>0)then
+          if( Wind .and. Average_Numpart(ID_U_WIND).eq.0) then
+                call set_Average_Wind()
+                !Average_Numpart(ID_U_WIND)=1
+          endif
+          if( SaltTempOn .and.Average_Numpart(ID_TEMP).eq.0) then
+                call set_Average_Temperature()
+                !Average_Numpart(ID_TEMP)=1
+          endif
+          if( Average_Numpart(ID_DEPTH).eq.0 ) then
+                call set_Average_Water_Depth()
+                !Average_Numpart(ID_DEPTH)=1
+          endif
+       endif
 
       !**********************************************************************
       !*     Irish Marine Institute Oil Model                               *
       !**********************************************************************
-      if(OilOn .and.nParLeft>0)then
-       !write(*,*)'call Oil, AvWind,Angle,Temp=',sqrt(AvUwind**2+AvVwind**2), &
-       !    Angle_wrtEast(AvUwind,AvVwind),AvTemp,numpartinAvWind,numpartinAvTemp
-       nParLeft       = nParLeft - nParBeached            !no of particles left in simulation
+      if(OilOn .and.Average_Numpart(ID_ALIVE)>0)then
+       !write(*,*)'call Oil, AvWind,Angle,Temp=',sqrt(Average_Value(ID_U_WIND)**2+Average_Value(ID_V_WIND)**2), &
+       !    Angle_wrtEast(Average_Value(ID_U_WIND),Average_Value(ID_V_WIND)),Average_Value(ID_TEMP),Average_Numpart(ID_U_WIND),Average_Numpart(ID_TEMP)
+       Average_Numpart(ID_ALIVE)       = Average_Numpart(ID_ALIVE) - Average_Numpart(ID_STRANDED)            !no of particles left in simulation
 
-       call OilModel(2,par(:,:2),nParLeft,nParbeached, &
-            sqrt(AvUwind**2+AvVwind**2)*WindWeatherFac,AvTemp, &
-            Angle_wrtEast(AvUwind,AvVwind),abs(AvWaterDepth))
+       call OilModel(2,par(:,:2),Average_Numpart(ID_ALIVE),Average_Numpart(ID_STRANDED), &
+            sqrt(Average_Value(ID_U_WIND)**2+Average_Value(ID_V_WIND)**2)*WindWeatherFac,Average_Value(ID_TEMP), &
+            Angle_wrtEast(Average_Value(ID_U_WIND),Average_Value(ID_V_WIND)),abs(Average_Value(ID_DEPTH)))
 
-       nParbeached    = 0                              !reset no of particles beached for this timestep
-      end if                                                   ! OilOn
+       Average_Numpart(ID_STRANDED)    = 0           !reset no of particles stranded for this timestep
+      end if                                         ! OilOn
 
       !********************************************************
 
@@ -1169,37 +1180,24 @@ contains
 
     DOUBLE PRECISION, DIMENSION(us) :: Pwc_zb,Pwc_zc,Pwc_zf
     DOUBLE PRECISION, DIMENSION(ws) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
-    DOUBLE PRECISION private_AvTDW_value(4)
-    INTEGER private_AvTDWBL_numpart(5)
+    DOUBLE PRECISION frstpriv_Average_Value(NUM_ID_VALUES)
+    INTEGER frstpriv_Average_Numpart(NUM_ID_NUMPARTS)
     INTEGER n
-    private_AvTDWBL_numpart(:)=0
-    private_AvTDW_value(:)=0
-
-    numpartinAvWind=0         !--- CL-OGS: for OILtrans
-    numpartinAvTemp=0         !--- CL-OGS: for OILtrans
-    numpartinAvWaterDepth=0   !--- CL-OGS: for OILtrans
-    AvUwind = 0.0             !--- CL-OGS: for OILtrans
-    AvVwind = 0.0             !--- CL-OGS: for OILtrans
-    AvTemp=0.0                !--- CL-OGS: for OILtrans
-    AvWaterDepth=0.0          !--- CL-OGS: for OILtrans
+    frstpriv_Average_Numpart(:)=0
+    frstpriv_Average_Value(:)=0.0
+    Average_Numpart(:)=0       
+    Average_Value(:) = 0.0     
 
    !$OMP PARALLEL DEFAULT(NONE) &
    !$OMP SHARED(numpar,par) &
    !$OMP PRIVATE(Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf) &
-   !$OMP FIRSTPRIVATE (private_AvTDW_value,private_AvTDWBL_numpart)  &
-   !$OMP REDUCTION(+:AvUwind) &    
-   !$OMP REDUCTION(+:AvVwind) &    
-   !$OMP REDUCTION(+:AvTemp) &
-   !$OMP REDUCTION(+:numpartinAvWind) &    
-   !$OMP REDUCTION(+:numpartinAvTemp) &
-   !$OMP REDUCTION(+:AvWaterDepth) & 
-   !$OMP REDUCTION(+:numpartinAvWaterDepth) &
-   !$OMP REDUCTION(+:nParBeached) &
-   !$OMP REDUCTION(+:nParLeft)
+   !$OMP FIRSTPRIVATE (frstpriv_Average_Value,frstpriv_Average_Numpart)  &
+   !$OMP REDUCTION(+:Average_Value) &    
+   !$OMP REDUCTION(+:Average_Numpart) &
 
    !$OMP DO PRIVATE(n)  
     DO n=1,numpar
-      call update_single_particle(n,private_AvTDW_value,private_AvTDWBL_numpart, &
+      call update_single_particle(n,frstpriv_Average_Value,frstpriv_Average_Numpart, &
                                   Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf)
       par(n,ppX) = par(n,pX)
       par(n,ppY) = par(n,pY)
@@ -1221,25 +1219,21 @@ contains
    !DEALLOCATE(Pwc_zb,Pwc_zc,Pwc_zf)
    !DEALLOCATE(Pwc_wzb,Pwc_wzc,Pwc_wzf)
 
-    AvTemp=AvTemp+private_AvTDW_value(1)
-    AvWaterDepth=AvWaterDepth+private_AvTDW_value(2)
-    AvUwind=AvUwind+private_AvTDW_value(3)
-    AvVwind=AvVwind+private_AvTDW_value(4)
-    numpartinAvTemp=numpartinAvTemp+private_AvTDWBL_numpart(1)
-    numpartinAvWaterDepth=numpartinAvWaterDepth+private_AvTDWBL_numpart(2)
-    numpartinAvWind=numpartinAvWind+private_AvTDWBL_numpart(3)
-    nParBeached=nParBeached+private_AvTDWBL_numpart(4) 
-    nParLeft=nParLeft+private_AvTDWBL_numpart(5) 
+    Average_Value(:)=Average_Value(:)+frstpriv_Average_Value(:)
+    Average_Numpart(:)=Average_Numpart(:)+frstpriv_Average_Numpart(:)
 
    !$OMP END PARALLEL 
 
-      IF(numpartinAvWind.ge.1)then
-         AvUwind=AvUwind/float(numpartinAvWind)
-         AvVwind=AvVwind/float(numpartinAvWind)
-         !write(*,*)'***** AvUwd=',AvUwind,' AvVwd=',AvVwind
+      IF(Average_Numpart(ID_U_WIND).ge.1)then
+         Average_Value(ID_U_WIND)=Average_Value(ID_U_WIND)/float(Average_Numpart(ID_U_WIND))
+         Average_Value(ID_V_WIND)=Average_Value(ID_V_WIND)/float(Average_Numpart(ID_V_WIND))
+         !write(*,*)'***** AvUwd=',Average_Value(ID_U_WIND),' AvVwd=',Average_Value(ID_V_WIND)
       ENDIF
-      IF(numpartinAvTemp.ge.1)then
-           AvTemp=AvTemp/float(numpartinAvTemp)
+      IF(Average_Numpart(ID_TEMP).ge.1)then
+         Average_Value(ID_TEMP)=Average_Value(ID_TEMP)/float(Average_Numpart(ID_TEMP))
+      ENDIF
+      IF(Average_Numpart(ID_DEPTH).ge.1)then
+         Average_Value(ID_DEPTH)=Average_Value(ID_DEPTH)/float(Average_Numpart(ID_DEPTH))
       ENDIF
 
     !IMIOM
@@ -1256,7 +1250,7 @@ contains
 
   !-----------------------------------------------------------------------
 
-  subroutine update_single_particle(n,AvTDW_value,AvTDWBL_numpart, &
+  subroutine update_single_particle(n,private_Average_Value,private_Average_Numpart, &
                                   Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf)
 
     USE PARAM_MOD,      ONLY: numpar,us,ws,idt,HTurbOn,VTurbOn,settlementon,   &
@@ -1277,7 +1271,7 @@ contains
                               constDens,Write_coastdist
 
 !        ***** END IMIOM *****
-    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded,p_Stranding
     USE BEHAVIOR_MOD,   ONLY: updateStatus,behave,setOut,isOut,isDead,die
     USE BOUNDARY_MOD,   ONLY: mbounds,ibounds,intersect_reflect,Get_coastdist
     USE CONVERT_MOD,    ONLY: x2lon,y2lat
@@ -1297,8 +1291,8 @@ contains
 
     DOUBLE PRECISION, DIMENSION(us) :: Pwc_zb,Pwc_zc,Pwc_zf
     DOUBLE PRECISION, DIMENSION(ws) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
-    DOUBLE PRECISION AvTDW_value(4)
-    INTEGER AvTDWBL_numpart(5)
+    DOUBLE PRECISION private_Average_Value(NUM_ID_VALUES)
+    INTEGER private_Average_Numpart(NUM_ID_NUMPARTS)
     INTEGER n
 
     ! Iteration Variables
@@ -1413,7 +1407,7 @@ contains
       !IMIOM
       if(OilOn)then
           if(par(n,pStatus) == 2) then
-              return                               !if beached
+              return                               !if stranded
         end if
       end if
       !END IMIOM
@@ -1855,9 +1849,12 @@ contains
                 else 
                   !write(*,*)n,' Uwind=',(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)),&
                   !            ' Vwind=',(P_Uw*sin(P_angle) + P_Vw*cos(P_angle))
-                  AvUwind=AvUwind+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle))      !--- CL-OGS
-                  AvVwind=AvVwind+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle))
-                  numpartinAvWind= numpartinAvWind+1                           !--- CL-OGS
+                  private_Average_Value(ID_U_WIND)=private_Average_Value(ID_U_WIND)+ &
+                                                (P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
+                  private_Average_Value(ID_V_WIND)=private_Average_Value(ID_V_WIND)+ &
+                                                (P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
+                  private_Average_Numpart(ID_U_WIND)=private_Average_Numpart(ID_U_WIND)+1   
+                  private_Average_Numpart(ID_V_WIND)=private_Average_Numpart(ID_V_WIND)+1   
                 endif  
 
 
@@ -1967,9 +1964,8 @@ contains
           P_Salt(n) = Tsalt
           P_Temp(n) = Ttemp 
         ENDIF
-        AvTemp=AvTemp+Ttemp                                            !--- CL-OGS 
-        numpartinAvTemp= numpartinAvTemp+1                           !--- CL-OGS
-
+        private_Average_Value(ID_TEMP)=private_Average_Value(ID_TEMP)+Ttemp
+        private_Average_Numpart(ID_TEMP)=private_Average_Numpart(ID_TEMP)+1
       ENDIF
 
       ! *********************************************************
@@ -2108,13 +2104,14 @@ contains
         if(intersectf == 0)exit
 
        IF(TrackCollisions) hitLand(n) = hitLand(n) + 1
-       IF(OilOn)then
+       IF(OilOn .and. StrandingDist>=0)then
         nXpos = Xpos+(fintersectX-Xpos)*0.9 
         nYpos = Ypos+(fintersectY-Ypos)*0.9 
         par(n,pnZ) = newZpos
         par(n,pStatus) = 2
-        nParBeached = nParBeached + 1
-        !write(*,*)'here mid ',n
+        call p_Stranding(n) ! Apply stranding in "is_Stranded"
+        P_coastdist(n)=0
+        private_Average_Numpart(ID_STRANDED) =private_Average_Numpart(ID_STRANDED) + 1
         exit
        ELSE
         if(OpenOceanBoundary .AND. isWater)then
@@ -2180,7 +2177,7 @@ contains
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
             CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,2,ele_err)
             if(ele_err.eq.0)then
-               write(*,*)'Beached particle ',n,' put at ',posfactor*10., &
+               write(*,*)'Stranded particle ',n,' put at ',posfactor*10., &
                '% of the distance from the boundary for setEle reasons'
                exit
             endif
@@ -2253,7 +2250,7 @@ contains
             Endif !ele_err
             call getDepth(newXpos,newYpos,n,it,nP_depth,Fstlev,conflict_tmp)
             if(Fstlev<=us)then
-               write(*,*)'Beached particle ',n,' put at ',posfactor*10, &
+               write(*,*)'Stranded particle ',n,' put at ',posfactor*10, &
                '% of the distance from the boundary for depth reasons'
                exit
             endif
@@ -2276,9 +2273,8 @@ contains
               P_depth=nP_depth
         Endif
       ENDIF !Zgrid
-      AvWaterDepth=AvWaterDepth+P_depth
-      numpartinAvWaterDepth= numpartinAvWaterDepth+1                           !--- CL-OGS
-
+      private_Average_Value(ID_DEPTH)=private_Average_Value(ID_DEPTH)+P_depth
+      private_Average_Numpart(ID_DEPTH)=private_Average_Numpart(ID_DEPTH)+1
       if (newZpos.GT.P_zetac) then
         reflectsup = P_zetac - newZpos
         NewZpos = P_zetac + reflectsup
@@ -2526,18 +2522,20 @@ contains
 
      ! If stranding is active or Write_coastdist requested, compute coast dist
      ! at upper level 
-     if( (settlementon .and. StrandingDist>=0) .or.   &
-        (Write_coastdist) )  call Get_coastdist(newYpos,newXpos,us,P_coastdist(n))
+     if( StrandingDist>=0 .or. Write_coastdist )  then
+          call Get_coastdist(newYpos,newXpos,us,P_coastdist(n))
+          coastdist=P_coastdist(n)
+      endif
 
 
       if(settlementon) then
-        if(StrandingDist>=0)coastdist=P_coastdist(n)
         CALL testSettlement(par(n,pAge),n,par(n,pX),par(n,pY),par(n,pZ),inpoly, &
                             P_depth,klev,saveintersectf,coastdist)
         if(Write_Poly_Presence .and. inpoly.gt.0)then
           Time_in_Poly(inpoly-poly0+1,n)=Time_in_Poly(inpoly-poly0+1,n)+int(idt)
         endif
       endif
+
       if(settlementon) then
         !if(inpoly>0.and.isStranded(n))write(*,*)'it=',it,' n=',n,' is in poly',inpoly
         if (inpoly .GT. 0 .and. (isSettled(n) .or. isStranded(n)) ) then
@@ -2556,6 +2554,7 @@ contains
       endif
 !--- CL-OGS: END OF SETTLEMENT SECTION !-----------------------------------------------
   
+      private_Average_Numpart(ID_ALIVE)=private_Average_Numpart(ID_ALIVE)+1
 
       ! *****************************************************************
       ! *                      End of Particle Loop                     *
@@ -3776,7 +3775,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
   !-----------------------------------------------------------------------------
 
 
-  SUBROUTINE   setAvWindAvFields_forallparts()
+  SUBROUTINE   set_Average_Water_Depth()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
                          numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
                          OilOn,settlementon,mortality,OpenOceanBoundary
@@ -3807,8 +3806,8 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     LOGICAL :: docycle
     
     !Allocate Dynamic Variables
-    IF(numpartinAvWaterDepth.eq.0)THEN
-      AvWaterDepth=0.0
+    IF(Average_Numpart(ID_DEPTH).eq.0)THEN
+      Average_Value(ID_DEPTH)=0.0
       DO n=1,numpar
 
         if(settlementon)then
@@ -3824,7 +3823,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == 2) cycle !beached
+            if(par(n,pStatus) == 2) cycle !stranded
         end if
  
         Xpar = par(n,pX)
@@ -3847,18 +3846,52 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
             P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,"depth",klev)
             Fstlev=1
         endif     
-        AvWaterDepth=AvWaterDepth+P_depth
-        numpartinAvWaterDepth= numpartinAvWaterDepth+1                           !--- CL-OGS
+        Average_Value(ID_DEPTH)=Average_Value(ID_DEPTH)+P_depth
+        Average_Numpart(ID_DEPTH)= Average_Numpart(ID_DEPTH)+1                           !--- CL-OGS
       ENDDO
-       if((numpartinAvWaterDepth)>0) then
-       AvWaterDepth=AvWaterDepth/float(numpartinAvWaterDepth)
+       if((Average_Numpart(ID_DEPTH))>0) then
+       Average_Value(ID_DEPTH)=Average_Value(ID_DEPTH)/float(Average_Numpart(ID_DEPTH))
        else
-       write(*,*)"In setAvWindAvFields numpartinAvWaterDepth=0"
+       write(*,*)"In set_Average_Water_Depth Average_Numpart(ID_DEPTH)=0"
        endif
     ENDIF
-    IF(numpartinAvWind.eq.0 .and. Wind)THEN
-      AvUwind=0.0
-      AvVwind=0.0
+
+  END SUBROUTINE  set_Average_Water_Depth
+
+
+  SUBROUTINE   set_Average_Wind()
+    USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
+                         numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
+                         OilOn,settlementon,mortality,OpenOceanBoundary
+    USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
+                         getSlevel,getWlevel,setInterp,getInterp
+    USE INT_MOD,    ONLY: polintd
+    use behavior_mod, only: die,isOut,isDead
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
+
+    IMPLICIT NONE
+
+    INTEGER :: i,deplvl,n
+    INTEGER :: klev,Fstlev,NumInterpLvl,ixnum,nklev,k,conflict                     !--- CL:OGS
+
+    ! Particle tracking
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_zb,Pwc_zc,Pwc_zf
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
+    DOUBLE PRECISION :: Xpar,Ypar,Zpar,newXpos,newYpos,newZpos,P_zb,P_zc,P_zf, &
+      P_depth,nP_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf,ey(3),  &
+      AdvecUwind,AdvecVwind
+
+    DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
+
+        DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
+                                UStokesDrift,VStokesDrift
+        DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
+    LOGICAL :: docycle
+    
+    IF(Average_Numpart(ID_U_WIND).eq.0 .and. Wind)THEN
+      Average_Value(ID_U_WIND)=0.0
+      Average_Value(ID_V_WIND)=0.0
       DO n=1,numpar
 
         if(settlementon)then
@@ -3874,7 +3907,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == 2) cycle !beached
+            if(par(n,pStatus) == 2) cycle !stranded
         end if
  
         Xpar = par(n,pX)
@@ -3951,30 +3984,61 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
                       + (P_Uw*sin(P_angle) + P_Vw*cos(P_angle))**2.0)    !v rectified to N-S orientation
 !        
        
-          AvUwind=AvUwind+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
-          AvVwind=AvVwind+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
-          numpartinAvWind= numpartinAvWind+1                           !--- CL-OGS
+          Average_Value(ID_U_WIND)=Average_Value(ID_U_WIND)+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
+          Average_Value(ID_V_WIND)=Average_Value(ID_V_WIND)+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
+          Average_Numpart(ID_U_WIND)= Average_Numpart(ID_U_WIND)+1                           !--- CL-OGS
 
       ENDDO 
 
-      IF(numpartinAvWind>0 .and. abs(AvUwind)+abs(AvVwind)>0.0001)then
-         AvUwind=AvUwind/float(numpartinAvWind)
-         AvVwind=AvVwind/float(numpartinAvWind)
+      IF(Average_Numpart(ID_U_WIND)>0 .and. abs(Average_Value(ID_U_WIND))+abs(Average_Value(ID_V_WIND))>0.0001)then
+         Average_Value(ID_U_WIND)=Average_Value(ID_U_WIND)/float(Average_Numpart(ID_U_WIND))
+         Average_Value(ID_V_WIND)=Average_Value(ID_V_WIND)/float(Average_Numpart(ID_U_WIND))
       ELSE
-         write(*,'(3(a,f9.4),a,i4)')'In setAvWindAvFields, USING constUWind=',constUWind, &
+         write(*,'(2(a,f9.4),2a,i4)')'In set_Average_Wind, USING constUWind=',constUWind, &
         ' constVWind=',ConstVWind,' instead of computed AvWind because',&
-        ' numpartinAvWind=',numpartinAvWind
-         AvUwind = constUwind
-         AvVwind = constVwind    !v rectified to N-S orientation
+        ' Average_Numpart(ID_U_WIND)=',Average_Numpart(ID_U_WIND)
+         Average_Value(ID_U_WIND) = constUwind
+         Average_Value(ID_V_WIND) = constVwind    !v rectified to N-S orientation
       ENDIF
 
 
-    ENDIF !numpartinAvWind==0 .and. Wind)
+    ENDIF !Average_Numpart(ID_U_WIND)==0 .and. Wind)
 
-    !------
+  END SUBROUTINE  set_Average_Wind
+
+  SUBROUTINE   set_Average_Temperature()
+    USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
+                         numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
+                         OilOn,settlementon,mortality,OpenOceanBoundary
+    USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
+                         getSlevel,getWlevel,setInterp,getInterp
+    USE INT_MOD,    ONLY: polintd
+    use behavior_mod, only: die,isOut,isDead
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
+
+    IMPLICIT NONE
+
+    INTEGER :: i,deplvl,n
+    INTEGER :: klev,Fstlev,NumInterpLvl,ixnum,nklev,k,conflict                     !--- CL:OGS
+
+    ! Particle tracking
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_zb,Pwc_zc,Pwc_zf
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
+    DOUBLE PRECISION :: Xpar,Ypar,Zpar,newXpos,newYpos,newZpos,P_zb,P_zc,P_zf, &
+      P_depth,nP_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf,ey(3),  &
+      AdvecUwind,AdvecVwind
+
+    DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
+
+        DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
+                                UStokesDrift,VStokesDrift
+        DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
+    LOGICAL :: docycle
+    
  
-    IF(numpartinAvTemp.eq.0 .and. SaltTempOn)THEN
-      AvTemp=0.0
+    IF(Average_Numpart(ID_TEMP).eq.0 .and. SaltTempOn)THEN
+      Average_Value(ID_TEMP)=0.0
       ALLOCATE(Pwc_zb(us))
       ALLOCATE(Pwc_zc(us))
       ALLOCATE(Pwc_zf(us))
@@ -3996,7 +4060,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == 2) cycle !beached
+            if(par(n,pStatus) == 2) cycle !stranded
         end if
  
           Xpar = par(n,pX)
@@ -4065,20 +4129,19 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
              Ttemp=WCTS_ITPI("temp",Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,     &
                               us,P_zb,P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)
            endif
-           AvTemp=AvTemp+Ttemp                                            !--- CL-OGS 
-           numpartinAvTemp= numpartinAvTemp+1                           !--- CL-OGS
+           Average_Value(ID_TEMP)=Average_Value(ID_TEMP)+Ttemp                                            !--- CL-OGS 
+           Average_Numpart(ID_TEMP)= Average_Numpart(ID_TEMP)+1                           !--- CL-OGS
       ENDDO !n=1,numpar ! loop for each particle
       
-      IF(numpartinAvTemp>0 .and. abs(AvTemp)>0.0001 .and.    &
-       abs(AvTemp/float(numpartinAvTemp))<50.)then
-         AvTemp=AvTemp/float(numpartinAvTemp)
+      IF(Average_Numpart(ID_TEMP)>0 .and. abs(Average_Value(ID_TEMP))>0.0001 .and.    &
+       abs(Average_Value(ID_TEMP)/float(Average_Numpart(ID_TEMP)))<50.)then
+         Average_Value(ID_TEMP)=Average_Value(ID_TEMP)/float(Average_Numpart(ID_TEMP))
       ELSE
-         AvTemp=constTemp
+         Average_Value(ID_TEMP)=constTemp
          if(SaltTempOn) &
-         write(*,'(2(a,f9.4),a,i4)')'In setAvWindAvFields, USING constTemp=',constTemp, &
-
-        ' instead of computed AvTemp because',&
-        ' numpartinAvTemp=',numpartinAvTemp
+         write(*,'(a,f9.4,2a,i4)')'In set_Average_Temperature, USING constTemp=',constTemp, &
+        ' instead of computed Average_Value(ID_TEMP) because',&
+        ' Average_Numpart(ID_TEMP)=',Average_Numpart(ID_TEMP)
       ENDIF
 
       DEALLOCATE(Pwc_zb)
@@ -4090,7 +4153,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     ENDIF
     !------
 
-  END SUBROUTINE  setAvWindAvFields_forallparts
+  END SUBROUTINE  set_Average_Temperature
 
   !-----------------------------------------------------------------------------
 

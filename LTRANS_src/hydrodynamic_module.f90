@@ -7992,7 +7992,7 @@ CONTAINS
   SUBROUTINE writeNetCDF(time,age,lon,lat,depth,colors,hitB,hitL,Salt,Temp,    &
                         GrSize,SizeP,CoDi,Poly)
     USE PARAM_MOD, ONLY: numpar,SaltTempOn,NCOutFile,outpath,outpathGiven,     &
-        NCtime,TrackCollisions,Behavior
+        NCtime,TrackCollisions,Behavior,Write_coastdist
     USE netcdf
     IMPLICIT NONE
 
@@ -8166,7 +8166,7 @@ CONTAINS
         IF(STATUS /= NF90_NOERR) WRITE(*,*) NF90_STRERROR(STATUS)
       ENDIF
 
-      IF( PRESENT(CoDi) )THEN
+      IF( PRESENT(CoDi) .and. Write_coastdist )THEN
         realarray(:)=real(CoDi(:))
         STATUS = NF90_INQ_VARID(NCID, "CoastDist", CoDiID)
         STATUS = NF90_PUT_VAR(NCID, CoDiID, realarray,                         &

@@ -39,7 +39,7 @@ MODULE SETTLEMENT_MOD
 
   !The following procedures have been made public:
   PUBLIC :: initSettlement,testSettlement,isSettled,finSettlement,isStranded, &
-             get_NumPoly,get_IDPoly
+             get_NumPoly,get_IDPoly,p_Stranding
 
 
 CONTAINS
@@ -568,7 +568,7 @@ CONTAINS
   SUBROUTINE testSettlement(P_age,n,Px,Py,Pz,inpoly, &
                             P_depth,k,intersectf,coastdist)
     USE PARAM_MOD, ONLY: holesExist,StrandingDist,strandingmaxdepth,    &
-                         strandingmaxdistfromdepth
+                         strandingmaxdistfromdepth,OilOn
     USE HYDRO_MOD, ONLY: getP_r_element,getP_klev
     IMPLICIT NONE
 
@@ -600,10 +600,10 @@ CONTAINS
     if(abs(P_age) >= settletime(n)                       &
      .and.(P_depth+abs(strandingmaxdistfromdepth)>=Pz    &
      .and.  Pz>=-abs(strandingmaxdepth))        )then 
-      if (inpoly .GT. 0) then
+      if (inpoly .GT. 0 .or. (OilOn.and.StrandingDist>=0)) then
         if(StrandingDist.le.0) then
             settle(n) = .TRUE.       ! If (StrandingDist=0) n can settle   
-        elseif(StrandingDist>0)then! If (StrandingDist>0) n can strand
+        elseif(StrandingDist>=0)then! If (StrandingDist>0) n can strand
             if(coastdist<=StrandingDist)   stranded(n)=.TRUE.
         endif
       endif
@@ -611,6 +611,12 @@ CONTAINS
     endif
 
   END SUBROUTINE testSettlement
+
+  SUBROUTINE p_Stranding(n)
+    IMPLICIT NONE
+    INTEGER :: n
+    stranded(n)=.TRUE.
+  END SUBROUTINE p_Stranding
 
 
   SUBROUTINE psettle(Px,Py,R_ele,klev,polyin)

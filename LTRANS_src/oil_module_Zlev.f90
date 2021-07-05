@@ -93,8 +93,8 @@ MODULE OIL_MOD
                         ThickLimit, lenR, OilThickness,SlickThickness,         &
                         VolumeOil, VolumeSlick, VolumeEvap, WaterContent,      &
                         xviscemul, VolumeDisp, OilDensity, OilDensity_RefT,    &
-                        AvWindAngle,VolumeBeached,MassBeached, & !,VolumeDiss   ! Added by OGS
-                        MassEvapPrev,MassDispPrev,MassBeachedPrev
+                        AvWindAngle,VolumeStranded,MassStranded, & !,VolumeDiss   ! Added by OGS
+                        MassEvapPrev,MassDispPrev,MassStrandedPrev
     !Timing variables 
     INTEGER :: Phase1Time
     LOGICAL :: FirstAP
@@ -131,16 +131,16 @@ MODULE OIL_MOD
       !*****************************
       !*     Subroutine OilModel   *
     !*****************************
-    SUBROUTINE OilModel(o_attrib,par,nParWater,nParBeaching,WindInst,TempInst,WAngleInst,WaterDepth)
+    SUBROUTINE OilModel(o_attrib,par,nParWater,nParStranding,WindInst,TempInst,WAngleInst,WaterDepth)
         USE PARAM_MOD,    ONLY:    numpar,idt,SecSpill,spreading,emulsification,  &
-               evaporation,dispersion,beaching,pi,Wind,SaltTempOn,Uwind_10,Vwind_10,  &
+               evaporation,dispersion,Remove_Stranded_Oil,pi,Wind,SaltTempOn,Uwind_10,Vwind_10,  &
                WaterTemp,Ext0,VolumeSpill,iprint
 
 
         IMPLICIT NONE
         INTEGER, INTENT(IN) :: o_attrib
         INTEGER, INTENT(IN) :: nParWater ! Added by OGS: Number of UNBEACHED Particles = in circulation in water at current timestep
-        INTEGER, INTENT(IN) :: nParBeaching ! Added by OGS: number of beaching particles at current timestep
+        INTEGER, INTENT(IN) :: nParStranding ! Added by OGS: number of beaching particles at current timestep
         DOUBLE PRECISION, INTENT(INOUT) :: par(numpar,o_attrib)
         DOUBLE PRECISION, INTENT(IN) :: WindInst,TempInst,WAngleInst,WaterDepth
 
@@ -167,7 +167,7 @@ MODULE OIL_MOD
         INTEGER :: n                            !counter for particles
         INTEGER :: ElapsedTime        !time in seconds
         DOUBLE PRECISION :: radius
-        DOUBLE PRECISION :: DM_Evap,DM_Disp,DM_Beach,WeatherPercent
+        DOUBLE PRECISION :: DM_Evap,DM_Disp,DM_Strand,WeatherPercent
         AvWindAngle=WAngleInst
 
         oil_time = Ext0+iT * idt
@@ -210,7 +210,7 @@ MODULE OIL_MOD
 
                 CALL SpreadOptions(ElapsedTime, SprdCase, param_a, param_b)
                !!Added by OGS : updating SlickTickness and OilThickness
-               !! after Beaching with AreaOil updated by StreadOptions
+               !! after Stranding with AreaOil updated by StreadOptions
                !SlickThickness = VolumeSlick / AreaOil 
                !OilThickness = VolumeOil / AreaOil
 
@@ -262,31 +262,31 @@ MODULE OIL_MOD
 
             END IF
 
-            IF (Beaching .and. MassSpill-MassEvap-MassDisp>0) THEN
-              !Removing Beached Oil  (Added by OGS)
-              CALL Remove_Beached_Oil_from_Weathering_Oil(nParWater,nParBeaching)
+            IF( Remove_Stranded_Oil .and. MassSpill-MassEvap-MassDisp>0) THEN
+              !Removing Stranded Oil  (Added by OGS)
+              CALL Remove_Stranded_Oil_from_Weathering_Oil(nParWater,nParStranding)
             ENDIF
              !update finally to reflect losses due oil weathering         ! OGS:added from old oiltrans version 
 
-               if(MassSpill-MassEvap-MassDisp-MassBeached<0)then
+               if(MassSpill-MassEvap-MassDisp-MassStranded<0)then
                   DM_Evap=MassEvap-MassEvapPrev
                   DM_Disp=MassDisp-MassDispPrev
-                  DM_Beach=MassBeached-MassBeachedPrev
-                  WeatherPercent=(MassSpill-MassEvapPrev-MassDispPrev-MassBeachedPrev) / (DM_Evap+DM_Disp+DM_Beach)
+                  DM_Strand=MassStranded-MassStrandedPrev
+                  WeatherPercent=(MassSpill-MassEvapPrev-MassDispPrev-MassStrandedPrev) / (DM_Evap+DM_Disp+DM_Strand)
                   MassEvap= MassEvapPrev + WeatherPercent*DM_Evap
                   MassDisp= MassDispPrev + WeatherPercent*DM_Disp
-                  MassBeached= MassBeachedPrev + WeatherPercent*DM_Beach
+                  MassStranded= MassStrandedPrev + WeatherPercent*DM_Strand
                endif
                MassEvapPrev=MassEvap
                MassDispPrev=MassDisp
-               MassBeachedPrev=MassBeached
+               MassStrandedPrev=MassStranded
 
 
-!             VolumeOil       =  VolumeSpill - VolumeBeached - VolumeEvap & ! OGS:added from old oiltrans version 
+!             VolumeOil       =  VolumeSpill - VolumeStranded - VolumeEvap & ! OGS:added from old oiltrans version 
 !                              - VolumeDisp                              ! OGS:added from old oiltrans version  
 !             MassOil       = VolumeOil * RhoOil                           ! OGS:added from old oiltrans version 
 
-             MassOil = MassSpill - MassEvap - MassDisp - MassBeached   ! changed by OGS as Mass is conserved, not volume
+             MassOil = MassSpill - MassEvap - MassDisp - MassStranded   ! changed by OGS as Mass is conserved, not volume
              VolumeOil = MassOil / RhoOil                              ! and all variables depend on mass variations  
 
              OilThickness   = VolumeOil / AreaOil                         ! OGS:added from old oiltrans version 
@@ -572,11 +572,11 @@ MODULE OIL_MOD
          xviscemul = 0.0
          OilDensity = 0.0
          OilDensity_RefT = 0.0
-        VolumeBeached = 0.0 ! Added by OGS
-        MassBeached=0.0
+        VolumeStranded = 0.0 ! Added by OGS
+        MassStranded=0.0
         MassEvapPrev=0.0
         MassDispPrev=0.0
-        MassBeachedPrev=0.0
+        MassStrandedPrev=0.0
 
         novalue = .FALSE.
         FirstAP = .TRUE.                                    ! first time for oil model processes
@@ -1556,28 +1556,28 @@ MODULE OIL_MOD
 !*********************************************************************
 !        *** BEGINNING OF supplements added to Zlev version by OGS ***    
 !*********************************************************************
-    ! Remove_Beached_Oil_from_Weathering_Oil routine is not yet validated
-    SUBROUTINE Remove_Beached_Oil_from_Weathering_Oil(nParWater,nParBeaching)
+    ! Remove_Stranded_Oil_from_Weathering_Oil routine is not yet validated
+    SUBROUTINE Remove_Stranded_Oil_from_Weathering_Oil(nParWater,nParStranding)
 
         USE PARAM_MOD, ONLY: VolumeSpill
 
         implicit none
 
         INTEGER, INTENT(IN) :: nParWater 
-        INTEGER, INTENT(IN) :: nParBeaching
-        DOUBLE PRECISION :: MassOil_LeftAtSurf,MassOil_Beaching
+        INTEGER, INTENT(IN) :: nParStranding
+        DOUBLE PRECISION :: MassOil_LeftAtSurf,MassOil_Stranding
 
         MassOil_LeftAtSurf=MassSpill-MassEvap-MassDisp
 
-!       MassOil_Beaching=MassOil           * &
-        MassOil_Beaching=MassOil_LeftAtSurf* & 
-                           (DBLE(nParBeaching)/DBLE(nParWater+nParBeaching)) 
+!       MassOil_Stranding=MassOil           * &
+        MassOil_Stranding=MassOil_LeftAtSurf* & 
+                           (DBLE(nParStranding)/DBLE(nParWater+nParStranding)) 
 
-        MassBeached    = MassBeached + MassOil_Beaching 
-        VolumeBeached  = MassBeached / RhoOil
+        MassStranded    = MassStranded + MassOil_Stranding 
+        VolumeStranded  = MassStranded / RhoOil
 
 
-    END SUBROUTINE Remove_Beached_Oil_from_Weathering_Oil
+    END SUBROUTINE Remove_Stranded_Oil_from_Weathering_Oil
 
     SUBROUTINE InitOilOutputs()
 
@@ -1605,7 +1605,7 @@ MODULE OIL_MOD
            endif                                                                  
            open(998,file=TRIM(OilPropfilename),status='replace')                  
            write(998,"(a10,14(',',a15))")'time','VolumeOil','VolumeEvap','VolumeDisp', &
-                         'VolumeBeached','WaterContent', &                              
+                         'VolumeStranded','WaterContent', &                              
                          'RhoOil','ViscOil','AreaOil','OilThickness',   &                           
                          'VolumeSlick','MassOil','AverageWind','WaterTemp(oC)',&                         
                           'AvWindAngle'                                
@@ -1648,7 +1648,7 @@ MODULE OIL_MOD
            open(998,file=TRIM(OilPropfilename),position='append')                  
 
           write(998,99)oil_time,VolumeOil,VolumeEvap,VolumeDisp, &
-                       VolumeBeached,WaterContent, &
+                       VolumeStranded,WaterContent, &
                        RhoOil,ViscOil,AreaOil,OilThickness,&
                        VolumeSlick,MassOil,WindSpeed,WaterTempInst,AvWindAngle
           close(998)

@@ -422,12 +422,12 @@ LOGICAL :: Evaporation                    ! Include evaporation (T/F)
 CHARACTER(LEN=6) :: EvapOption    ! Choose from: FINGAS / MACKAY / PSEUDO
 LOGICAL :: Emulsification              ! Include emulsification (T/F)
 LOGICAL :: Dispersion                    ! Include dispersion due to wave breaking (T/F)
-LOGICAL :: Beaching                      ! Include beaching of particles (beached oil has no weathering)               
+LOGICAL :: Remove_Stranded_Oil            ! Stranded oil is removed from weathering oil               
 LOGICAL :: Langmuir                            ! Include Langmuir circulation effects (T/F)
 LOGICAL :: Stokes                          ! Include Stokes drift effects (T/F)
 
 namelist/oilprocs/Spreading,AreaOption,SprdOption,Evaporation,EvapOption, &
-                  Emulsification,Dispersion,Beaching,Langmuir,Stokes
+                  Emulsification,Dispersion,Remove_Stranded_Oil,Langmuir,Stokes
 
 
 !*** WAVE MODEL DATA
