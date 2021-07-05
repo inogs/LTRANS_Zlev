@@ -238,7 +238,7 @@
   INTEGER :: pedges                 ! Number of habitat polygon edge points (# of rows in habitat polygon file)
   INTEGER :: hedges                 ! Number of hole edge points (number of rows in holes file)
 !--- CL-OGS : allow stranding along coast when particle enters the water squared elements bordering the coast
-  DOUBLE PRECISION :: StrandingDist          !--- CL-OGS : Stranding Distance in meters from land (Disabled if StrandingDist<=0, Enabled for StrandingDist>0)
+  INTEGER :: StrandingDist          !--- CL-OGS : Stranding Distance in meters from land (Disabled if StrandingDist<=0, Enabled for StrandingDist>0)
   DOUBLE PRECISION :: strandingmaxdepth          !--- CL-OGS : maximal depth at which stranding can occur                  
   DOUBLE PRECISION :: strandingmaxdistfromdepth  !--- CL-OGS : maximal distance from bottom depth at which stranding can occur                 
   LOGICAL :: Write_Poly_Presence  

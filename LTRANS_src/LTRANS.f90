@@ -2522,9 +2522,11 @@ contains
 
      ! If stranding is active or Write_coastdist requested, compute coast dist
      ! at upper level 
-     if( StrandingDist>=0 .or. Write_coastdist )  then
+      if( (StrandingDist>0) .or. Write_coastdist )  then
           call Get_coastdist(newYpos,newXpos,us,P_coastdist(n))
           coastdist=P_coastdist(n)
+      else
+          coastdist=9e12
       endif
 
 
