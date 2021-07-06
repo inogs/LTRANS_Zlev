@@ -10,8 +10,6 @@
 #==========================================================================
 OMP :=    # turn on to enable openmp (turn it off to have a sequential executable)
 Debug :=    # turn on to activate debug flags
-DebugOptimized :=    # turn on to activate debug flags
-DebugO0 :=    # turn on to activate debug flags
 #
 #    Turn one of the following on to link the libraries and flags specific to a given cluster:
 IFORT_UMCES :=     
@@ -132,12 +130,6 @@ ifdef Galileo
   ifdef Debug 
     FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
   endif
-  ifdef DebugOptimized
-      FFLAGS = $(DEBUGFLAGS) -O3  -fno-math-errno -unroll=3  -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR) 
-  endif
-  ifdef DebugO0
-      FFLAGS = $(DEBUGFLAGS) -O0  -fno-math-errno  -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR) 
-  endif
 endif
 
 
@@ -167,14 +159,9 @@ else
   FOPENMP_FLAG =
   LTRANS_NAME=LTRANS_Zlev_SEQ
 endif
+LTRANSEXE=${LTRANS_NAME}.exe
 ifdef Debug
   LTRANSEXE=${LTRANS_NAME}_dbg.exe
-endif
-ifdef DebugOptimized
-  LTRANSEXE=${LTRANS_NAME}_dbgopti.exe
-endif
-ifdef DebugO0
-  LTRANSEXE=${LTRANS_NAME}_dbgO0.exe
 endif
 
 COMPILINGMESSAGE1= "Executable is ../$(LTRANSEXE)"
