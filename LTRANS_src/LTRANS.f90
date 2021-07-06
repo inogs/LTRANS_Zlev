@@ -908,7 +908,7 @@ contains
     integer :: stepIT,ios  
     CHARACTER(len=200) :: namefile                                      !--- CL-OGS 
     real :: before,after
-    integer :: n,nalive,npsetl,npdead,npout,npstrd                  !--- CL-OGS
+    integer :: n,nunborn,npsetl,npdead,npout,npstrd                  !--- CL-OGS
       
         npsetl=0
         npstrd=0
@@ -927,10 +927,9 @@ contains
               if(isOut(n)) npout=npout+1
             endif
         ENDDO
-        nalive=numpar-npsetl-npstrd-npdead-npout
-        write(*,'(5(a,i8))')'Number of parts alive=',Average_Numpart(ID_ALIVE),' settled=',npsetl,' stranded=',npstrd,&
-                    ' dead=',npdead,' out=',npout 
-       if(nalive/=Average_Numpart(ID_ALIVE))write(*,'(2(a,i8))')'Average_Numpart(ID_ALIVE)=',Average_Numpart(ID_ALIVE),'/=nalive=',nalive
+        nunborn=numpar-npsetl-npstrd-npdead-npout-Average_Numpart(ID_ALIVE)
+        write(*,'(6(a,i8))')'Number of parts alive=',Average_Numpart(ID_ALIVE),' settled=',npsetl,&
+                    ' stranded=',npstrd,' dead=',npdead,' out=',npout,' unborn=',nunborn 
 
 
       stepIT  = int(dt/idt)                     !number of internal time steps
@@ -2107,8 +2106,8 @@ contains
        IF(TrackCollisions) hitLand(n) = hitLand(n) + 1
        
        coastdist=0
-       P_coastdist(n)=0
-       IF(OilOn .and. StrandingDist>=0)then
+       IF(StrandingDist>=0)then
+        P_coastdist(n)=0
         nXpos = Xpos+(fintersectX-Xpos)*0.9 
         nYpos = Ypos+(fintersectY-Ypos)*0.9 
         par(n,pnZ) = newZpos

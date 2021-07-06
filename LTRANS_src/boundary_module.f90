@@ -985,7 +985,7 @@ SUBROUTINE createBounds()
          write(*,*)'ERROR while searching for nested nodes in boundary module'
          write(*,*)' created NestingDegree file search for error level ',&
                       k,'/',us_tridim
-         stop'ERROR while searching for nested nodes in boundary module'
+         stop 'ERROR while searching for nested nodes in boundary module'
    endif
    if(BndOut)write(*,*)'Start searching nested land/water regions of degree',&
                     a,b,d,' max nesting value is', maxval(nestingdegree(:,:,k))
