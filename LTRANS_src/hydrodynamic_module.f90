@@ -3434,7 +3434,7 @@ CONTAINS
       counter=iint+filenum  !176 + 1 = 177 --> June 26,1995
       countfilenum=counter
       stepf = 1
-      write(*,*)'opening new hydro file'
+      write(*,*)'opening new hydro file number',counter
     ENDIF
 
 
