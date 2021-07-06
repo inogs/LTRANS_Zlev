@@ -53,7 +53,6 @@ MODULE HYDRO_MOD
 !--- CL-OGS: vertical level number of the bottom (Z-grid)
   INTEGER         , ALLOCATABLE, DIMENSION(:,:,:) :: BottomK 
 !--- CL-OGS: if bottom cell was partial in MITgcm re-interpolate currents at new cell center
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: BottomInterpCoeff 
 !--- CL-OGS: vertical level number of the bottom (Z-grid)
   INTEGER, ALLOCATABLE, DIMENSION(:) :: BottomKatRnode,BottomKatUnode,BottomKatVnode
 !--- CL-OGS: form of the 4 nodes elements imported from boundary module  
@@ -223,9 +222,7 @@ CONTAINS
       ALLOCATE(BottomKatRnode(rho_nodes))
       ALLOCATE(BottomKatUnode(  u_nodes))
       ALLOCATE(BottomKatVnode(  v_nodes))
-      !ALLOCATE(PartialCellInterpCoeff(rho_nodes))
       ALLOCATE(BottomK(vi,uj,3))
-      ALLOCATE(BottomInterpCoeff(vi,uj,3))
     else
       Zgrid_depthinterp=.FALSE.
       us_tridim=1
@@ -429,13 +426,6 @@ CONTAINS
         if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
         STATUS = NF90_GET_VAR(NCID,VID,BottomK)
         if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read KBottomRUV'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-
-        STATUS = NF90_INQ_VARID(NCID,'InterpCoeffRUV',VID)
-        IF(STATUS /= NF90_NOERR)write(*,*) 'Problem finding InterpCoeffRUV'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-        STATUS = NF90_GET_VAR(NCID,VID,BottomInterpCoeff)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read InterpCoeffRUV'
         if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
 
       else          !--- CL-OGS: angle read only for ROMS files  
@@ -7279,7 +7269,7 @@ CONTAINS
     DEALLOCATE(mask_rho,depth)
     if(Zgrid)then
       DEALLOCATE(ZC,ZW)
-      DEALLOCATE(BottomK,BottomInterpCoeff)
+      DEALLOCATE(BottomK)
       DEALLOCATE(BottomKatRnode,BottomKatUnode,BottomKatVnode)
       DEALLOCATE(depthU)
       DEALLOCATE(depthV)
