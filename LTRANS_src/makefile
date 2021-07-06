@@ -10,14 +10,16 @@
 #==========================================================================
 OMP :=    # turn on to enable openmp (turn it off to have a sequential executable)
 Debug :=    # turn on to activate debug flags
+DebugOptimized :=    # turn on to activate debug flags
+DebugO0 :=    # turn on to activate debug flags
 #
 #    Turn one of the following on to link the libraries and flags specific to a given cluster:
 IFORT_UMCES :=     
 GFORTRAN_UMCES :=    
 GFORTRAN_USGS :=   
 PGI_USGS   :=
-Fluxus := on
-Galileo :=      
+Fluxus := 
+Galileo := on     
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
@@ -92,7 +94,7 @@ ifdef Fluxus
   NETCDF_INCDIR =  /usr/include -I/usr/lib64/gfortran/modules/ 
   NETCDF_LIBDIR = /usr/lib -L/usr/lib64  -lnetcdff -lnetcdf
   ifdef Debug 
-    FFLAGS =  -O0 -pg -g  -fbounds-check -fimplicit-none -ffpe-trap=invalid,overflow -pedantic -ffixed-line-length-132 -cpp  $(F_HIDEUNUSED)   -I$(NETCDF_INCDIR) 
+    FFLAGS =  -O0 -pg -g  -fbounds-check -fimplicit-none -ffpe-trap=invalid,overflow -pedantic -ffixed-line-length-132 -cpp  $(F_HIDEUNUSED)   -I$(NETCDF_INCDIR)  
   else
     FFLAGS =   -O3  -Wall  -Warray-bounds -fbacktrace -ffree-line-length-none -cpp $(F_HIDEUNUSED) -I$(NETCDF_INCDIR) 
   endif
@@ -101,29 +103,40 @@ endif
 ifdef Galileo
   Intel := on
   Gnu := 
-  DEBUGFLAGS :=
+  DEBUGFLAGS= -O3 -march=native
   ifdef Intel
    FC = ifort
    F90C = ifort
    CC = icc
    ifdef Debug
-     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB -cpp
+     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB
+   endif
+   ifdef DebugOptimized
+     DEBUGFLAGS= -g -traceback -trace -fpe0 -ftrapuv   -ggdb -g3  -check all -debug all
+   endif
+   ifdef DebugO0
+     DEBUGFLAGS= -g -trace -traceback -fpe0 -fp-stack-check -ftrapuv -CB -qopt-report=5 -qopt-report-phase=all 
    endif
   else
    FC = gfortran
    F90C = gfortran
    CC = gcc
    ifdef Debug
-     DEBUGFLAGS= -g -fsanitize=address -fbacktrace  -cpp
+     DEBUGFLAGS= -g -fsanitize=address -fbacktrace 
    endif
   endif
     NETCDF_INCDIR = /cineca/prod/opt/libraries/netcdf/4.6.1/intel--pe-xe-2018--binary/include -I/cineca/prod/opt/libraries/netcdff/4.4.4/intel--pe-xe-2018--binary/include 
     NETCDF_LIBDIR = /cineca/prod/opt/libraries/netcdf/4.6.1/intel--pe-xe-2018--binary/lib  -L/cineca/prod/opt/libraries/netcdff/4.4.4/intel--pe-xe-2018--binary/lib  -lnetcdf
     HDF5_LIBDIR = /cineca/prod/opt/libraries/hdf5/1.8.18/intel--pe-xe-2018--binary/lib 
+  FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR)
   ifdef Debug 
-    FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -ggdb -g3 -cpp -I$(NETCDF_INCDIR) 
-  else
-    FFLAGS = -O3 -fno-math-errno -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR)
+    FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
+  endif
+  ifdef DebugOptimized
+      FFLAGS = $(DEBUGFLAGS) -O3  -fno-math-errno -unroll=3  -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR) 
+  endif
+  ifdef DebugO0
+      FFLAGS = $(DEBUGFLAGS) -O0  -fno-math-errno  -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR) 
   endif
 endif
 
@@ -149,10 +162,19 @@ ifdef FOPENMP
   else
     FOPENMP_FLAG = -fopenmp
   endif
-  LTRANSEXE=LTRANS_Zlev_OMP.exe
+  LTRANS_NAME=LTRANS_Zlev_OMP
 else
   FOPENMP_FLAG =
-  LTRANSEXE=LTRANS_Zlev_SEQ.exe
+  LTRANS_NAME=LTRANS_Zlev_SEQ
+endif
+ifdef Debug
+  LTRANSEXE=${LTRANS_NAME}_dbg.exe
+endif
+ifdef DebugOptimized
+  LTRANSEXE=${LTRANS_NAME}_dbgopti.exe
+endif
+ifdef DebugO0
+  LTRANSEXE=${LTRANS_NAME}_dbgO0.exe
 endif
 
 COMPILINGMESSAGE1= "Executable is ../$(LTRANSEXE)"
@@ -185,9 +207,10 @@ endif
 
 LTRANS : $(OBJS)
 	@echo "  Compiling LTRANS_vZ.f90"
+	@echo "$(F90C) $(FOPENMP_FLAG)  $(FFLAGS) -o ../$(LTRANSEXE) LTRANS.f90 $(OBJS) $(LIBS)"
 	@$(F90C) $(FOPENMP_FLAG)  $(FFLAGS) -o ../$(LTRANSEXE) LTRANS.f90 $(OBJS) $(LIBS)
-	@echo "  Removing .o and .mod files"
-	@\rm *.o *.mod
+	#@echo "  Removing .o and .mod files"
+	#@\rm *.o *.mod
 	@echo "  "
 	@echo "####################################################################################"
 	@echo "  "

@@ -2106,7 +2106,8 @@ contains
        IF(TrackCollisions) hitLand(n) = hitLand(n) + 1
        
        coastdist=0
-       IF(StrandingDist>=0)then
+
+       IF(OilOn .and. StrandingDist>=0)then
         P_coastdist(n)=0
         nXpos = Xpos+(fintersectX-Xpos)*0.9 
         nYpos = Ypos+(fintersectY-Ypos)*0.9 
