@@ -662,10 +662,17 @@ CONTAINS
 !     interpolation.
 
         DO
+          NIT = NIT + 1
+          IF (NIT.GT.10000) THEN
+            SigErr=SigErr+1
+            RETURN
+          END IF
+
           DSIG = -F*DSIG/(F-F0)
           IF (LUN .GE. 0) WRITE (LUN,120) DSIG
           120 FORMAT (5X,'MONOTONICITY -- DSIG = ',D15.8)
-          IF ( ABS(DSIG) .GT. ABS(DMAX)  .OR.              &
+          IF ((ABS(DSIG) - ABS(DMAX)) > 1e-13  .OR.              &
+          !IF ( ABS(DSIG) .GT. ABS(DMAX)       .OR.              &
                DSIG*DMAX .GT. 0. ) THEN
             DSIG = DMAX
             F0 = FNEG
@@ -721,7 +728,6 @@ CONTAINS
 
 !   Update number of iterations NIT.
 
-          NIT = NIT + 1
           IF (LUN .GE. 0) WRITE (LUN,130) NIT, SIG, F
           130 FORMAT (1X,10X,I2,' -- SIG = ',D15.8,        &
                   ', F = ',D15.8)
