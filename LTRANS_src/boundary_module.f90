@@ -2316,22 +2316,23 @@ SUBROUTINE getNext(i,j,wf,dir,form)
 
 END SUBROUTINE getNext
 
-  SUBROUTINE Get_coastdist(Ypos,Xpos,klev,coastdist)
+  SUBROUTINE Get_coastdist(Ypos,Xpos,k_in,coastdist)
 
     USE PARAM_MOD, ONLY:us,Zgrid_depthinterp
 
     IMPLICIT NONE
 
-    INTEGER, INTENT(IN) :: klev
+    INTEGER, INTENT(IN) :: k_in
     DOUBLE PRECISION, INTENT(IN) :: Ypos,Xpos
     DOUBLE PRECISION, INTENT(OUT) :: coastdist
-    INTEGER i,j,start,bndpts,Mbnd,isle,islpts
+    INTEGER i,j,start,bndpts,Mbnd,isle,islpts,klev
     DOUBLE PRECISION :: dXp1,dYp1,dX12,dY12,lenseg,param,Xseg,Yseg
     LOGICAL :: endMbnd,endIsle 
     
     !!!!_-----------------------------------------------------------------------
 
     i = 1                  !initialize i to 1
+    klev=min(k_in,us_tridim)
     Mbnd = mid(i,klev)     !initialize isle to first boundary id
     start = 0              !initialize start to 0
 
