@@ -268,6 +268,7 @@ CONTAINS
 
     USE HYDRO_MOD, ONLY: WCTS_ITPI
     USE RANDOM_MOD, ONLY: genrand_real1
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: daytime
@@ -330,7 +331,7 @@ CONTAINS
         deplvl = i-2   !depth level
          
         !Salinity at particle location
-        P_S = WCTS_ITPI("salt",Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,us,P_zb,    &
+        P_S = WCTS_ITPI(VAR_ID_salt,Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,us,P_zb,    &
                         P_zc,P_zf,ex,ix,p,4,n)
          
       ENDIF

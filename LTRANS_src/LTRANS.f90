@@ -257,7 +257,8 @@ contains
     use oil_mod, only: InitOilModel,OilModel
     use tension_mod, only : initTensionModule
     use settlement_mod, only :  get_NumPoly,get_IDPoly
-
+#INCLUDE 'VAR_IDs.h'
+    IMPLICIT NONE
 
     double precision :: pDep,P_depth
     integer:: m,STATUS
@@ -735,7 +736,7 @@ contains
       !Find depth, angle, and sea surface height at particle location
       conflict=1
       if(.not. Zgrid)then ! (ROMS sigma-level-grid :)
-       P_depth = DBLE(-1.0)* getInterp(par(m,pX),par(m,pY),"depth",klev)
+       P_depth = DBLE(-1.0)* getInterp(par(m,pX),par(m,pY),VAR_ID_depth,klev)
       else !             (Zgrid :)      
         call getDepth(par(m,pX),par(m,pY),m,it,P_depth,Fstlev,conflict)  
       endif
@@ -1286,6 +1287,8 @@ contains
 
     !$ use OMP_LIB
 
+#INCLUDE 'VAR_IDs.h'
+
     IMPLICIT NONE
 
     DOUBLE PRECISION, DIMENSION(us) :: Pwc_zb,Pwc_zc,Pwc_zf
@@ -1465,8 +1468,8 @@ contains
       !Find depth, angle, and sea surface height at particle location
       conflict=1
       if(.not. Zgrid)then ! (ROMS sigma-level-grid :)
-        P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,"depth",klev)
-        P_angle = getInterp(Xpar,Ypar,"angle",klev)
+        P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,VAR_ID_depth,klev)
+        P_angle = getInterp(Xpar,Ypar,VAR_ID_angle,klev)
         Fstlev=1
       else !             (Zgrid :)                                    !--- CL-OGS:  for Z-grid model P_depth is computed by the 
         call getDepth(Xpar,Ypar,n,it,P_depth,Fstlev,conflict)         !--- CL-OGS:   new routine getDepth returning as well the
@@ -1488,13 +1491,13 @@ contains
       
       !**********   Sea level zeta  *****************************
       if(p.eq.1)then                        !--- CL-OGS: added in v.Zlev, but is it right ?? 
-      P_zetab = getInterp(Xpar,Ypar,"zetab",klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
-      P_zetac = getInterp(Xpar,Ypar,"zetab",klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
-      P_zetaf = getInterp(Xpar,Ypar,"zetac",klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
+      P_zetab = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
+      P_zetac = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
+      P_zetaf = getInterp(Xpar,Ypar,VAR_ID_zetac,klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
       else                                  !--- CL-OGS: added in v.Zlev, but is it right ?? 
-      P_zetab = getInterp(Xpar,Ypar,"zetab",klev)
-      P_zetac = getInterp(Xpar,Ypar,"zetac",klev)
-      P_zetaf = getInterp(Xpar,Ypar,"zetaf",klev)
+      P_zetab = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)
+      P_zetac = getInterp(Xpar,Ypar,VAR_ID_zetac,klev)
+      P_zetaf = getInterp(Xpar,Ypar,VAR_ID_zetaf,klev)
       endif                                 !--- CL-OGS: added in v.Zlev, but is it right ??
 
 !--- CL-OGS : shouldn'be moved here the SETTLEMENT SECTION ?            
@@ -1933,9 +1936,9 @@ contains
         endif  
         !P_Salt(n) = WCTS_ITPI("salt",Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,    &
         !                      us,P_zb,P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)
-        Tsalt=WCTS_ITPI("salt",Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,    &
+        Tsalt=WCTS_ITPI(VAR_ID_salt,Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,    &
                               us,P_zb,P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)        
-        Ttemp=WCTS_ITPI("temp",Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,          &
+        Ttemp=WCTS_ITPI(VAR_ID_temp,Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,          &
                               us,P_zb,P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)
         IF(Behavior.ge.8.and.Behavior.le.10)THEN
           if(Write_Temp_min_max_ins.eq.'max')then
@@ -2008,8 +2011,8 @@ contains
       !$OMP END MASTER
       
       IF((Behavior.ge.8.and.Behavior.le.11).and.read_GrainSize)then
-       P_GrainSize(n)=max(P_GrainSize(n),getInterp(Xpar,Ypar,"GrainSize",klev))
-       !if(readNetcdfSwdown)P_swdown = getInterp(Xpar,Ypar,"swdown",klev)
+       P_GrainSize(n)=max(P_GrainSize(n),getInterp(Xpar,Ypar,VAR_ID_GrainSize,klev))
+       !if(readNetcdfSwdown)P_swdown = getInterp(Xpar,Ypar,VAR_ID_swdown,klev)
       ENDIF
       PTemptmp=0.0
       if(SaltTempOn)PTemptmp=P_Temp(n)
@@ -2589,6 +2592,7 @@ contains
     USE HYDRO_MOD,  ONLY: WCTS_ITPI,setInterp,getInterp
     USE TENSION_MOD, ONLY: TSPSI,HVAL
     USE INT_MOD,    ONLY: linint,polintd
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p,version,kwBotLvl,n
@@ -2681,15 +2685,15 @@ contains
    !elseif (Zpar .LT. BottLayerHeight  ) then ! apply log layer
     if (Zpar .LT. BottLayerHeight  ) then ! apply log layer
 
-      Pwc_Ub = getInterp(Xpar,Ypar,"uvelb",kwBotLvl  )
-      Pwc_Uc = getInterp(Xpar,Ypar,"uvelc",kwBotLvl  )
-      Pwc_Uf = getInterp(Xpar,Ypar,"uvelf",kwBotLvl  )
-      Pwc_Vb = getInterp(Xpar,Ypar,"vvelb",kwBotLvl  )
-      Pwc_Vc = getInterp(Xpar,Ypar,"vvelc",kwBotLvl  )
-      Pwc_Vf = getInterp(Xpar,Ypar,"vvelf",kwBotLvl  )
-      Pwc_Wb = getInterp(Xpar,Ypar,"wvelb",kwBotLvl+1)
-      Pwc_Wc = getInterp(Xpar,Ypar,"wvelc",kwBotLvl+1)
-      Pwc_Wf = getInterp(Xpar,Ypar,"wvelf",kwBotLvl+1)
+      Pwc_Ub = getInterp(Xpar,Ypar,VAR_ID_uvelb,kwBotLvl  )
+      Pwc_Uc = getInterp(Xpar,Ypar,VAR_ID_uvelc,kwBotLvl  )
+      Pwc_Uf = getInterp(Xpar,Ypar,VAR_ID_uvelf,kwBotLvl  )
+      Pwc_Vb = getInterp(Xpar,Ypar,VAR_ID_vvelb,kwBotLvl  )
+      Pwc_Vc = getInterp(Xpar,Ypar,VAR_ID_vvelc,kwBotLvl  )
+      Pwc_Vf = getInterp(Xpar,Ypar,VAR_ID_vvelf,kwBotLvl  )
+      Pwc_Wb = getInterp(Xpar,Ypar,VAR_ID_wvelb,kwBotLvl+1)
+      Pwc_Wc = getInterp(Xpar,Ypar,VAR_ID_wvelc,kwBotLvl+1)
+      Pwc_Wf = getInterp(Xpar,Ypar,VAR_ID_wvelf,kwBotLvl+1)
 
       !  u(z)  = [ u(zB) / (log(zB/zo) ] * (log (z/zo) 
       !where:
@@ -2794,12 +2798,12 @@ contains
           .or. (Zpar .GT. Pwc_zf(us) .and. p.ne.1) ).and. &
            (.not.VInterpUVinSurfWater) )then
  
-          P_Ub = getInterp(Xpar,Ypar,"uvelb",us)
-          P_Uc = getInterp(Xpar,Ypar,"uvelc",us)
-          P_Uf = getInterp(Xpar,Ypar,"uvelf",us)
-          P_Vb = getInterp(Xpar,Ypar,"vvelb",us)
-          P_Vc = getInterp(Xpar,Ypar,"vvelc",us)
-          P_Vf = getInterp(Xpar,Ypar,"vvelf",us)
+          P_Ub = getInterp(Xpar,Ypar,VAR_ID_uvelb,us)
+          P_Uc = getInterp(Xpar,Ypar,VAR_ID_uvelc,us)
+          P_Uf = getInterp(Xpar,Ypar,VAR_ID_uvelf,us)
+          P_Vb = getInterp(Xpar,Ypar,VAR_ID_vvelb,us)
+          P_Vc = getInterp(Xpar,Ypar,VAR_ID_vvelc,us)
+          P_Vf = getInterp(Xpar,Ypar,VAR_ID_vvelf,us)
                  
           !a. U velocity
           ! 1. PrgetIepare external time step values
@@ -2835,12 +2839,12 @@ contains
           Vad = polintd(ex,ey,3,ix(version))    ! WAS CANCELLED, WHY ??? 
       
       else
-          Uad = WCTS_ITPI("uvel",Xpar,Ypar,ii ,Pwc_zb ,Pwc_zc ,Pwc_zf ,us,P_zb,    &
+          Uad = WCTS_ITPI(VAR_ID_uvel,Xpar,Ypar,ii ,Pwc_zb ,Pwc_zc ,Pwc_zf ,us,P_zb,    &
                       P_zc,P_zf,ex,ix,p,version,n,NumInterpLvlii)
-          Vad = WCTS_ITPI("vvel",Xpar,Ypar,ii ,Pwc_zb ,Pwc_zc ,Pwc_zf ,us,P_zb,    &
+          Vad = WCTS_ITPI(VAR_ID_vvel,Xpar,Ypar,ii ,Pwc_zb ,Pwc_zc ,Pwc_zf ,us,P_zb,    &
                       P_zc,P_zf,ex,ix,p,version,n,NumInterpLvlii)
       endif
-      Wad = WCTS_ITPI("wvel",Xpar,Ypar,iii,Pwc_wzb,Pwc_wzc,Pwc_wzf,ws,P_zb,    &
+      Wad = WCTS_ITPI(VAR_ID_wvel,Xpar,Ypar,iii,Pwc_wzb,Pwc_wzc,Pwc_wzf,ws,P_zb,    &
                       P_zc,P_zf,ex,ix,p,version,n,NumInterpLvliii)
     else
         write(*,*)'ERROR NuminterpLvl ',NuminterpLvlii,NuminterpLvliii
@@ -2856,6 +2860,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     !  location in space and time
     USE HYDRO_MOD,  ONLY: setInterp,getInterp
     USE INT_MOD,    ONLY: linint,polintd
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p,version,n
@@ -2868,12 +2873,12 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     !Set Interpolation Values for the current particle
     CALL setInterp(Xpar,Ypar,n)
 
-        P_Uwindb = getInterp(Xpar,Ypar,"uwindb",1)
-        P_Uwindc = getInterp(Xpar,Ypar,"uwindc",1)
-        P_Uwindf = getInterp(Xpar,Ypar,"uwindf",1)
-        P_Vwindb = getInterp(Xpar,Ypar,"vwindb",1)
-        P_Vwindc = getInterp(Xpar,Ypar,"vwindc",1)
-        P_Vwindf = getInterp(Xpar,Ypar,"vwindf",1)
+        P_Uwindb = getInterp(Xpar,Ypar,VAR_ID_uwindb,1)
+        P_Uwindc = getInterp(Xpar,Ypar,VAR_ID_uwindc,1)
+        P_Uwindf = getInterp(Xpar,Ypar,VAR_ID_uwindf,1)
+        P_Vwindb = getInterp(Xpar,Ypar,VAR_ID_vwindb,1)
+        P_Vwindc = getInterp(Xpar,Ypar,VAR_ID_vwindc,1)
+        P_Vwindf = getInterp(Xpar,Ypar,VAR_ID_vwindf,1)
 
       !     *********************************************************
       !     *        Find Internal b,c,f and Advection Values       *
@@ -3788,6 +3793,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     use behavior_mod, only: die,isOut,isDead
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     INTEGER :: i,deplvl,n
@@ -3846,7 +3852,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
             endif
         else
             klev=1
-            P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,"depth",klev)
+            P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,VAR_ID_depth,klev)
             Fstlev=1
         endif     
         Average_Value(ID_DEPTH)=Average_Value(ID_DEPTH)+P_depth
@@ -3872,6 +3878,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     use behavior_mod, only: die,isOut,isDead
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     INTEGER :: i,deplvl,n
@@ -3933,8 +3940,8 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
             P_angle=0
         else
             klev=1
-            P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,"depth",klev)
-            P_angle = getInterp(Xpar,Ypar,"angle",klev)
+            P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,VAR_ID_depth,klev)
+            P_angle = getInterp(Xpar,Ypar,VAR_ID_angle,klev)
             Fstlev=1
         endif     
 
@@ -4019,6 +4026,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     use behavior_mod, only: die,isOut,isDead
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     INTEGER :: i,deplvl,n
@@ -4078,27 +4086,27 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
             P_angle=0
           else
             klev=1
-            P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,"depth",klev)
-            P_angle = getInterp(Xpar,Ypar,"angle",klev)
+            P_depth = DBLE(-1.0)* getInterp(Xpar,Ypar,VAR_ID_depth,klev)
+            P_angle = getInterp(Xpar,Ypar,VAR_ID_angle,klev)
             Fstlev=1
           endif    
           if(Zgrid.and.klev.eq.us)then
-              ey(1) =getInterp(Xpar,Ypar,"tempb",klev)
-              ey(2) =getInterp(Xpar,Ypar,"tempc",klev)
-              ey(3) =getInterp(Xpar,Ypar,"tempf",klev)
+              ey(1) =getInterp(Xpar,Ypar,VAR_ID_tempb,klev)
+              ey(2) =getInterp(Xpar,Ypar,VAR_ID_tempc,klev)
+              ey(3) =getInterp(Xpar,Ypar,VAR_ID_tempf,klev)
               !write(*,*)'Interp Temp',ex,ey,3,ix(2)
               Ttemp= polintd(ex,ey,3,ix(2))
               !write(*,*)'Interp Temp result is ',Ttemp
           else 
              !**********   Sea level zeta  *****************************
              if(p.eq.1)then                        !--- CL-OGS: added in v.Zlev, but is it right ?? 
-             P_zetab = getInterp(Xpar,Ypar,"zetab",klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
-             P_zetac = getInterp(Xpar,Ypar,"zetab",klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
-             P_zetaf = getInterp(Xpar,Ypar,"zetac",klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
+             P_zetab = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
+             P_zetac = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
+             P_zetaf = getInterp(Xpar,Ypar,VAR_ID_zetac,klev)     !--- CL-OGS: added in v.Zlev, but is it right ?? 
              else                                !--- CL-OGS: added in v.Zlev, but is it right ?? 
-             P_zetab = getInterp(Xpar,Ypar,"zetab",klev)
-             P_zetac = getInterp(Xpar,Ypar,"zetac",klev)
-             P_zetaf = getInterp(Xpar,Ypar,"zetaf",klev)
+             P_zetab = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)
+             P_zetac = getInterp(Xpar,Ypar,VAR_ID_zetac,klev)
+             P_zetaf = getInterp(Xpar,Ypar,VAR_ID_zetaf,klev)
              endif                                 !--- CL-OGS: added in v.Zlev, but is it right ??
             
              !Create matrix of z-coordinates at particle and at each node for
@@ -4129,7 +4137,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
              else
                  NumInterpLvl=4
              endif 
-             Ttemp=WCTS_ITPI("temp",Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,     &
+             Ttemp=WCTS_ITPI(VAR_ID_temp,Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,     &
                               us,P_zb,P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)
            endif
            Average_Value(ID_TEMP)=Average_Value(ID_TEMP)+Ttemp                                            !--- CL-OGS 

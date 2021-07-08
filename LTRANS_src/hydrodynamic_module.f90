@@ -5977,11 +5977,11 @@ CONTAINS
     !  the hydrodynamic variables that have been read in
 
     !$ use OMP_LIB
-
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: xp,yp
-    CHARACTER(LEN=*), INTENT(IN) :: var
+    INTEGER, INTENT(IN) :: var
     INTEGER, INTENT(IN), OPTIONAL :: i
 
     INTEGER :: rmasksum   !ewn.v.2
@@ -6040,37 +6040,37 @@ CONTAINS
       !  v2 = t_Swdown(t_f,rnode2)
       !  v3 = t_Swdown(t_f,rnode3)
       !  v4 = t_Swdown(t_f,rnode4)
-       CASE("GrainSize")
+       CASE(VAR_ID_GrainSize)
          v1 = GrainSize(rnode1)
          v2 = GrainSize(rnode2)
          v3 = GrainSize(rnode3)
          v4 = GrainSize(rnode4)
-       CASE("depth")
+       CASE(VAR_ID_depth)
          v1 = depth(rnode1)
          v2 = depth(rnode2)
          v3 = depth(rnode3)
          v4 = depth(rnode4)
-       CASE("angle")
+       CASE(VAR_ID_angle)
          v1 = rho_angle(rnode1)
          v2 = rho_angle(rnode2)
          v3 = rho_angle(rnode3)
          v4 = rho_angle(rnode4)
-       CASE("zetab")
+       CASE(VAR_ID_zetab)
          v1 = t_zeta(t_b,rnode1)
          v2 = t_zeta(t_b,rnode2)
          v3 = t_zeta(t_b,rnode3)
          v4 = t_zeta(t_b,rnode4)
-       CASE("zetac")
+       CASE(VAR_ID_zetac)
          v1 = t_zeta(t_c,rnode1)
          v2 = t_zeta(t_c,rnode2)
          v3 = t_zeta(t_c,rnode3)
          v4 = t_zeta(t_c,rnode4)
-       CASE("zetaf")
+       CASE(VAR_ID_zetaf)
          v1 = t_zeta(t_f,rnode1)
          v2 = t_zeta(t_f,rnode2)
          v3 = t_zeta(t_f,rnode3)
          v4 = t_zeta(t_f,rnode4)
-       CASE("saltb")
+       CASE(VAR_ID_saltb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6082,7 +6082,7 @@ CONTAINS
          v2 = t_salt(t_b,rnode2,i)
          v3 = t_salt(t_b,rnode3,i)
          v4 = t_salt(t_b,rnode4,i)
-       CASE("saltc")
+       CASE(VAR_ID_saltc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6094,7 +6094,7 @@ CONTAINS
          v2 = t_salt(t_c,rnode2,i)
          v3 = t_salt(t_c,rnode3,i)
          v4 = t_salt(t_c,rnode4,i)
-       CASE("saltf")
+       CASE(VAR_ID_saltf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6106,7 +6106,7 @@ CONTAINS
          v2 = t_salt(t_f,rnode2,i)
          v3 = t_salt(t_f,rnode3,i)
          v4 = t_salt(t_f,rnode4,i)
-       CASE("tempb")
+       CASE(VAR_ID_tempb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6118,7 +6118,7 @@ CONTAINS
          v2 = t_temp(t_b,rnode2,i)
          v3 = t_temp(t_b,rnode3,i)
          v4 = t_temp(t_b,rnode4,i)
-       CASE("tempc")
+       CASE(VAR_ID_tempc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6130,7 +6130,7 @@ CONTAINS
          v2 = t_temp(t_c,rnode2,i)
          v3 = t_temp(t_c,rnode3,i)
          v4 = t_temp(t_c,rnode4,i)
-       CASE("tempf")
+       CASE(VAR_ID_tempf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6142,7 +6142,7 @@ CONTAINS
          v2 = t_temp(t_f,rnode2,i)
          v3 = t_temp(t_f,rnode3,i)
          v4 = t_temp(t_f,rnode4,i)
-       CASE("denb")
+       CASE(VAR_ID_denb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6154,7 +6154,7 @@ CONTAINS
          v2 = t_den(t_b,rnode2,i)
          v3 = t_den(t_b,rnode3,i)
          v4 = t_den(t_b,rnode4,i)
-       CASE("denc")
+       CASE(VAR_ID_denc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6166,7 +6166,7 @@ CONTAINS
          v2 = t_den(t_c,rnode2,i)
          v3 = t_den(t_c,rnode3,i)
          v4 = t_den(t_c,rnode4,i)
-       CASE("denf")
+       CASE(VAR_ID_denf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6178,7 +6178,7 @@ CONTAINS
          v2 = t_den(t_f,rnode2,i)
          v3 = t_den(t_f,rnode3,i)
          v4 = t_den(t_f,rnode4,i)
-       CASE("uvelb")
+       CASE(VAR_ID_uvelb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6191,7 +6191,7 @@ CONTAINS
          v3 = t_Uvel(t_b,unode3,i)
          v4 = t_Uvel(t_b,unode4,i)
          RUV = 2
-       CASE("uvelc")
+       CASE(VAR_ID_uvelc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6204,7 +6204,7 @@ CONTAINS
          v3 = t_Uvel(t_c,unode3,i)
          v4 = t_Uvel(t_c,unode4,i)
          RUV = 2
-       CASE("uvelf")
+       CASE(VAR_ID_uvelf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6217,7 +6217,7 @@ CONTAINS
          v3 = t_Uvel(t_f,unode3,i)
          v4 = t_Uvel(t_f,unode4,i)
          RUV = 2
-       CASE("vvelb")
+       CASE(VAR_ID_vvelb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6230,7 +6230,7 @@ CONTAINS
          v3 = t_Vvel(t_b,vnode3,i)
          v4 = t_Vvel(t_b,vnode4,i)
          RUV = 3
-       CASE("vvelc")
+       CASE(VAR_ID_vvelc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6243,7 +6243,7 @@ CONTAINS
          v3 = t_Vvel(t_c,vnode3,i)
          v4 = t_Vvel(t_c,vnode4,i)
          RUV = 3
-       CASE("vvelf")
+       CASE(VAR_ID_vvelf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6256,7 +6256,7 @@ CONTAINS
          v3 = t_Vvel(t_f,vnode3,i)
          v4 = t_Vvel(t_f,vnode4,i)
          RUV = 3
-       CASE("wvelb")
+       CASE(VAR_ID_wvelb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6268,7 +6268,7 @@ CONTAINS
          v2 = t_Wvel(t_b,rnode2,i)
          v3 = t_Wvel(t_b,rnode3,i)
          v4 = t_Wvel(t_b,rnode4,i)
-       CASE("wvelc")
+       CASE(VAR_ID_wvelc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6280,7 +6280,7 @@ CONTAINS
          v2 = t_Wvel(t_c,rnode2,i)
          v3 = t_Wvel(t_c,rnode3,i)
          v4 = t_Wvel(t_c,rnode4,i)
-       CASE("wvelf")
+       CASE(VAR_ID_wvelf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6292,7 +6292,7 @@ CONTAINS
          v2 = t_Wvel(t_f,rnode2,i)
          v3 = t_Wvel(t_f,rnode3,i)
          v4 = t_Wvel(t_f,rnode4,i)
-       CASE("khb")
+       CASE(VAR_ID_khb)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6304,7 +6304,7 @@ CONTAINS
          v2 = t_KH(t_b,rnode2,i)
          v3 = t_KH(t_b,rnode3,i)
          v4 = t_KH(t_b,rnode4,i)
-       CASE("khc")
+       CASE(VAR_ID_khc)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6316,7 +6316,7 @@ CONTAINS
          v2 = t_KH(t_c,rnode2,i)
          v3 = t_KH(t_c,rnode3,i)
          v4 = t_KH(t_c,rnode4,i)
-       CASE("khf")
+       CASE(VAR_ID_khf)
          if(.not. present(i))then
            write(*,*) 'Problem interpolating ',var
            write(*,*) 'Optional Argument (i) Required for this Variable'
@@ -6328,47 +6328,47 @@ CONTAINS
          v2 = t_KH(t_f,rnode2,i)
          v3 = t_KH(t_f,rnode3,i)
          v4 = t_KH(t_f,rnode4,i)
-       CASE("uwindb")
+       CASE(VAR_ID_uwindb)
          v1 = t_uwind(t_b,unode1)
          v2 = t_uwind(t_b,unode2)
          v3 = t_uwind(t_b,unode3)
          v4 = t_uwind(t_b,unode4)
-       CASE("uwindc")
+       CASE(VAR_ID_uwindc)
          v1 = t_uwind(t_c,unode1)
          v2 = t_uwind(t_c,unode2)
          v3 = t_uwind(t_c,unode3)
          v4 = t_uwind(t_c,unode4)
-       CASE("uwindf")
+       CASE(VAR_ID_uwindf)
          v1 = t_uwind(t_f,unode1)
          v2 = t_uwind(t_f,unode2)
          v3 = t_uwind(t_f,unode3)
          v4 = t_uwind(t_f,unode4)
-       CASE("vwindb")
+       CASE(VAR_ID_vwindb)
          v1 = t_vwind(t_b,vnode1)
          v2 = t_vwind(t_b,vnode2)
          v3 = t_vwind(t_b,vnode3)
          v4 = t_vwind(t_b,vnode4)
-       CASE("vwindc")
+       CASE(VAR_ID_vwindc)
          v1 = t_vwind(t_c,vnode1)
          v2 = t_vwind(t_c,vnode2)
          v3 = t_vwind(t_c,vnode3)
          v4 = t_vwind(t_c,vnode4)
-       CASE("vwindf")
+       CASE(VAR_ID_vwindf)
          v1 = t_vwind(t_f,vnode1)
          v2 = t_vwind(t_f,vnode2)
          v3 = t_vwind(t_f,vnode3)
          v4 = t_vwind(t_f,vnode4)
-       CASE("iwindb")
+       CASE(VAR_ID_iwindb)
          v1 = t_iwind(t_b,rnode1)
          v2 = t_iwind(t_b,rnode2)
          v3 = t_iwind(t_b,rnode3)
          v4 = t_iwind(t_b,rnode4)
-       CASE("iwindc")
+       CASE(VAR_ID_iwindc)
          v1 = t_iwind(t_c,rnode1)
          v2 = t_iwind(t_c,rnode2)
          v3 = t_iwind(t_c,rnode3)
          v4 = t_iwind(t_c,rnode4)
-       CASE("iwindf")
+       CASE(VAR_ID_iwindf)
          v1 = t_iwind(t_f,rnode1)
          v2 = t_iwind(t_f,rnode2)
          v3 = t_iwind(t_f,rnode3)
@@ -6415,11 +6415,11 @@ CONTAINS
     INTEGER, INTENT(IN) :: deplvl,slvls,p,v,nP
     DOUBLE PRECISION, INTENT(IN) :: Xpos,Ypos,Pwc_zb(slvls),Pwc_zc(slvls),     &
                                     Pwc_zf(slvls),P_zb,P_zc,P_zf,ex(3),ix(3)
-    CHARACTER(LEN=*), INTENT(IN) :: var
+    INTEGER, INTENT(IN) :: var
 
     INTEGER,INTENT(INOUT), OPTIONAL :: nN 
 
-    CHARACTER(LEN=LEN(var)+1) :: varb,varc,varf
+    INTEGER :: varb,varc,varf
     INTEGER ::  i
     DOUBLE PRECISION ,ALLOCATABLE, DIMENSION(:) :: abb_zb,abb_zc,abb_zf,abb_vb,&
       abb_vc,abb_vf
@@ -6441,9 +6441,9 @@ CONTAINS
     ALLOCATE(abb_vf(nN))
     ALLOCATE(SIGM(nN))
     ALLOCATE(YP(nN))
-    varb = var//"b"
-    varc = var//"c"
-    varf = var//"f"
+    varb = var+1
+    varc = var+2
+    varf = var+3
     do i=1,nN
       abb_zb(i) = Pwc_zb(i+deplvl-1)
       abb_zc(i) = Pwc_zc(i+deplvl-1)

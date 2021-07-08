@@ -34,6 +34,7 @@ CONTAINS
     USE INT_MOD,    ONLY: linint,polintd
     USE NORM_MOD,   ONLY: norm
     USE TENSION_MOD, ONLY: TSPSI,HVAL,HPVAL
+#INCLUDE 'VAR_IDs.h'
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p
@@ -102,9 +103,9 @@ CONTAINS
     !i. find KH in water column profile at particle location
     do i=1,ws
 
-        Pwc_KHb(i) = getInterp(xp,yp,"khb",i)
-        Pwc_KHc(i) = getInterp(xp,yp,"khc",i)
-        Pwc_KHf(i) = getInterp(xp,yp,"khf",i)
+        Pwc_KHb(i) = getInterp(xp,yp,VAR_ID_khb,i)
+        Pwc_KHc(i) = getInterp(xp,yp,VAR_ID_khc,i)
+        Pwc_KHf(i) = getInterp(xp,yp,VAR_ID_khf,i)
 
     enddo
 
