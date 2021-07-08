@@ -39,7 +39,7 @@ SAVE
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION (:,:) :: hx,hy,bx,by
   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: mid,hid
   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: mdeg,hdeg
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION (:,:,:) :: bnd_x,bnd_y
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION (:,:) :: bnd_x1,bnd_x2,bnd_y1,bnd_y2
 
   !TRUE if the boundary is land, FALSE if it is open ocean
   LOGICAL, ALLOCATABLE, DIMENSION(:,:) :: land
@@ -1826,8 +1826,8 @@ SUBROUTINE createBounds()
 
 
   ! Construct bnd_x and bnd_y matrices that contain boundary line segments.
-  ! bnd_x(1,i),bnd_y(1,i) = coordinates of first point in line segment.
-  ! bnd_x(2,i),bnd_y(2,i) = coordinates of second point in line segment.
+  ! bnd_x1(i),bnd_y1(i) = coordinates of first point in line segment.
+  ! bnd_x2(i),bnd_y2(i) = coordinates of second point in line segment.
   ! The bnd_x/bnd_y matrices are used to 
   !   1) determine if a particle intersects a boundary segment and 
   !   2) reflect the particle off the boundary segment.
@@ -1839,10 +1839,14 @@ SUBROUTINE createBounds()
   if(nbounds(klevel)> nbounds_max) nbounds_max=nbounds(klevel)
   ENDDO  ! klevel=1,us_tridim
 
-  ALLOCATE(bnd_x(2,nbounds_max,us_tridim),STAT=STATUS)  
-  IF(STATUS /= 0) write(*,*) 'Problem allocating bnd_x'
-  ALLOCATE(bnd_y(2,nbounds_max,us_tridim),STAT=STATUS)  
-  IF(STATUS /= 0) write(*,*) 'Problem allocating bnd_y'
+  ALLOCATE(bnd_x1(nbounds_max,us_tridim),STAT=STATUS)  
+  IF(STATUS /= 0) write(*,*) 'Problem allocating bnd_x1'
+  ALLOCATE(bnd_x2(nbounds_max,us_tridim),STAT=STATUS)  
+  IF(STATUS /= 0) write(*,*) 'Problem allocating bnd_x2'
+  ALLOCATE(bnd_y1(nbounds_max,us_tridim),STAT=STATUS)  
+  IF(STATUS /= 0) write(*,*) 'Problem allocating bnd_y1'
+  ALLOCATE(bnd_y2(nbounds_max,us_tridim),STAT=STATUS)  
+  IF(STATUS /= 0) write(*,*) 'Problem allocating bnd_y2'
 
   !Allocate land to track land/ocean boundaries
   ALLOCATE (land(nbounds_max,us_tridim),STAT=STATUS)
@@ -1886,10 +1890,10 @@ SUBROUTINE createBounds()
           k = mid(i,klevel)                !update k to new main bound id
           j = j + 1                 !and increment j
         endif
-      bnd_x(1,i-j,klevel) = bx(i  ,klevel)   
-      bnd_y(1,i-j,klevel) = by(i  ,klevel)
-      bnd_x(2,i-j,klevel) = bx(i+1,klevel)
-      bnd_y(2,i-j,klevel) = by(i+1,klevel)
+      bnd_x1(i-j,klevel) = bx(i  ,klevel)   
+      bnd_y1(i-j,klevel) = by(i  ,klevel)
+      bnd_x2(i-j,klevel) = bx(i+1,klevel)
+      bnd_y2(i-j,klevel) = by(i+1,klevel)
       if(oo(i,klevel).AND.oo(i+1,klevel))then
         land(i,klevel) = .FALSE. !Not a land boundary
         if(BoundaryBLNs) WRITE(10,*) bx(i,klevel),',',bx(i+1,klevel),',',      &
@@ -1940,10 +1944,10 @@ SUBROUTINE createBounds()
          ', tot_mbnd_pts=',tot_mbnd_pts(klevel),' num_mbnd=',num_mbnd(klevel), &
          ' j=',j
         endif
-        bnd_x(1,tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hx(i  ,klevel)
-        bnd_y(1,tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hy(i  ,klevel)
-        bnd_x(2,tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hx(i+1,klevel)
-        bnd_y(2,tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hy(i+1,klevel)
+        bnd_x1(tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hx(i  ,klevel)
+        bnd_y1(tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hy(i  ,klevel)
+        bnd_x2(tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hx(i+1,klevel)
+        bnd_y2(tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,klevel)=hy(i+1,klevel)
         if(BoundaryBLNs) WRITE(11,*) hx(i,klevel),',',hx(i+1,klevel),',',      &
                                      hy(i,klevel),',',hy(i+1,klevel),',',      &
               klevel,',',tot_mbnd_pts(klevel)-num_mbnd(klevel)+i-j,',',1
@@ -1962,7 +1966,7 @@ SUBROUTINE createBounds()
   enddo
   if(BndOut)write(*,*)'now set boundaries calling setbounds'
 
-  call setbounds(nbounds_max,us_tridim,nbounds,bnd_x,bnd_y)
+  call setbounds(nbounds_max,us_tridim,nbounds,bnd_x1,bnd_x2,bnd_y1,bnd_y2)
 
   if(BoundaryBLNs) CLOSE(10)
   if(BoundaryBLNs) CLOSE(11)
@@ -2638,17 +2642,21 @@ END SUBROUTINE getNext
       ylow = Ypos
     endif
 
-    bcx1_array=bnd_x(1,:,klev)
-    bcx2_array=bnd_x(2,:,klev)
-    bcy1_array=bnd_y(1,:,klev)
-    bcy2_array=bnd_y(2,:,klev)
+    bcx1_array=bnd_x1(:,klev)
+    bcx2_array=bnd_x2(:,klev)
+    bcy1_array=bnd_y1(:,klev)
+    bcy2_array=bnd_y2(:,klev)
     dist=    sqrt((bcx1- Xpos)**2+(bcy1- Ypos)**2) 
     dist=min(sqrt((bcx2- Xpos)**2+(bcy2- Ypos)**2),dist)
     dist=min(sqrt((bcx2-nXpos)**2+(bcy2-nYpos)**2),dist)
 
     do i=1,nbounds(klev)
 
-      if (i == skipbound) cycle
+      if (i /= skipbound)then
+         continue
+      else
+         cycle
+      endif
 
         intersect = 0
         bcx1=bcx1_array(i)
@@ -2888,35 +2896,35 @@ END SUBROUTINE getNext
           bndintersect(2)=bcy1                      !--- CL:OGS
           bndintersect(4)=bcy2                      !--- CL:OGS
 
-          bndintersect(5)=bnd_x(1,max(1,i-1),klev)           !--- CL:OGS
-          bndintersect(7)=bnd_y(1,max(1,i-1),klev)           !--- CL:OGS
-          bndintersect(6)=bnd_x(2,max(1,i-1),klev)           !--- CL:OGS
-          bndintersect(8)=bnd_y(2,max(1,i-1),klev)           !--- CL:OGS
+          bndintersect(5)=bnd_x1(max(1,i-1),klev)           !--- CL:OGS
+          bndintersect(7)=bnd_y1(max(1,i-1),klev)           !--- CL:OGS
+          bndintersect(6)=bnd_x2(max(1,i-1),klev)           !--- CL:OGS
+          bndintersect(8)=bnd_y2(max(1,i-1),klev)           !--- CL:OGS
 
-          bndintersect( 9)=bnd_x(1,min(nbounds(klev),i+1),klev)           !--- CL:OGS
-          bndintersect(11)=bnd_y(1,min(nbounds(klev),i+1),klev)           !--- CL:OGS
-          bndintersect(10)=bnd_x(2,min(nbounds(klev),i+1),klev)           !--- CL:OGS
-          bndintersect(12)=bnd_y(2,min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect( 9)=bnd_x1(min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect(11)=bnd_y1(min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect(10)=bnd_x2(min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect(12)=bnd_y2(min(nbounds(klev),i+1),klev)           !--- CL:OGS
 
         endif
        
     enddo
     if( (intersect .EQ. 0))then
           i=min(max(1,closerbound),nbounds(klev))
-          bndintersect(1)=bnd_x(1,i,klev)                                !--- CL:OGS
-          bndintersect(3)=bnd_y(1,i,klev)                                !--- CL:OGS
-          bndintersect(2)=bnd_x(2,i,klev)                                !--- CL:OGS
-          bndintersect(4)=bnd_y(2,i,klev)                                !--- CL:OGS
+          bndintersect(1)=bnd_x1(i,klev)                                !--- CL:OGS
+          bndintersect(3)=bnd_y1(i,klev)                                !--- CL:OGS
+          bndintersect(2)=bnd_x2(i,klev)                                !--- CL:OGS
+          bndintersect(4)=bnd_y2(i,klev)                                !--- CL:OGS
 
-          bndintersect(5)=bnd_x(1,max(1,i-1),klev)                       !--- CL:OGS
-          bndintersect(7)=bnd_y(1,max(1,i-1),klev)                       !--- CL:OGS
-          bndintersect(6)=bnd_x(2,max(1,i-1),klev)                       !--- CL:OGS
-          bndintersect(8)=bnd_y(2,max(1,i-1),klev)                       !--- CL:OGS
+          bndintersect(5)=bnd_x1(max(1,i-1),klev)                       !--- CL:OGS
+          bndintersect(7)=bnd_y1(max(1,i-1),klev)                       !--- CL:OGS
+          bndintersect(6)=bnd_x2(max(1,i-1),klev)                       !--- CL:OGS
+          bndintersect(8)=bnd_y2(max(1,i-1),klev)                       !--- CL:OGS
 
-          bndintersect( 9)=bnd_x(1,min(nbounds(klev),i+1),klev)           !--- CL:OGS
-          bndintersect(11)=bnd_y(1,min(nbounds(klev),i+1),klev)           !--- CL:OGS
-          bndintersect(10)=bnd_x(2,min(nbounds(klev),i+1),klev)           !--- CL:OGS
-          bndintersect(12)=bnd_y(2,min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect( 9)=bnd_x1(min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect(11)=bnd_y1(min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect(10)=bnd_x2(min(nbounds(klev),i+1),klev)           !--- CL:OGS
+          bndintersect(12)=bnd_y2(min(nbounds(klev),i+1),klev)           !--- CL:OGS
 
 
     endif
@@ -3190,7 +3198,7 @@ SUBROUTINE finBoundary()
   DEALLOCATE(bnum)
   DEALLOCATE(hid,hx,hy)
   DEALLOCATE(mid,bx,by)
-  DEALLOCATE(bnd_x,bnd_y)
+  DEALLOCATE(bnd_x1,bnd_x2,bnd_y1,bnd_y2)
   DEALLOCATE(land)
   DEALLOCATE(nbounds)
   DEALLOCATE(tot_mbnd_pts)

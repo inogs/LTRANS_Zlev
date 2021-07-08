@@ -8700,13 +8700,15 @@ CONTAINS
    !*********************************************************
    !*                     setbounds                         *
    !*********************************************************
-  SUBROUTINE setbounds(nbmax,us_tmp,nbounds_tmp,bndxtmp,bndytmp)
+  SUBROUTINE setbounds(nbmax,us_tmp,nbounds_tmp,bndx1tmp,bndx2tmp,bndy1tmp,bndy2tmp)
    USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,Zgrid,BndOut
    IMPLICIT NONE
    INTEGER,INTENT(IN):: nbmax,us_tmp
    INTEGER, INTENT(IN):: nbounds_tmp(us_tmp)
-   DOUBLE PRECISION, INTENT(IN):: bndxtmp(2,nbmax,us_tmp), &
-                                  bndytmp(2,nbmax,us_tmp)
+   DOUBLE PRECISION, INTENT(IN):: bndx1tmp(nbmax,us_tmp), &
+                                  bndx2tmp(nbmax,us_tmp), &
+                                  bndy1tmp(nbmax,us_tmp), &
+                                  bndy2tmp(nbmax,us_tmp)
    INTEGER :: ff,i
      write(*,*)'setting bounds in hydrodynamic module'
     if(BndOut) write(*,*)'nbmax,us_tmp=',nbmax,us_tmp,nbounds_tmp
@@ -8729,10 +8731,12 @@ CONTAINS
       if(BndOut)write(*,*)'allocation ok' 
       nbounds(:)=nbounds_tmp(:)
       if(BndOut)write(*,*)'nbounds ok'
-      bnd_x(:,:,:)=bndxtmp(:,:,:)
+      bnd_x(1,:,:)=bndx1tmp(:,:)
+      bnd_x(2,:,:)=bndx2tmp(:,:)
       if(BndOut)write(*,*)'bnd_x ok'
       if(BndOut)write(*,*)'bnd_x ok'
-      bnd_y(:,:,:)=bndytmp(:,:,:)
+      bnd_y(1,:,:)=bndy1tmp(:,:)
+      bnd_y(2,:,:)=bndy2tmp(:,:)
       if(BndOut)write(*,*)'bnd_y ok'
      write(*,*)'bounds copied in hydrodynamic module'
 
