@@ -2599,10 +2599,11 @@ END SUBROUTINE getNext
     LOGICAL, OPTIONAL, INTENT(OUT) :: isWater
     INTEGER :: i,intersect,skipboundi
     DOUBLE PRECISION :: crossk,dPBC,mBCperp,rx1,rx2,ry1,ry2,Bp,distBC,dist1,   &
-      dist2,intersctx,interscty,rPxyzX,rPxyzY,Mbc,Bbc,Mp,bcx1,bcy1,bcx2,bcy2,  &
+      dist2,intersctx,interscty,rPxyzX,rPxyzY,Mbc,Bbc,Mp,bcx1,bcx2,bcy1,bcy2,  &
       bBCperp,xhigh,xlow,yhigh,ylow,d_Pinter,dtest,bxhigh,bxlow,byhigh,bylow
-    DOUBLE PRECISION :: bndintersect(12),mindist,dist      !--- CL:OGS
+    DOUBLE PRECISION :: bndintersect(12),mindist     !--- CL:OGS
     INTEGER:: closerbound                                 !--- CL:OGS
+    DOUBLE PRECISION :: bcx1_array(nbounds(klev)),bcx2_array(nbounds(klev)),bcy1_array(nbounds(klev)),bcy2_array(nbounds(klev)),dist(nbounds(klev)) 
      
     distBC=0.0
     Mbc = 0.0
@@ -2637,22 +2638,26 @@ END SUBROUTINE getNext
       ylow = Ypos
     endif
 
+    bcx1_array=bnd_x(1,:,klev)
+    bcx2_array=bnd_x(2,:,klev)
+    bcy1_array=bnd_y(1,:,klev)
+    bcy2_array=bnd_y(2,:,klev)
+    dist=    sqrt((bcx1- Xpos)**2+(bcy1- Ypos)**2) 
+    dist=min(sqrt((bcx2- Xpos)**2+(bcy2- Ypos)**2),dist)
+    dist=min(sqrt((bcx2-nXpos)**2+(bcy2-nYpos)**2),dist)
+
     do i=1,nbounds(klev)
 
       if (i == skipbound) cycle
 
         intersect = 0
-        bcx1=bnd_x(1,i,klev)
-        bcy1=bnd_y(1,i,klev)
-        bcx2=bnd_x(2,i,klev)
-        bcy2=bnd_y(2,i,klev)
-        dist=    sqrt((bcx1- Xpos)**2+(bcy1- Ypos)**2) 
-        dist=min(sqrt((bcx2- Xpos)**2+(bcy2- Ypos)**2),dist)
-        dist=min(sqrt((bcx2-nXpos)**2+(bcy2-nYpos)**2),dist)
-        dist=min(sqrt((bcx2-nXpos)**2+(bcy2-nYpos)**2),dist)
-        if( (mindist>dist))then
+        bcx1=bcx1_array(i)
+        bcx2=bcx2_array(i)
+        bcy1=bcy1_array(i)
+        bcy2=bcy2_array(i)
+        if( (mindist>dist(i)))then
             closerbound=i
-            mindist=dist
+            mindist=dist(i)
        endif
 
         !If the boundary segment end points are both east, west, north, or 
