@@ -899,7 +899,7 @@ contains
     use param_mod, only: dt,idt,WriteModelTiming,                     & 
                         numdigits,suffix,numpar,                     & !--- CL-OGS 
                         OpenOceanBoundary, mortality,                & !--- CL-OGS 
-                        settlementon,Ext0,WriteParfile,VTurbOn          !--- CL-OGS 
+                        settlementon,Ext0,WriteParfile,VTurbOn,StrandingDist          !--- CL-OGS 
     use convert_mod, only: x2lon,y2lat                                  !--- CL-OGS   
     use hydro_mod, only: updateHydro,                                 &
                         filenm                                          !--- CL-OGS 
@@ -1063,7 +1063,7 @@ contains
 
   subroutine fin_LTRANS()
     use param_mod, only: numpar,writeCSV,outpathGiven,outpath,settlementon, & 
-                         NCOutFile,Behavior,OutDir                           !--- CL-OGS
+                         NCOutFile,Behavior,OutDir,StrandingDist                           !--- CL-OGS
     use behavior_mod, only: finBehave,getStatus
     use convert_mod, only: x2lon,y2lat
     use hydro_mod, only: finHydro
