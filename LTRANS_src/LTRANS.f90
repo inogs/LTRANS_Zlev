@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 !
 ! LTRANS-Zlev version 0(beta)
 !
