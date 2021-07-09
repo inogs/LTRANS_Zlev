@@ -597,15 +597,14 @@ CONTAINS
         endif
       endif
 
-    if(abs(P_age) >= settletime(n)                       &
-     .and.(P_depth+abs(strandingmaxdistfromdepth)>=Pz    &
-     .and.  Pz>=-abs(strandingmaxdepth))        )then 
-      if (inpoly .GT. 0 .or. (OilOn.and.StrandingDist>=0)) then
-        if(StrandingDist.le.0) then
+    if( (inpoly .GT. 0) .and. &
+      ( (abs(P_age) >= settletime(n)) .and.(P_depth+abs(strandingmaxdistfromdepth)>=Pz )  ) )then 
+      if (.not.OilOn .and. StrandingDist<0) then
             settle(n) = .TRUE.       ! If (StrandingDist=0) n can settle   
-        elseif(StrandingDist>=0)then! If (StrandingDist>0) n can strand
+      elseif(StrandingDist>0)then! If (StrandingDist>0) n can strand
             if(coastdist<=StrandingDist)   stranded(n)=.TRUE.
-        endif
+      elseif(StrandingDist==0 .and. abs(coastdist)<0.5)then! If (StrandingDist>0) n can strand
+            stranded(n)=.TRUE.
       endif
 
     endif

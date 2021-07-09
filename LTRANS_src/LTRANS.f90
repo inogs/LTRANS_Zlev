@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 !
 ! LTRANS-Zlev version 0(beta)
 !
@@ -338,7 +339,7 @@ contains
     
     IF( StrandingDist>=0 .and. (.not.settlementon ))then
       write(*,*)'error StrandingDist>=0 .and. (.not.settlementon )'
-      stop 'set sellementon to True or StrandingDist<0'
+      stop 'set settlementon to True or StrandingDist<0'
     ENDIF
     IF( StrandingDist>=0 .or. Write_coastdist )  then
       ALLOCATE(P_coastdist(numpar))
@@ -448,7 +449,7 @@ contains
 !        ***** END IMIOM *****
 
             do n=1,numpar
-              if(settlementon)then
+              if(settlementon .and.  StrandingDist<0)then
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n) 
               else
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB)
@@ -950,7 +951,7 @@ contains
       
         do n=1,numpar
           if( (.not.isOut(n)) .and. (.not.isDead(n)))then
-            if(settlementon)then
+            if(settlementon .and.  StrandingDist<0)then
               write(1,"(3(F18.7,','),2(i13,','),i20)") x2lon(par(n,pX),par(n,pY)),y2lat(par(n,pY)),par(n,pZ), &
                          int(max(par(n,pDOB)-ix(2),0.0)),startpoly(n),n
             else
@@ -1099,7 +1100,7 @@ contains
           pLon = x2lon(par(n,pX),par(n,pY))
           pLat = y2lat(par(n,pY))
           par(n,pStatus) = getStatus(n)
-          if(settlementon)then
+          if(settlementon .and.  StrandingDist<0)then
             write(333,3) startpoly(n),endpoly(n),int(par(n,pStatus)),pLat,pLon,  &
                        int(par(n,pLifespan))
           else
