@@ -2113,6 +2113,7 @@ contains
         par(n,pStatus) = 2
         call p_Stranding(n) ! Apply stranding in "is_Stranded"
         private_Average_Numpart(ID_STRANDED) =private_Average_Numpart(ID_STRANDED) + 1
+        par(n,pStatus) = - 99999
         exit
        ELSE
         if(OpenOceanBoundary .AND. isWater)then
