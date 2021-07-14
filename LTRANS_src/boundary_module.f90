@@ -2557,10 +2557,10 @@ END SUBROUTINE getNext
         !    If not, deallocate isbnds and repeat for all remaining islands
         if(endIsle)then
           islpts = i - start
-          ALLOCATE(isbnds(islpts,2))
+          ALLOCATE(isbnds(2,islpts))
           do j=1,islpts
-            isbnds(j,1) = hx(start+j,klev)
-            isbnds(j,2) = hy(start+j,klev)
+            isbnds(1,j) = hx(start+j,klev)
+            isbnds(2,j) = hy(start+j,klev)
           enddo
 
           if(inpoly(clongx,claty,islpts,isbnds))then

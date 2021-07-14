@@ -413,10 +413,10 @@ CONTAINS
           !if the element edge points are in range:
           if(check)then
             !allocate poly to contain the current habitat polygon edge points
-            ALLOCATE(poly(polyspecs(nint(polys(j,1)),2),2))
+            ALLOCATE(poly(2,polyspecs(nint(polys(j,1)),2)))
             do k=1,polyspecs(nint(polys(j,1)),2)
-              poly(k,1) = polys(polyspecs(nint(polys(j,1)),1)+k-1,4)
-              poly(k,2) = polys(polyspecs(nint(polys(j,1)),1)+k-1,5)
+              poly(1,k) = polys(polyspecs(nint(polys(j,1)),1)+k-1,4)
+              poly(2,k) = polys(polyspecs(nint(polys(j,1)),1)+k-1,5)
             enddo
             !check if any of the four element edge points are in the polygon
             do k=1,4
@@ -647,10 +647,10 @@ CONTAINS
 
         !allocate polybnds and fill it with the boundary point locations of 
         !  the current habitat polygon
-        ALLOCATE(polybnds(size,2))
+        ALLOCATE(polybnds(2,size))
         do j=1,size
-          polybnds(j,1) = polys(start + j - 1, 4)
-          polybnds(j,2) = polys(start + j - 1, 5)
+          polybnds(1,j) = polys(start + j - 1, 4)
+          polybnds(2,j) = polys(start + j - 1, 5)
         enddo
         ! call inpoly to see if the point is in the polygon
         if(inpoly(Px,Py,size,polybnds))then ! if it is in the polygon:
@@ -695,10 +695,10 @@ CONTAINS
 
         !allocate polybnds and fill it with the boundary point locations of 
         !  the current hole
-        ALLOCATE(polybnds(size,2))
+        ALLOCATE(polybnds(2,size))
         do j=1,size
-          polybnds(j,1) = Holes(start + j - 1, 4)
-          polybnds(j,2) = Holes(start + j - 1, 5)
+          polybnds(1,j) = Holes(start + j - 1, 4)
+          polybnds(2,j) = Holes(start + j - 1, 5)
         enddo
 
         ! call inpoly to see if the point is in the hole
