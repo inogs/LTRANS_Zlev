@@ -339,7 +339,7 @@ contains
     
     IF( StrandingDist>=0 .and. (.not.settlementon ))then
       write(*,*)'error StrandingDist>=0 .and. (.not.settlementon )'
-      stop 'set sellementon to True or StrandingDist<0'
+      stop 'set settlementon to True or StrandingDist<0'
     ENDIF
     IF( StrandingDist>=0 .or. Write_coastdist )  then
       ALLOCATE(P_coastdist(numpar))
@@ -449,7 +449,7 @@ contains
 !        ***** END IMIOM *****
 
             do n=1,numpar
-              if(settlementon)then
+              if(settlementon .and.  StrandingDist<0)then
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n) 
               else
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB)
@@ -900,7 +900,7 @@ contains
     use param_mod, only: dt,idt,WriteModelTiming,                     & 
                         numdigits,suffix,numpar,                     & !--- CL-OGS 
                         OpenOceanBoundary, mortality,                & !--- CL-OGS 
-                        settlementon,Ext0,WriteParfile,VTurbOn          !--- CL-OGS 
+                        settlementon,Ext0,WriteParfile,VTurbOn,StrandingDist          !--- CL-OGS 
     use convert_mod, only: x2lon,y2lat                                  !--- CL-OGS   
     use hydro_mod, only: updateHydro,                                 &
                         filenm                                          !--- CL-OGS 
@@ -951,7 +951,7 @@ contains
       
         do n=1,numpar
           if( (.not.isOut(n)) .and. (.not.isDead(n)))then
-            if(settlementon)then
+            if(settlementon .and.  StrandingDist<0)then
               write(1,"(3(F18.7,','),2(i13,','),i20)") x2lon(par(n,pX),par(n,pY)),y2lat(par(n,pY)),par(n,pZ), &
                          int(max(par(n,pDOB)-ix(2),0.0)),startpoly(n),n
             else
@@ -1064,7 +1064,7 @@ contains
 
   subroutine fin_LTRANS()
     use param_mod, only: numpar,writeCSV,outpathGiven,outpath,settlementon, & 
-                         NCOutFile,Behavior,OutDir                           !--- CL-OGS
+                         NCOutFile,Behavior,OutDir,StrandingDist                           !--- CL-OGS
     use behavior_mod, only: finBehave,getStatus
     use convert_mod, only: x2lon,y2lat
     use hydro_mod, only: finHydro
@@ -1100,7 +1100,7 @@ contains
           pLon = x2lon(par(n,pX),par(n,pY))
           pLat = y2lat(par(n,pY))
           par(n,pStatus) = getStatus(n)
-          if(settlementon)then
+          if(settlementon .and.  StrandingDist<0)then
             write(333,3) startpoly(n),endpoly(n),int(par(n,pStatus)),pLat,pLon,  &
                        int(par(n,pLifespan))
           else
@@ -1564,10 +1564,8 @@ contains
               if(Wind)then
                       UWindDrift = 0.0
                       VWindDrift = 0.0
-                      if(Stokes)then
-                              UStokesDrift = 0.0
-                              VStokesDrift = 0.0
-                      end if
+                      UStokesDrift = 0.0
+                      VStokesDrift = 0.0
               end if
       !end if     
  
@@ -2118,6 +2116,7 @@ contains
         par(n,pStatus) = 2
         call p_Stranding(n) ! Apply stranding in "is_Stranded"
         private_Average_Numpart(ID_STRANDED) =private_Average_Numpart(ID_STRANDED) + 1
+        par(n,pStatus) = - 99999
         exit
        ELSE
         if(OpenOceanBoundary .AND. isWater)then
@@ -2554,7 +2553,11 @@ contains
           par(n,pLifespan) = par(n,pAge)
           ! When n is settled or stranded, color(n)= -99999:
           ! W hen n is settled or stranded, color(n)= -1*polynumber:
-          if(.not.OilOn ) par(n,pStatus) = - inpoly
+          if(.not.OilOn ) then 
+            par(n,pStatus) = - inpoly
+          else
+            par(n,pStatus) = - 99999
+          endif
           return
         endif
       endif
