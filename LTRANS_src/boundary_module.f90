@@ -2458,12 +2458,12 @@ END SUBROUTINE getNext
       if(endMbnd)then
         !WRITE(*,'(5(a,i8))')'klev=',klev,' main bnd ',Mbnd,' from i=',start+1,' ->',start+i,' /',tot_mbnd_pts(klev)
         bndpts = i - start
-        ALLOCATE(blatlon(bndpts,2))
+        ALLOCATE(blatlon(2,bndpts))
         !write(*,*)
         do j=1,bndpts
           !write(*,'(2(a,i8,a,f20.12))')'bx(',start+j,')=',bx(start+j,klev),',  by(',start+j,')=',by(start+j,klev)
-          blatlon(j,1) = bx(start+j,klev)
-          blatlon(j,2) = by(start+j,klev)
+          blatlon(1,j) = bx(start+j,klev)
+          blatlon(2,j) = by(start+j,klev)
         enddo
         if(inpoly(Xpos,Ypos,bndpts,blatlon)) then
           inbounds = 1

@@ -14,7 +14,7 @@ PUBLIC
 CONTAINS
 
   !Function inpoly returns .TRUE. if the point (x,y) lies within 
-  !  the polygon defined by the points in the variable e(n,2)
+  !  the polygon defined by the points in the variable e(2,n)
   !  It uses the point-in-polygon approach, shooting a ray out to the
   !  right of the point along the point's x coordinate, if an odd number 
   !  of boundaries are crossed then the point is in the polygon.
@@ -27,7 +27,7 @@ CONTAINS
   INTEGER, INTENT(in) :: n                  ! number of edge points in polygon
   LOGICAL, INTENT(in), OPTIONAL :: onin     ! define polygon edge as in or out
   DOUBLE PRECISION, INTENT(in) :: x,y, &    ! particle x & y location
-                                  e(n,2)    ! polygon edge coordinates  
+                                  e(2,n)    ! polygon edge coordinates  
 
   !Additional Variables
   INTEGER :: i,j,hilo(n),crossed
@@ -47,10 +47,10 @@ CONTAINS
   hilo=0        !initialize hilo to 0
   on=.false.    !initialize on to false, to indicate no edge points on the ray
   do i=1,n
-    if( e(i,2) > y ) hilo(i)=1                  !if above ray, set hilo to  1
-    if( e(i,2) < y ) hilo(i)=-1                 !if below ray, set hilo to -1
-    if( e(i,2) == y .and. e(i,1)>x) on=.true.   !if on ray, set on true
-    if( e(i,1)==x .and. e(i,2)==y)then          !if edge point on point:
+    if( e(2,i) > y ) hilo(i)=1                  !if above ray, set hilo to  1
+    if( e(2,i) < y ) hilo(i)=-1                 !if below ray, set hilo to -1
+    if( e(2,i) == y .and. e(1,i)>x) on=.true.   !if on ray, set on true
+    if( e(1,i)==x .and. e(2,i)==y)then          !if edge point on point:
       if(onout)inpoly=.false.                   ! if on means out inpoly=false
       return                                    ! return from function
     endif
@@ -67,7 +67,7 @@ CONTAINS
 
     do
       if(i>n)exit                           !if all boundaries checked, exit
-      if(hilo(i)==0 .and. e(i,1)>x)then     !if on ray:
+      if(hilo(i)==0 .and. e(1,i)>x)then     !if on ray:
 
         if(first)then                       !if first point:
           i=i+1                             !  increment i
@@ -91,7 +91,7 @@ CONTAINS
           if(hilo(i+j)/=0)exit      !if the boundary point is not on ray, exit
           !if the next boundary point not on the ray and shares the point's x
           !  coordinate, then the boundary crossed the point:
-          if(e(i+j,1)<x)then
+          if(e(1,i+j)<x)then
             if(onout)inpoly=.false.         !if on means out set inpoly false
             return                          !return from the function
           endif
@@ -123,18 +123,18 @@ CONTAINS
   do i=1,n-1
 
     !if both boundary points are left of the point, cycle
-    if(e(i,1)<=x .and. e(i+1,1)<=x)cycle
+    if(e(1,i)<=x .and. e(1,i+1)<=x)cycle
 
     !if both boundary points are below the point, cycle
-    if(e(i,2)<=y .and. e(i+1,2)<=y)cycle
+    if(e(2,i)<=y .and. e(2,i+1)<=y)cycle
 
     !if both boundary points are above the point, cycle
-    if(e(i,2)>=y .and. e(i+1,2)>=y)cycle
+    if(e(2,i)>=y .and. e(2,i+1)>=y)cycle
 
     !if both boundary points are to the right of the point, increment crossed
     !  and cycle (if they are not both above or both below, but are both
     !  right of, then it has to cross)
-    if(e(i,1)> x .and. e(i+1,1)> x)then
+    if(e(1,i)> x .and. e(1,i+1)> x)then
       crossed=crossed+1
       cycle
     endif
@@ -146,8 +146,8 @@ CONTAINS
     !  with the boundary line must be calculated using the y coordinate of the 
     !  point:
 
-    m=  (e(i+1,2)-e(i,2))/(e(i+1,1)-e(i,1)) !slope
-    b=  e(i,2)-m*e(i,1)                     !intercept
+    m=  (e(2,i+1)-e(2,i))/(e(1,i+1)-e(1,i)) !slope
+    b=  e(2,i)-m*e(1,i)                     !intercept
     ix= (y-b)/m                             !ix = intersection point
 
     if(ix==x)then                           !if x is on the intersection point:
