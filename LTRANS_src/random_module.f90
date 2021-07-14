@@ -182,14 +182,14 @@ CONTAINS
     !$ use OMP_LIB                     ! CL-OGS :: for OMP   
     INTEGER :: y,kk
     INTEGER :: rank                    ! CL-OGS :: for OMP 
-    rank=0                             ! CL-OGS :: for OMP 
-    !$ rank=OMP_GET_THREAD_NUM ()      ! CL-OGS :: for OMP 
+    rank=1                             ! CL-OGS :: for OMP 
+    !$ rank=OMP_GET_THREAD_NUM () +1   ! CL-OGS :: for OMP 
     !write(*,*)'in random module rank is ',rank    
     if(initialized.ne.DONE)then
       CALL init_genrand(21641)
     endif
     
-    if(mti_threadprivate(rank+1).ge.N)then                ! CL-OGS :: for OMP
+    if(mti_threadprivate(rank).ge.N)then                ! CL-OGS :: for OMP
       do kk=0,N-M-1
         y=ior(iand(mt(kk),UPPER_MASK),iand(mt(kk+1),LOWER_MASK))
         mt(kk)=ieor(ieor(mt(kk+M),ishft(y,-1)),mag01(iand(y,1)))
@@ -200,11 +200,11 @@ CONTAINS
       enddo
       y=ior(iand(mt(N-1),UPPER_MASK),iand(mt(0),LOWER_MASK))
       mt(kk)=ieor(ieor(mt(M-1),ishft(y,-1)),mag01(iand(y,1)))
-      mti_threadprivate(rank+1)=0
+      mti_threadprivate(rank)=0
     endif
 
-    y=mt(mti_threadprivate(rank+1))                       ! CL-OGS :: for OMP
-    mti_threadprivate(rank+1)=mti_threadprivate(rank+1)+1 ! CL-OGS :: for OMP
+    y=mt(mti_threadprivate(rank))                       ! CL-OGS :: for OMP
+    mti_threadprivate(rank)=mti_threadprivate(rank)+1 ! CL-OGS :: for OMP
 
     y=ieor(y,ishft(y,-11))
     y=ieor(y,iand(ishft(y,7),T1_MASK))

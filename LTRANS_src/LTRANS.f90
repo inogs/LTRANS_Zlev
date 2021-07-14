@@ -1561,10 +1561,8 @@ contains
               if(Wind)then
                       UWindDrift = 0.0
                       VWindDrift = 0.0
-                      if(Stokes)then
-                              UStokesDrift = 0.0
-                              VStokesDrift = 0.0
-                      end if
+                      UStokesDrift = 0.0
+                      VStokesDrift = 0.0
               end if
       !end if     
  
@@ -2551,7 +2549,11 @@ contains
           par(n,pLifespan) = par(n,pAge)
           ! When n is settled or stranded, color(n)= -99999:
           ! W hen n is settled or stranded, color(n)= -1*polynumber:
-          if(.not.OilOn ) par(n,pStatus) = - inpoly
+          if(.not.OilOn ) then 
+            par(n,pStatus) = - inpoly
+          else
+            par(n,pStatus) = - 99999
+          endif
           return
         endif
       endif

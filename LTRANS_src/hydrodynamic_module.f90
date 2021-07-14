@@ -1622,12 +1622,6 @@ CONTAINS
                    ' and recordnum=',recordnum
         stop
     endif
-    if  (tdim.ne.0 .and. tdim-recordnum>int( (days*86400.0)/float(dt) ) ) then
-        write(*,*) 'error inconsistency between tdim=',tdim,                   &
-                   ' tdim-recordnum=',tdim-recordnum,                          &
-              ' > (days*86400.0)/dt=',int( (days*86400.0)/float(dt) )
-        stop
-    endif
    
     if (tdim==1)then ! each of the three timestep are in different files
       nfmax=3
@@ -5067,6 +5061,7 @@ CONTAINS
     USE PARAM_MOD, ONLY: numpar,ui,vi,us,ws,vj,uj,Zgrid 
     USE GRIDCELL_MOD, ONLY: gridcell
     USE CONVERT_MOD, ONLY: x2lon,y2lat
+    !$ use OMP_LIB          
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: Xpar,Ypar,Zpar
     INTEGER, INTENT(IN) :: n,num,it
@@ -5076,6 +5071,9 @@ CONTAINS
     LOGICAL :: fst,same_vertical_level
     INTEGER :: i,triangle,checkele,P_r_ele,P_u_ele,P_v_ele,oP_ele,P_ele,error,k
     INTEGER :: updatednode ,j,err_in
+    INTEGER :: rank
+     rank=1
+     !$ rank=OMP_GET_THREAD_NUM () +1
     err_in=0
     if(PRESENT(err)) then
        err_in= err
@@ -5152,7 +5150,7 @@ CONTAINS
     endif 
 
      IF(P_r_element(n).eq.0.or.P_u_element(n).eq.0.or.P_v_element(n).eq.0)then
-      write(*,*)'----------------------------------------------------------'
+     write(*,*)'----------------------------------------------------------'
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -5174,6 +5172,7 @@ CONTAINS
       fst=.True. 
     ENDIF
 
+    !--------------Find r element in which particle is located------------------
     IF(.not.fst)THEN !if not the first iteration 
       !Find rho element in which particle is located
       oP_ele = P_r_element(n)
@@ -5210,9 +5209,27 @@ CONTAINS
       ' ->',Zpar,&
       ' ; ',P_klev_old(n), &
       ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
-      ' ) Failed to find neighbor Relement'
+      ' ) Failed to find neighbor Relement, now searching among all elements'
       endif
-      !Find u element in which particle is located
+    ENDIF
+
+    IF(fst.or.(error.ne.0)) then !if the first iteration
+      error=0
+      !Find rho element in which particle is located
+      P_r_ele=0
+      triangle=0
+      call gridcell(rho_kwele(k),r_kwele_y(1,1,k),                &
+            r_kwele_x(1,1,k),Xpar,Ypar,P_r_ele,triangle)
+      if(triangle .NE. 0) then
+          P_r_element(n) = P_r_ele
+      else
+          error = 1
+      endif
+      if(error==1)write(*,*)'setEle failed to find containing Rele searching among all elements'
+    ENDIF
+
+    !--------------Find u element in which particle is located------------------
+    IF(.not.fst)THEN !if not the first iteration 
       oP_ele = P_u_element(n)
       do i=1,10
         triangle = 0
@@ -5231,7 +5248,6 @@ CONTAINS
 
 
       if (error.eq.5 .and. same_vertical_level)then
-
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -5249,10 +5265,27 @@ CONTAINS
       ' ->',Zpar,&
       ' ; ',P_klev_old(n), &
       ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
-      ' ) Failed to find neighbor Uelement'
+      ' ) Failed to find neighbor Uelement, now searching among all elements'
       endif
- 
-      !Find v element in which particle is located
+    ENDIF
+
+    IF(fst.or.(error.ne.0)) then !if the first iteration
+      error=0
+      P_u_ele=0
+      triangle=0
+      call gridcell(u_kwele(k),u_kwele_y(1,1,k),                    &
+                    u_kwele_x(1,1,k),                               &
+                    Xpar,Ypar,P_u_ele,triangle)
+      if(triangle .NE. 0) then
+          P_u_element(n) = P_u_ele
+      else
+          error = 2
+      endif
+      if(error==2)write(*,*)'setEle failed to find containing Uele searching among all elements'
+    ENDIF
+
+    !--------------Find v element in which particle is located------------------
+    IF(.not.fst)THEN !if not the first iteration 
       oP_ele = P_v_element(n)
       do i=1,10
         triangle = 0
@@ -5287,62 +5320,29 @@ CONTAINS
       ' ->',Zpar,&
       ' ; ',P_klev_old(n), &
       ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
-      ' ) Failed to find neighbor Velement'
+      ' ) Failed to find neighbor Velement, now searching among all elements'
       endif
-
- 
-    ENDIF ! !if not the first iteration
+    ENDIF
 
     IF(fst.or.(error.ne.0)) then !if the first iteration
-      if(same_vertical_level) then
-     write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
-      'setEle warning it=',it,' at call num',num,' for part ',n, &
-      ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
-      ' ->',Xpar,&
-      ' ;',Ypar_at_setEle(n),&
-      ' ->',Ypar,&
-      ' ; ',Zpar_at_setEle(n),&
-      ' ->',Zpar, &
-      ' ) ; P_r,u,v=(',P_r_element(n),' ->',P_r_ele,' ; ',P_u_element(n),' ->',P_u_ele,' ; ',P_v_element(n),' ->',P_v_ele, &
-      ' ) lon,lat,depth,k=( ',x2lon(Xpar_at_setEle(n),Ypar_at_setEle(n)), &
-      ' ->',x2lon(Xpar,Ypar),  &
-      ' ; ',y2lat(Ypar_at_setEle(n)),&
-      ' ->',y2lat(Ypar),&
-      ' ; ', Zpar_at_setEle(n),&
-      ' ->',Zpar,&
-      ' ; ',P_klev_old(n), &
-      ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
-      ' ) k lev is unchanged, now searching among all elements'
-      !else
-      !write(*,*)'Searching containing elements among all elements ',&
-      !          ' because particle change of vertical level'
-      endif
-      !write(*,*)'Searching among all elements'
       error=0
-      !Find rho element in which particle is located
-      P_r_ele=0
-      triangle=0
-      call gridcell(rho_kwele(k),r_kwele_y(1,1,k),                &
-            r_kwele_x(1,1,k),Xpar,Ypar,P_r_ele,triangle)
-      if (triangle.EQ.0) error = 1
-
-      !Find u element in which particle is located
-      P_u_ele=0
-      triangle=0
-      call gridcell(u_kwele(k),u_kwele_y(1,1,k),                    &
-                    u_kwele_x(1,1,k),                               &
-                    Xpar,Ypar,P_u_ele,triangle)
-      if (triangle.EQ.0) error = 2
-
-      !Find v element in which particle is located
       P_v_ele=0
       triangle=0
       call gridcell(v_kwele(k),v_kwele_y(1,1,k),                    &
                      v_kwele_x(1,1,k),                              &
                      Xpar,Ypar,P_v_ele,triangle)
-      if (triangle.EQ.0) error = 3
-      if(error>0)then
-        write(*,*)'-------------------------------'
+      if(triangle .NE. 0) then
+          P_v_element(n) = P_v_ele
+      else
+          error = 3
+      endif
+      if(error==3)write(*,*)'setEle failed to find containing Vele searching among all elements'
+    ENDIF
+
+    ! Done searching in r u and v elements.
+
+    IF(error>0)then
+     write(*,*)'-------------------------------'
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -5361,40 +5361,10 @@ CONTAINS
       ' ; ',P_klev_old(n), &
       ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
       ') Searching containing elements among all elements failed'
-     !else
-     !  write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
-     !  'setEle warning it=',it,' at call num',num,' for part ',n, &
-     !  ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
-     !  ' ->',Xpar,&
-     !  ' ;',Ypar_at_setEle(n),&
-     !  ' ->',Ypar,&
-     !  ' ; ',Zpar_at_setEle(n),&
-     !  ' ->',Zpar, &
-     !  ' ) ; P_r,u,v=(',P_r_element(n),' ->',P_r_ele,' ; ',P_u_element(n),' ->',P_u_ele,' ; ',P_v_element(n),' ->',P_v_ele, &
-     !  ' ) lon,lat,depth,k=( ',x2lon(Xpar_at_setEle(n),Ypar_at_setEle(n)), &
-     !  ' ->',x2lon(Xpar,Ypar),  &
-     !  ' ; ',y2lat(Ypar_at_setEle(n)),&
-     !  ' ->',y2lat(Ypar),&
-     !  ' ; ', Zpar_at_setEle(n),&
-     !  ' ->',Zpar,&
-     !  ' ; ',P_klev_old(n), &
-     !  ' ->',k,' ) and triangle,error=(',triangle,' ; ',error, &
-     !  '). Searching among all elements succeded'
-     !   P_r_element(n)=P_r_ele
-     !   P_u_element(n)=P_u_ele
-     !   P_v_element(n)=P_v_ele
-     !  if(same_vertical_level) then
-     !    write(*,*)'Reason could be a transgression of the CFL condition try decreasing idt'
-     !  else
-     !    write(*,*)'Most probably the change of vertical level caused it.'
-     !  endif
-      endif
-    !ELSE
-    !  write(*,*)'Found in neighbor elements'
-    ENDIF ! if fst
+      ENDIF
 
     if(num.ne.2 .and. &
-    (P_r_element(n)==0 .or. P_v_element(n)==0 .or. P_u_element(n)==0) )then
+    (P_r_element(n)<=0 .or. P_v_element(n)<=0 .or. P_u_element(n)<=0) )then
      if(error.eq.0) error=7
      write(*,*)'----------------------------------------------------------'
      write(*,'(a,i2)')'error while ending setEle call num ',num
@@ -5415,7 +5385,6 @@ CONTAINS
     endif
 
     If(error==0)then
-    P_klev_old(n)=k
     ! Check that nodes are among the range of hydro nodes updated :
       do i=1,4
           updatednode=0
@@ -5474,21 +5443,8 @@ CONTAINS
             if(error==0) error=-3
           endif
       enddo
+
       !Assign node numbers for rho,u,v calculations
-     !rnode1 = RE(1,P_r_element(n),k)
-     !rnode2 = RE(2,P_r_element(n),k)
-     !rnode3 = RE(3,P_r_element(n),k)
-     !rnode4 = RE(4,P_r_element(n),k)
-     
-     !unode1 = UE(1,P_u_element(n),k)
-     !unode2 = UE(2,P_u_element(n),k)
-     !unode3 = UE(3,P_u_element(n),k)
-     !unode4 = UE(4,P_u_element(n),k)
-     
-     !vnode1 = VE(1,P_v_element(n),k)
-     !vnode2 = VE(2,P_v_element(n),k)
-     !vnode3 = VE(3,P_v_element(n),k)
-     !vnode4 = VE(4,P_v_element(n),k)
       call setRnode(n)
       Xpar_at_setEle(n)=Xpar
       Ypar_at_setEle(n)=Ypar
@@ -5499,6 +5455,7 @@ CONTAINS
     if(PRESENT(err))then
             err = error
     endif
+    P_klev_old(n)=k
 
   END SUBROUTINE setEle
 
