@@ -5934,7 +5934,7 @@ CONTAINS
     !  the hydrodynamic variables that have been read in
 
     !$ use OMP_LIB
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: xp,yp

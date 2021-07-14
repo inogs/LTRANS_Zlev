@@ -268,7 +268,7 @@ CONTAINS
 
     USE HYDRO_MOD, ONLY: WCTS_ITPI
     USE RANDOM_MOD, ONLY: genrand_real1
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: daytime

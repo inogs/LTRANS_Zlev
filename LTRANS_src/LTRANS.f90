@@ -257,7 +257,7 @@ contains
     use oil_mod, only: InitOilModel,OilModel
     use tension_mod, only : initTensionModule
     use settlement_mod, only :  get_NumPoly,get_IDPoly
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     double precision :: pDep,P_depth
@@ -1287,7 +1287,7 @@ contains
 
     !$ use OMP_LIB
 
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
 
     IMPLICIT NONE
 
@@ -2595,7 +2595,7 @@ contains
     USE HYDRO_MOD,  ONLY: WCTS_ITPI,setInterp,getInterp
     USE TENSION_MOD, ONLY: TSPSI,HVAL
     USE INT_MOD,    ONLY: linint,polintd
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p,version,kwBotLvl,n
@@ -2863,7 +2863,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     !  location in space and time
     USE HYDRO_MOD,  ONLY: setInterp,getInterp
     USE INT_MOD,    ONLY: linint,polintd
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p,version,n
@@ -3796,7 +3796,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     use behavior_mod, only: die,isOut,isDead
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER :: i,deplvl,n
@@ -3881,7 +3881,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     use behavior_mod, only: die,isOut,isDead
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER :: i,deplvl,n
@@ -4029,7 +4029,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     use behavior_mod, only: die,isOut,isDead
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
 
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER :: i,deplvl,n

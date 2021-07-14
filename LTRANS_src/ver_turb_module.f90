@@ -34,7 +34,7 @@ CONTAINS
     USE INT_MOD,    ONLY: linint,polintd
     USE NORM_MOD,   ONLY: norm
     USE TENSION_MOD, ONLY: TSPSI,HVAL,HPVAL
-#INCLUDE 'VAR_IDs.h'
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p
