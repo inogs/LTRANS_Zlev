@@ -1027,7 +1027,7 @@ contains
       !**********************************************************************
       !*     Irish Marine Institute Oil Model                               *
       !**********************************************************************
-      if(OilOn .and.Average_Numpart(ID_ALIVE)>0)then
+      if(OilOn)then
        !write(*,*)'call Oil, AvWind,Angle,Temp=',sqrt(Average_Value(ID_U_WIND)**2+Average_Value(ID_V_WIND)**2), &
        !    Angle_wrtEast(Average_Value(ID_U_WIND),Average_Value(ID_V_WIND)),Average_Value(ID_TEMP),Average_Numpart(ID_U_WIND),Average_Numpart(ID_TEMP)
        Average_Numpart(ID_ALIVE)       = Average_Numpart(ID_ALIVE) - Average_Numpart(ID_STRANDED)            !no of particles left in simulation

@@ -186,6 +186,8 @@ MODULE OIL_MOD
            WaterTempInst =TempInst 
         endif
 
+       IF((nParWater+nParStranding)>0)THEN
+
         IF(SPILLSTARTED.eqv..False. .and. oil_time >= TIMESPILLSTARTS) THEN
            
            ! write(*,*)'CALLING EMISSION'
@@ -295,9 +297,11 @@ MODULE OIL_MOD
              FirstAP         = .false.                                    ! OGS:added from old oiltrans version 
 
         END IF
-        if(mod(oil_time,iprint)==0) call WriteOilOutputs() ! Added by OGS for LTRANS-Zlev
 
-        iT = iT + 1                                             !increment timestep counter
+       END IF !  IF((nParWater+nParStranding)>0)THEN
+       if(mod(oil_time,iprint)==0) call WriteOilOutputs() ! Added by OGS for LTRANS-Zlev
+
+       iT = iT + 1                                             !increment timestep counter
     END SUBROUTINE OilModel
 
       !*****************************************
