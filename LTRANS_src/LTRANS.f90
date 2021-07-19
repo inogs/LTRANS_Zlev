@@ -438,7 +438,7 @@ contains
                         par(m,ppX) = par(m,pX)  !0.0                                                                                            !initialize to 0.0 to indicate no previous location
                         par(m,ppY) = par(m,pY)  !0.0                                                                                            !initialize to 0.0 to indicate no previous location
                         par(m,ppZ) = par(m,pZ)  !0.0                                                                                            !initialize to 0.0 to indicate no previous location
-                        par(m,pStatus)   = 1                                                                                        !floating oil
+                        par(m,pStatus)   = 0                                                                                        !floating oil
                         par(m,pAge)      = 0.0
 !                        par(m,pDOB)      = pTS(n)                                                                                !set particle DoB to Time of Spill (pTS)
                         par(m,pDOB)      = pTS                                                                                        !set particle DoB to Time of Spill (pTS)
@@ -1078,6 +1078,7 @@ contains
     integer :: n,d,h,m,ios
     real :: fintime,s
     double precision :: pLon,pLat
+    double precision :: default_stat
     open (unit = fpy,file = TRIM(OutDir)//'/'//TRIM(NCOutFile)//               &
                          'PartErrors'//'.py',POSITION='APPEND')
     write(fpy,'(a)')'#plt.show()'
@@ -1099,7 +1100,8 @@ contains
         do n=1,numpar
           pLon = x2lon(par(n,pX),par(n,pY))
           pLat = y2lat(par(n,pY))
-          par(n,pStatus) = getStatus(n)
+          default_stat=par(n,pStatus)
+          par(n,pStatus) = getStatus(n,default_stat)
           if(settlementon .and.  StrandingDist<0)then
             write(333,3) startpoly(n),endpoly(n),int(par(n,pStatus)),pLat,pLon,  &
                        int(par(n,pLifespan))
@@ -1409,8 +1411,10 @@ contains
 
       !IMIOM
       if(OilOn)then
-          if(par(n,pStatus) == 2) then
+          if(par(n,pStatus) == -2) then
               return                               !if stranded
+         else
+            par(n,pStatus)   = 1          !floating oil
         end if
       end if
       !END IMIOM
@@ -2116,7 +2120,6 @@ contains
         par(n,pStatus) = 2
         call p_Stranding(n) ! Apply stranding in "is_Stranded"
         private_Average_Numpart(ID_STRANDED) =private_Average_Numpart(ID_STRANDED) + 1
-        par(n,pStatus) = - 99999
         exit
        ELSE
         if(OpenOceanBoundary .AND. isWater)then
@@ -2176,7 +2179,7 @@ contains
        CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,2,ele_err)
        nklev=getKRlevel(newZpos)
        if(ele_err.ne.0)then
-        IF(OilOn.and. par(n,pStatus) ==2)then
+        IF(OilOn)then
           do posfactor=8,0,-1
             newXpos = Xpos+(fintersectX-Xpos)*posfactor/10.0 
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
@@ -2226,7 +2229,7 @@ contains
        conflict_tmp=1
        call getDepth(newXpos,newYpos,n,it,nP_depth,Fstlev,conflict_tmp)
         If(Fstlev>us)then                                    
-         if(OilOn.and. par(n,pStatus) ==2)then
+         if(OilOn)then
           do posfactor=8,0,-1
             newXpos = Xpos+(fintersectX-Xpos)*posfactor/10.0 
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
@@ -2556,7 +2559,7 @@ contains
           if(.not.OilOn ) then 
             par(n,pStatus) = - inpoly
           else
-            par(n,pStatus) = - 99999
+            par(n,pStatus) = 2
           endif
           return
         endif
@@ -3061,7 +3064,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
   end subroutine printOutput
 
 
-  SUBROUTINE writeOutput(x,y,z,Page,PStatus,prcount,hitBottom,hitLand, &
+  SUBROUTINE writeOutput(x,y,z,Page,PStat,prcount,hitBottom,hitLand, &
                                       PSalt,PTemp,PCoDi,PPoly,PGrainSize,PSize)
     USE PARAM_MOD, ONLY: numpar,SaltTempOn,outpathGiven,outpath,writePARA,      &
                   writeNC,TrackCollisions,Behavior,Write_coastdist,storedincolor
@@ -3072,7 +3075,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     IMPLICIT NONE
 
     DOUBLE PRECISION, INTENT(IN) :: x(numpar),y(numpar),z(numpar),Page(numpar)
-    DOUBLE PRECISION, INTENT(INOUT) :: PStatus(numpar)
+    DOUBLE PRECISION, INTENT(INOUT) :: PStat(numpar)
     INTEGER         , INTENT(IN) :: prcount
     INTEGER, DIMENSION(numpar), INTENT(IN), OPTIONAL :: hitBottom,hitLand
     DOUBLE PRECISION, DIMENSION(numpar), INTENT(IN), OPTIONAL ::   &
@@ -3082,6 +3085,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     INTEGER :: n
     DOUBLE PRECISION :: statuses(numpar)
     double precision, dimension(numpar) :: pLon,pLat
+    double precision :: default_stat
 
     !INPUT/OUTPUT FILE NAME CONSTRUCTION VARIABLES
     CHARACTER(LEN=100) :: filenm2
@@ -3094,13 +3098,9 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     do n=1,numpar
       pLon(n) = x2lon(x(n),y(n))
       pLat(n) = y2lat(y(n))
-      statuses(n) = getStatus(n)
-      if(storedincolor==0) then
-      !if(abs(PStatus(n))>100)then     ! CL-OGS: BEUG: DIRTY IMPLEMENTATION
-        statuses(n)=PStatus(n)        
-        PStatus(n)=getStatus(n)       
-      endif                            
-      !if(statuses(n)>=0) statuses(n)=PStatus(n) 
+      default_stat= par(n,pStatus)
+      statuses(n) = getStatus(n,default_stat)
+      !if(statuses(n)>=0) statuses(n)=PStat(n) 
     enddo
 
     !if writing to .csv files:
@@ -3835,7 +3835,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == 2) cycle !stranded
+            if(par(n,pStatus) == -2) cycle !stranded
         end if
  
         Xpar = par(n,pX)
@@ -3920,7 +3920,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == 2) cycle !stranded
+            if(par(n,pStatus) == -2) cycle !stranded
         end if
  
         Xpar = par(n,pX)
@@ -4074,7 +4074,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == 2) cycle !stranded
+            if(par(n,pStatus) == -2) cycle !stranded
         end if
  
           Xpar = par(n,pX)

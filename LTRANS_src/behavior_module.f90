@@ -777,21 +777,27 @@ CONTAINS
   END SUBROUTINE behave
 
 
-  INTEGER FUNCTION getStatus(n)
+  INTEGER FUNCTION getStatus(n,default_status)
     !This function returns an identification number that describes a particle's  
     !behavior type or status for use in visualization routines. It was
     !initially developed to contain the color code for plotting in Surfer.)                
-    USE PARAM_MOD, ONLY: SETTLEMENTON,OPENOCEANBOUNDARY
-    USE SETTLEMENT_MOD, ONLY: isSettled
+    USE PARAM_MOD, ONLY: SETTLEMENTON,OPENOCEANBOUNDARY,OilOn
+    USE SETTLEMENT_MOD, ONLY: isSettled,isStranded
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: n
-
+    DOUBLE PRECISION, INTENT(IN) :: default_status
+    if(OilOn)then
+    getStatus = default_status
+    else
     getStatus = P_behave(n)          ! Set Status to behavior ID
+    endif
                                      ! Change if Dead, Settled, or OutOfBounds
+
 
     if(dead(n)) getStatus = -1         ! -1 = Dead
     if(settlementon)then
       if(isSettled(n)) getStatus = -2  ! -2 = Settled
+      if(isStranded(n)) getStatus = -2  ! -2 = Stranded
     endif
     if(OpenOceanBoundary)then
       if(oob(n)) getStatus = -3        ! -3 = Out of Bounds
