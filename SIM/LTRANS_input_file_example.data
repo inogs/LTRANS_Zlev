@@ -182,7 +182,7 @@ $settleparam
  pedges     = 5              ! Number of habitat polygon edge points (# of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points (number of rows in holes file)
 
- StrandingDist= -999           ! Stranding Distance in meters from land (Disabled if StrandingDist<=0)
+ StrandingDist= -999            ! Stranding Distance in meters from land (Disabled if StrandingDist<0)
  strandingmaxdepth =300.00      ! maximal depth at which stranding can occur                  
  strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which stranding can occur                  
  storedincolor=1                ! if ==1: If particle is in a polygon, store the poly-number in color array
