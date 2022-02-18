@@ -6,8 +6,8 @@ The present manual consists of a guide detailing the options and setup instructi
 
 Users should make reference to the following article relative to the present Zlev version:
 
-> C. Laurent, S. Querin, C. Solidoro, D. Melaku Canu. 2020. "Modelling marine particle dynamics with LTRANS-Zlev: implementation and validation", Environmental Modelling & Software 125, 104621.
-[Link to paper](https://www.sciencedirect.com/science/article/pii/S1364815219305304) 
+> [C. Laurent, S. Querin, C. Solidoro, D. Melaku Canu. 2020. "Modelling marine particle dynamics with LTRANS-Zlev: implementation and validation", Environmental Modelling & Software 125, 104621.
+](https://www.sciencedirect.com/science/article/pii/S1364815219305304) 
 
 For any issue relative to the present version of the software, the users can write to : **claurent@inogs.it**
 
