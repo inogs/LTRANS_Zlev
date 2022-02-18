@@ -16,8 +16,8 @@ IFORT_UMCES :=
 GFORTRAN_UMCES :=    
 GFORTRAN_USGS :=   
 PGI_USGS   :=
-Fluxus := on 
-Galileo :=      
+Fluxus := 
+INTEL_g100 := on      
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
@@ -98,7 +98,7 @@ ifdef Fluxus
   endif
 endif
 
-ifdef Galileo
+ifdef INTEL_g100
   Intel := on
   Gnu := 
   DEBUGFLAGS= -O3 -march=native
@@ -123,10 +123,10 @@ ifdef Galileo
      DEBUGFLAGS= -g -fsanitize=address -fbacktrace 
    endif
   endif
-    NETCDF_INCDIR = /cineca/prod/opt/libraries/netcdf/4.6.1/intel--pe-xe-2018--binary/include -I/cineca/prod/opt/libraries/netcdff/4.4.4/intel--pe-xe-2018--binary/include 
-    NETCDF_LIBDIR = /cineca/prod/opt/libraries/netcdf/4.6.1/intel--pe-xe-2018--binary/lib  -L/cineca/prod/opt/libraries/netcdff/4.4.4/intel--pe-xe-2018--binary/lib  -lnetcdf
-    HDF5_LIBDIR = /cineca/prod/opt/libraries/hdf5/1.8.18/intel--pe-xe-2018--binary/lib 
-  FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend_source -assume byterecl -I$(NETCDF_INCDIR)
+    NETCDF_INCDIR = /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-fortran-4.5.3-sahkx4xeldetdrpxxn2labp6c35up3ao/include -I /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-c-4.7.4-xl3jfmsilrbsuok4677hw2juupld7xc5/include
+    NETCDF_LIBDIR = /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-fortran-4.5.3-sahkx4xeldetdrpxxn2labp6c35up3ao/lib -L /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-c-4.7.4-xl3jfmsilrbsuok4677hw2juupld7xc5/lib
+    HDF5_LIBDIR = /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/hdf5-1.10.7-a5umuclmg5qlhbulqk2pq6migqteqlhf/lib
+  FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend-source -assume byterecl -I$(NETCDF_INCDIR)
   ifdef Debug 
     FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
   endif
