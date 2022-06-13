@@ -537,6 +537,7 @@ $behavparam
                              !   Note: The behavior types numbers are: 
                              !  0 Passive, 1 near-surface, 2 near-bottom, 3 DVM, 
                              !  4 C.virginica oyster larvae, 5 C.ariakensis oyster larvae, 
+                             !  6 : vertical sinking or floating without random motion
                              !  7 Tidal Stream Transport, 
                              !  8: Nephrops Norvegicus
                              !  9 : Solea
