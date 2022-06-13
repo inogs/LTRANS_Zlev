@@ -94,7 +94,8 @@ $behavparam
                              !   Note: The behavior types numbers are: 
                              !     0 Passive, 1 near-surface, 2 near-bottom, 3 DVM, 
                              !     4 C.virginica oyster larvae, 5 C.ariakensis oyster larvae, 
-                             !     7 Tidal Stream Transport, 8: Nephrops Norvegicus
+                             !     6 : vertical sinking or floating without random motion
+                             !     7: Tidal Stream Transport, 8: Nephrops Norvegicus
                              !     9 : Solea,  10 : Mullus Barbatus, 11 : Parametrizable larvae
                              !     998 : Keep constant depth under zero, 999 : Keep constant depth under zetasink      = 0.0            ! Sinking velocity for behavior type 6 and 8 to 11
                              !     1000: Oil Spill  
@@ -143,11 +144,11 @@ $behavparam
   Write_coastdist =.False.            ! if True write closest coast distance in netcdf output file
 $end
 
-!*** DVM.  ***
-$dvmparam
-!  Note: The following parameters are only used if Behavior = 3 for the Diurnal Vertical Migration (DVM) behavior type
+!*** DVM. The following are parameters for the Diurnal Vertical Migration (DVM) behavior type ***
 !  Note: These values were calculated for September 1 at the latitude of 37.0 (Chesapeake Bay mouth)
 !  Note: Variables marked with ** were calculated with light_v2BlueCrab.f (not included in LTRANS yet)
+$dvmparam
+!  Note: Thes following parameters are only used if Behavior = 3 
   twistart  = 4.801821       ! Time of twilight start (hr) **
   twiend    = 19.19956       ! Time of twilight end (hr) **
   daylength = 14.39774       ! Length of day (hr) **
@@ -181,7 +182,7 @@ $settleparam
  pedges     = 5              ! Number of habitat polygon edge points (# of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points (number of rows in holes file)
 
- StrandingDist= -999.           ! Stranding Distance in meters from land (Disabled if StrandingDist<=0)
+ StrandingDist= -999           ! Stranding Distance in meters from land (Disabled if StrandingDist<=0)
  strandingmaxdepth =300.00      ! maximal depth at which stranding can occur                  
  strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which stranding can occur                  
  storedincolor=1                ! if ==1: If particle is in a polygon, store the poly-number in color array
@@ -332,7 +333,7 @@ $oilprocs
   Evaporation        = .True.
   EvapOption         = 'MACKAY'
   Emulsification     = .True.
-  Beaching           = .False.
+  Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
   Stokes             = .True.

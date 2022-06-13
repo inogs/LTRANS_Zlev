@@ -127,7 +127,7 @@ $behavparam
                              ! in meters above bottom (this should be a positive value
                              ! Note: this formulation may need some work
 
-  GrainSize_fname = "/home/claurent/LTRANS_vZlev_PACKAGE//input/GRAINSIZEFILENAME" ! for Behavior 8
+  GrainSize_fname = "/home/claurent/LTRANS_vZlev_PACKAGE/input/GRAINSIZEFILENAME" ! for Behavior 8
   read_GrainSize  = .False.           ! for Behavior 8
   DVMtime = 0                         ! maximum time spent doing DVM (if DVMtime>0, used for behavior 8 and 9 and 11)
   SettlementSize = 14              
@@ -208,11 +208,11 @@ $end
 !*** INPUT FILE NAME AND LOCATION PARAMETERS ***; 
 ! ** NetCDF Hydro Model Grid file **
 $hydromodelgrid
-  NCgridfile='/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/input//GridforLTRANS-boxes_NiNj64-c1.nc'  ! Name of the grid file created by the pre-processing tool
+  NCgridfile='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/GridforLTRANS-boxes_NiNj64-c1.nc'  ! Name of the grid file created by the pre-processing tool
   Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= '/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/input//Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
+  ADJele_fname= 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.                                        ! set to True if file already exists
 $end
 
@@ -220,7 +220,7 @@ $end
 ! ** Hydro Model Predictions NetCDF Input (History) File **
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
-  dirin='/galileo/home/userexternal/clauren1/LTRANS_Zlev//MITgcm_outputs/'
+  dirin='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/MITgcm_outputs/'
   prefix= 'U_hr_ave','V_hr_ave','W_hr_ave','Eta.','RHOAnoma.','S.','T.','KPPdiffS.','EXFuwind.','EXFvwind.'   ! NetCDF Input Filename prefix                     
   numdigits = 10                ! Number of digits in number portion of file name (with leading zeros)
   suffix='.data'                ! NetCDF Input Filename suffix
@@ -234,15 +234,15 @@ $end
 ! ** Particle Location Input File **
   !Note: the path to the file is necessary if the file is not in the same folder as the code
 $parloc
-  parfile  = '/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/input//Iniparloc_boxes_NiNj256_every_5-i_5-j_rhowaternode.csv'    !Particle locations
+  parfile  = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Iniparloc_boxes_NiNj256_every_5-i_5-j_rhowaternode.csv'    !Particle locations
 $end
 
 
 ! ** Habitat Polygon Location Input Files **
 !Note: the path to the file is necessary if the file is not in the same folder as the code
 $habpolyloc
-  habitatfile = '/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/input//Polygon_boxes_NiNj256_global.csv'    !Habitat polygons
-  holefile    = '/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/input//End_holes.csv'  !Holes in habitat polygons
+  habitatfile = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Polygon_boxes_NiNj256_global.csv'    !Habitat polygons
+  holefile    = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/End_holes.csv'  !Holes in habitat polygons
 $end
 
 
@@ -250,7 +250,7 @@ $end
 $output
 
   !NOTE: Full path must already exist.  Model can create files, but not directories.
-  outpath = '/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/output_boxes_NiNj256//'  ! Location to write output .csv and/or .nc files  
+  outpath = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/output_boxes_NiNj256/'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
   NCOutFile = 'boxes_NiNj256'    ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
@@ -264,7 +264,7 @@ $output
   SVN_Version  = 'https://cmgsoft.repositoryhosting.com/svn/cmgsoft_ltrans/trunk'
   RunName      = 'LTRANS vZlev with Partial Bottom Cells'
   ExeDir       = '.'
-  OutDir       = '/galileo/home/userexternal/clauren1/LTRANS_Zlev//SIM/output_boxes_NiNj64//metadata'
+  OutDir       = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/output_boxes_NiNj64/metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
   StartedOn    = '01 December 2019'
