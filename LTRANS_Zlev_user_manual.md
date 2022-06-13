@@ -496,6 +496,7 @@ $hydroparam
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of  
                                 ! wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
+  Stokes             = .True.   ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a  
                                 ! linear interpolation is performed 
                                 ! along the vertical direction instead of the  
@@ -891,7 +892,6 @@ $oilprocs
   Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
-  Stokes             = .True.
 $end
 
 $windswaves
