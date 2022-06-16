@@ -597,6 +597,7 @@ $behavparam
   Write_Salt_min_max_ins = 'ins'    ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_coastdist =.False.          ! if True write closest coast distance in the
                                     ! netcdf output file
+  vertical_vel_file='NONE'            ! For Behavior 6 only
 $end
 ```
 
@@ -631,6 +632,7 @@ $end
 
 -  `Write_coastdist` enables the creation of the Coast Distance field in the netcdf output file to track for every particle its distance from the coast and enable post-processing of the success in settling.
 
+- For Behavior 6 the vertical floating/sinking velocities can be setup through an input file whose name must be passed by flag `vertical_vel_file`. This file must be formatted, every line corresponds to a simulated time, and must contain: `time(in seconds), vvel of part 1, vvel of part 2, ... , vvel of part n`. The time step used in this file can be any, it only matters that all the internal timesteps are covered from `Ext0` up to `Ext0+days*3600`. An example file for 6 particles is provided in the SIM/input folder.
 ##### 6.6 Dial Vertical Migration parameters
 
 ```fortran

@@ -82,6 +82,11 @@ MODULE BEHAVIOR_MOD
   !(n,1)slope, (n,2)intercept, (n,3) speed at current age
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: P_swim
 
+  !vertical velocity provided for every particle as input file 
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: P_vvel
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: vvel_read
+  DOUBLE PRECISION, DIMENSION(2) :: vvel_time
+
   !For behavior 8, Larval Size increasing according to growth function
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: LarvSize
 
@@ -97,9 +102,12 @@ MODULE BEHAVIOR_MOD
   !Tracks if particles are Out Of Bounds (ie cross open ocean bound)
   LOGICAL, ALLOCATABLE, DIMENSION(:) :: oob
 
+  !Tracks if vertical velocity provided for every particle as input file 
+  LOGICAL :: vvel_from_file
+
   !The following procedures have been made public:
   PUBLIC :: initBehave,updateStatus,behave,getStatus,finBehave, &
-            setOut,isOut,die,isDead
+            setOut,isOut,die,isDead,updateBehave
 
 CONTAINS
 
@@ -107,7 +115,7 @@ CONTAINS
     USE PARAM_MOD, ONLY: numpar,Behavior,swimfast,swimslow,swimstart,     &
                       pediage,deadage,Sgradient,settlementon, &
                       swdown_ASCIIfname,swdown_dt,swdown_rec,swdown_ASCII,days,&
-                      DVMtime,SettlementSize!,readNetCdfSwdown
+                      DVMtime,SettlementSize,vertical_vel_file,Ext0!,readNetCdfSwdown
     USE SETTLEMENT_MOD, ONLY: initSettlement
     USE NORM_MOD,   ONLY: norm
     IMPLICIT NONE
@@ -127,6 +135,17 @@ CONTAINS
     ALLOCATE(dead(numpar))
     ALLOCATE(oob(numpar))
     ALLOCATE(LarvSize(numpar))
+    if(vertical_vel_file.ne.'NONE') then
+      ALLOCATE(P_vvel(numpar,3))
+      P_vvel(:,:)=0
+      ALLOCATE(vvel_read(numpar,2))
+      vvel_time(1)=Ext0+1
+      vvel_time(2)=Ext0-1
+      vvel_from_file=.True.
+      write(*,*)'vvel from file',vertical_vel_file
+    else
+      vvel_from_file=.False.
+    endif
     IF(Behavior == 7) THEN
       ALLOCATE(bottom(numpar))
       bottom = .TRUE.
@@ -254,6 +273,50 @@ CONTAINS
 
   END SUBROUTINE updateStatus
 
+  SUBROUTINE updateBehave(ix)    !Update the behavior properties
+    USE PARAM_MOD, ONLY: numpar,vertical_vel_file
+    double precision :: ix(3),t_read(2)
+    integer :: io,line,prev,next
+    if(vvel_from_file) then
+      if(vvel_time(1)>ix(2) .or. vvel_time(2)<ix(2))then
+        line=0
+        open(555,file=vertical_vel_file,status='old')
+        do
+           next=mod(line,2)+1
+           line=line+1
+           if(line>1)then
+             prev=mod(line,2)+1
+           else
+             prev=next
+           endif
+           read(555,*,iostat=io) t_read(next),vvel_read(:,next)
+           if(io<0) stop 'vertical velocity file EOF'
+           write(*,*)'read vvel',line,t_read(next),vvel_read(:,next)
+           write(*,*)t_read(prev),'<?',ix(2),'.and.',t_read(next),'>=?',&
+                     ix(2)
+           if(line>1.and.(t_read(prev)<=ix(2).and.t_read(next)>=ix(2)))then
+             vvel_time(1)=t_read(prev)
+             vvel_time(2)=t_read(next)
+             P_vvel(:,1)=vvel_read(:,prev)
+             P_vvel(:,2)=vvel_read(:,next)
+             exit
+           endif 
+        enddo   
+        close(555)          
+        write(*,*)'***********************'
+        write(*,'(a,3f10.6,2i3)')'time',ix(2),t_read,prev,next
+        write(*,'(a,6f10.6)')'P_vvel(1)=',P_vvel(:,1)
+        write(*,'(a,6f10.6)')'P_vvel(2)=',P_vvel(:,2)
+        write(*,*)'***********************'
+      endif
+      !   ***************** Compute vertical velocity coming from file based on simulation time
+      P_vvel(:,3)=1.0/(vvel_time(2)-vvel_time(1))*         &
+                  ( (vvel_time(2)-ix(2))*P_vvel(:,1)   &
+                   +(ix(2)-vvel_time(1))*P_vvel(:,2) )
+        write(*,'(a,6f10.6)')'P_vvel(3)=',P_vvel(:,3)
+    endif
+  END SUBROUTINE updateBehave
+
   SUBROUTINE behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,P_zb,P_zc,P_zf,        &
                     P_zetac,P_age,P_depth,P_U,P_V,P_angle,P_T,     &
                     n,it,ex,ix,          &
@@ -296,6 +359,7 @@ CONTAINS
     YBehav = 0.0
     ZBehav = 0.0
     P_S= -9999
+
 
     !   ***************** Update vertical swimming speeds based on particle age
     IF(Behavior.lt.8)THEN
@@ -689,10 +753,14 @@ CONTAINS
      
      !TYPE 6. Constant -- no random motion to vertical movement
      IF ((P_behave(n).EQ.6)) THEN               
-        if(P_age .GE. swimstart) then
-           parBehav = sink 
+        if(vvel_from_file)then
+          parBehav = P_vvel(n,3)
         else
-           parBehav = P_swim(n,3)
+           if(P_age .GE. swimstart) then
+                parBehav = sink 
+           else
+              parBehav = P_swim(n,3)
+           endif
         endif
         
         !Note: the code below is included if someone wants to calculate density

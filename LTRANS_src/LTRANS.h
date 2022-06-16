@@ -172,6 +172,8 @@
   DOUBLE PRECISION :: rise          ! Rising velocity for behavior type 8
   DOUBLE PRECISION :: sink          ! Sinking velocity for behavior type 6 and 8
                                     !   Note: This parameter is only used if Behavior = 6. or 8.
+
+  CHARACTER(LEN=200) :: vertical_vel_file ! name of file containing for every particle the time evolution of the vertical velocity for behavior 6
 ! Tidal Stream Transport behavior type:
   DOUBLE PRECISION :: Hswimspeed    ! Horizontal swimming speed (m/s)
   DOUBLE PRECISION :: Swimdepth     ! Depth at which fish swims during flood time 
@@ -200,7 +202,8 @@
            surflayer_lowerdepth_night,surflayer_upperdepth_night,     &
            DVMtime,SettlementSize,  &
            SeabedRelease,SeabedRelease_meters,Seabed_layerheight, &
-           Write_Temp_min_max_ins,Write_Salt_min_max_ins,Write_coastdist
+           Write_Temp_min_max_ins,Write_Salt_min_max_ins,Write_coastdist, &
+           vertical_vel_file
 
 
 !*** DVM. The following are parameters for the Diurnal Vertical Migration (DVM) behavior type:

@@ -143,6 +143,7 @@ $behavparam
   Write_Temp_min_max_ins = 'ins'      ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_Salt_min_max_ins = 'ins'      ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_coastdist =.False.            ! if True write closest coast distance in netcdf output file
+  vertical_vel_file='NONE'            ! For Behavior 6 only
 $end
 
 !*** DVM. The following are parameters for the Diurnal Vertical Migration (DVM) behavior type ***

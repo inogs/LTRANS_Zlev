@@ -995,13 +995,15 @@ contains
     use convert_mod, only: x2lon,y2lat                                  !--- CL-OGS   
 
     use oil_mod, only: OilModel
-
+    use behavior_mod, only: updateBehave
     INTEGER :: Phase1Time,n,m,ElapsedTime,SprdCase
     !Prepare internal time step values to be used for 
     !  calculating Advection and Turbulence
     ix(1) = ex(2) + DBLE((it-2)*idt)
     ix(2) = ex(2) + DBLE((it-1)*idt)
     ix(3) = ex(2) + DBLE(it*idt)
+
+    call updateBehave(ix)
           
     !********************************************************
     !*                    Particle Loop                     *
