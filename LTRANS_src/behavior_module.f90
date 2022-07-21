@@ -83,15 +83,19 @@ MODULE BEHAVIOR_MOD
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: P_swim
 
   !vertical velocity provided for every particle as input file 
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: P_vvel
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: vvel_read
-  DOUBLE PRECISION, DIMENSION(2) :: vvel_time
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: G_vvel
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: G_vvel_time
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: G_ext2int
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: G_int2ext
 
   !For behavior 8, Larval Size increasing according to growth function
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: LarvSize
 
   !For behavior 8 , 10 and 11 swdown radiation for dvm 
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: swdown
+  INTEGER, ALLOCATABLE, DIMENSION(:) :: P_group
+  INTEGER :: NumGroups,DimGroups
+ 
   INTEGER :: swdown_numrec
   !For behavior 7, tracks if particle is on the bottom
   LOGICAL, ALLOCATABLE, DIMENSION(:) :: bottom
@@ -111,7 +115,7 @@ MODULE BEHAVIOR_MOD
 
 CONTAINS
 
-  SUBROUTINE initBehave()    !Initialize the behavior module
+  SUBROUTINE initBehave(pGroup)    !Initialize the behavior module
     USE PARAM_MOD, ONLY: numpar,Behavior,swimfast,swimslow,swimstart,     &
                       pediage,deadage,Sgradient,settlementon, &
                       swdown_ASCIIfname,swdown_dt,swdown_rec,swdown_ASCII,days,&
@@ -119,7 +123,8 @@ CONTAINS
     USE SETTLEMENT_MOD, ONLY: initSettlement
     USE NORM_MOD,   ONLY: norm
     IMPLICIT NONE
-    INTEGER :: n,count
+    INTEGER, INTENT(IN) :: pGroup(:)
+    INTEGER :: n,count,g
     REAL :: swdown_read
 
     write(*,*) 'initialize behavior'    
@@ -136,13 +141,31 @@ CONTAINS
     ALLOCATE(oob(numpar))
     ALLOCATE(LarvSize(numpar))
     if(vertical_vel_file.ne.'NONE') then
-      ALLOCATE(P_vvel(numpar,3))
-      P_vvel(:,:)=0
-      ALLOCATE(vvel_read(numpar,2))
-      vvel_time(1)=Ext0+1
-      vvel_time(2)=Ext0-1
+      ALLOCATE(P_group(numpar))
+      DimGroups=maxval( pGroup )
+      ALLOCATE(G_ext2int(DimGroups))
+      G_ext2int(:)=-9999
+      NumGroups=0
+      do g=1,DimGroups
+        if ( ANY( pGroup==g ) ) then
+          NumGroups=NumGroups+1
+          G_ext2int(g)=NumGroups
+        endif
+      enddo
+      ALLOCATE(G_int2ext(NumGroups))
+      do g=1,DimGroups
+        if(G_ext2int(g)>=0) G_int2ext(G_ext2int(g))=g
+      enddo
+      do n=1,numpar
+        P_group(n)=G_ext2int(pGroup(n))
+      enddo
+      ALLOCATE(G_vvel(NumGroups,3))
+      G_vvel(:,:)=0
+      ALLOCATE(G_vvel_time(NumGroups,2))
+      G_vvel_time(:,1)=Ext0+1
+      G_vvel_time(:,2)=Ext0-1
       vvel_from_file=.True.
-      write(*,*)'vvel from file',vertical_vel_file
+      write(*,'(3a,i3,a)')'vvel from file',trim(vertical_vel_file),' with',NumGroups,' different groups'
     else
       vvel_from_file=.False.
     endif
@@ -275,11 +298,22 @@ CONTAINS
 
   SUBROUTINE updateBehave(ix)    !Update the behavior properties
     USE PARAM_MOD, ONLY: numpar,vertical_vel_file
-    double precision :: ix(3),t_read(2)
-    integer :: io,line,prev,next
+    double precision :: ix(3),t_read(2),vvel_read(2)
+    integer :: g_read(2),g_prev_int,g_next_int
+    integer :: io,line,prev,next,g,groups_updated,last_group_done
+    logical :: update_vvel
+    update_vvel=.False.
     if(vvel_from_file) then
-      if(vvel_time(1)>ix(2) .or. vvel_time(2)<ix(2))then
+     do g=1,NumGroups
+      if(G_vvel_time(g,1)>ix(2) .or. G_vvel_time(g,2)<ix(2))then
+        update_vvel=.True.
+      endif
+     enddo
+     if(update_vvel)then
         line=0
+        g_read=-99999
+        groups_updated=0
+        last_group_done=-9999
         open(555,file=vertical_vel_file,status='old')
         do
            next=mod(line,2)+1
@@ -289,31 +323,34 @@ CONTAINS
            else
              prev=next
            endif
-           read(555,*,iostat=io) t_read(next),vvel_read(:,next)
+           read(555,*,iostat=io) g_read(next), t_read(next),vvel_read(next)
            if(io<0) stop 'vertical velocity file EOF'
-           write(*,*)'read vvel',line,t_read(next),vvel_read(:,next)
-           write(*,*)t_read(prev),'<?',ix(2),'.and.',t_read(next),'>=?',&
-                     ix(2)
+           if(g_read(prev).ne.g_read(next)) cycle
+           if(g_read(next).eq.last_group_done) cycle
            if(line>1.and.(t_read(prev)<=ix(2).and.t_read(next)>=ix(2)))then
-             vvel_time(1)=t_read(prev)
-             vvel_time(2)=t_read(next)
-             P_vvel(:,1)=vvel_read(:,prev)
-             P_vvel(:,2)=vvel_read(:,next)
-             exit
+             g_prev_int=G_ext2int(g_read(prev))
+             g_next_int=G_ext2int(g_read(next))
+             if(g_prev_int>=0 .and. g_next_int>=0)then
+               G_vvel_time(g_prev_int,1)=t_read(prev)
+               G_vvel_time(g_next_int,2)=t_read(next)
+               G_vvel(g_prev_int,1)=vvel_read(prev)
+               G_vvel(g_next_int,2)=vvel_read(next)
+               groups_updated=groups_updated+1
+             endif
+             last_group_done=g_read(next)
            endif 
+           if(groups_updated==NumGroups) exit 
         enddo   
         close(555)          
-        write(*,*)'***********************'
-        write(*,'(a,3f10.6,2i3)')'time',ix(2),t_read,prev,next
-        write(*,'(a,6f10.6)')'P_vvel(1)=',P_vvel(:,1)
-        write(*,'(a,6f10.6)')'P_vvel(2)=',P_vvel(:,2)
-        write(*,*)'***********************'
       endif
       !   ***************** Compute vertical velocity coming from file based on simulation time
-      P_vvel(:,3)=1.0/(vvel_time(2)-vvel_time(1))*         &
-                  ( (vvel_time(2)-ix(2))*P_vvel(:,1)   &
-                   +(ix(2)-vvel_time(1))*P_vvel(:,2) )
-        write(*,'(a,6f10.6)')'P_vvel(3)=',P_vvel(:,3)
+      G_vvel(:,3)=1.0/(G_vvel_time(:,2)-G_vvel_time(:,1))*         &
+                  ( (G_vvel_time(:,2)-ix(2))*G_vvel(:,1)   &
+                   +(ix(2)-G_vvel_time(:,1))*G_vvel(:,2) )
+       !do g=1,NumGroups
+       !  write(*,'(a,i10,a,i3,a,3f10.6)')'vvel',int(ix(2)),' G_vvel(',g,',:)=',G_vvel(g,:)
+       !enddo
+       !write(*,*)' '
     endif
   END SUBROUTINE updateBehave
 
@@ -754,7 +791,7 @@ CONTAINS
      !TYPE 6. Constant -- no random motion to vertical movement
      IF ((P_behave(n).EQ.6)) THEN               
         if(vvel_from_file)then
-          parBehav = P_vvel(n,3)
+          parBehav = G_vvel(P_group(n),3)
         else
            if(P_age .GE. swimstart) then
                 parBehav = sink 

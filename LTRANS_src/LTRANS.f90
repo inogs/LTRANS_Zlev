@@ -252,6 +252,7 @@ contains
                       constTemp,constUwind,constVwind,                &
                       SeabedRelease,SeabedRelease_meters,             &
                       Write_coastdist,StrandingDist,us,Write_Poly_Presence, &
+                      vertical_vel_file, &
 !        *****   IMIOM        *****
                       OilOn,WindWeatherFac
     use oil_mod, only: InitOilModel,OilModel
@@ -260,7 +261,8 @@ contains
 #include "VAR_IDs.h"
     IMPLICIT NONE
 
-    double precision :: pDep,P_depth
+    double precision :: pDep,P_depth,skippolygon
+    INTEGER, ALLOCATABLE, DIMENSION( : ) :: pGroup
     integer:: m,STATUS
 !        ***** END IMIOM *****
 
@@ -402,6 +404,9 @@ contains
 
     OPEN(1,FILE=TRIM(parfile))
 !        write(*,*)TRIM(parfile)
+        if(vertical_vel_file.ne.'NONE') then
+          ALLOCATE(pGroup(numpar))
+        endif
 !        *****   IMIOM        *****
         if(OilOn)then
 !                read(1,*)nts                                                                                                                        !numbers of times for spill events
@@ -450,9 +455,17 @@ contains
 
             do n=1,numpar
               if(settlementon .and.  StrandingDist<0)then
-                read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n) 
+                if(vertical_vel_file.ne.'NONE') then
+                  read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n),pGroup(n) 
+                else
+                  read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n)
+                endif
               else
-                read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB)
+                if(vertical_vel_file.ne.'NONE') then
+                  read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),skippolygon,pGroup(n)
+                else
+                  read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB) 
+                endif
               endif
               !--- CL-OGS: store in parIniDepth the initial depth for simulations with constant depth
               parIniDepth(n)=par(n,pZ)
@@ -489,7 +502,7 @@ contains
 
 
     !Initialize Behavior
-    CALL initBehave()
+    CALL initBehave(pGroup)
 
      IF(SettlementOn.and.Write_Poly_Presence) then
                  write(*,*)'Initialize polygon related arrays'
