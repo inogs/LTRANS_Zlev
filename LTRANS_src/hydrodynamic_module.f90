@@ -3266,8 +3266,8 @@ CONTAINS
               write(*,*)'SigWaveHeight=',SigWaveHeight
               swanHs   = SigWaveHeight
               swantm01 = MeanWavePeriod
-              modelUwind = UWind_10
-              modelVwind = VWind_10
+              if(.not.readUwind)  modelUwind = UWind_10
+              if(.not.readVwind)  modelVwind = VWind_10
               swanpd   = PeakDirection
               swanwl   = PeakWaveLength
         endif                ! if WindWaveModel
@@ -5000,8 +5000,8 @@ CONTAINS
             swanHsf   = SigWaveHeight
             write(*,*)'SigWaveHeight passed'
             swantm01f = MeanWavePeriod
-            modelUwindf = UWind_10
-            modelVwindf = VWind_10
+            if(.not.readUwind)  modelUwindf = UWind_10
+            if(.not.readVwind)  modelVwindf = VWind_10
             swanpdf   = PeakDirection
             swanwlf   = PeakWaveLength
       endif                ! if WindWaveModel
@@ -5016,7 +5016,7 @@ CONTAINS
             t_wlen(t_f,count) = swanwlf(i,j,1) * m_r(i,j,us_tridim)
           enddo
        enddo
-      if(windwavemodel.or.(UWind_10.ne.0 .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
+      if(windwavemodel.or.((.not.readUwind) .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
             write(*,*)'overwrite ROMS U Wind'
               do j=t_ijruv(7),t_ijruv(8)
                 do i=t_ijruv(5),t_ijruv(6)
@@ -5025,7 +5025,7 @@ CONTAINS
                 enddo
               enddo
       end if
-      if(windwavemodel.or.(VWind_10.ne.0.and. (.not. Zgrid)))then    !only overwrite ROMS t_vwind (from sustr) if using windwavesmodel OR overwriting by constant V wind
+      if(windwavemodel.or.((.not.readVwind) .and. (.not. Zgrid)))then    !only overwrite ROMS t_vwind (from sustr) if using windwavesmodel OR overwriting by constant V wind
            write(*,*)'overwrite ROMS V Wind'
               do j=t_ijruv(11),t_ijruv(12)
                 do i=t_ijruv(9),t_ijruv(10)
