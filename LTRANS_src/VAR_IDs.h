@@ -58,3 +58,13 @@
 #define VAR_ID_iwindb 66
 #define VAR_ID_iwindc 67
 #define VAR_ID_iwindf 68
+
+#define VAR_ID_ustokdrift 70
+#define VAR_ID_ustokdriftb 71
+#define VAR_ID_ustokdriftc 72
+#define VAR_ID_ustokdriftf 73
+
+#define VAR_ID_vstokdrift 75
+#define VAR_ID_vstokdriftb 76
+#define VAR_ID_vstokdriftc 77
+#define VAR_ID_vstokdriftf 78

@@ -1521,12 +1521,13 @@ MODULE OIL_MOD
     !********************************
     !*     Subroutine StokesDrift   *
     !********************************
-    SUBROUTINE STOKESDRIFT(uwind,vwind,pdir,depth,ustoke,vstoke,WVecAngle)
+    SUBROUTINE STOKESDRIFT(uwind,vwind,pdir,depth,ustoke,vstoke,StokesDriftFac,WVecAngle)
     ! Give the Stokes drift at depth of a particle assuming a Pierson Moskowitz spectrum and Langmuir circulation
     ! Author Marcel Cure (www.numericswarehouse.com) Apr. 2010
     !
     DOUBLE PRECISION, INTENT(IN) :: uwind,vwind,pdir,depth
     DOUBLE PRECISION, INTENT(OUT) :: ustoke,vstoke                       ! velocity components of particle at depth
+    DOUBLE PRECISION, INTENT(IN) :: StokesDriftFac
     DOUBLE PRECISION, INTENT(IN), OPTIONAL :: WVecAngle
     !
     DOUBLE PRECISION :: V10,knum,phi,VS0,VS
@@ -1550,7 +1551,7 @@ MODULE OIL_MOD
     endif
     !
     knum = 1.25*(grav/(V10**2.0))
-    VS0 = 0.016*V10
+    VS0 =StokesDriftFac*V10
     VS = VS0*EXP(2.0*knum*depth)
     ustoke = VS*COS(phi)
     vstoke = VS*SIN(phi)

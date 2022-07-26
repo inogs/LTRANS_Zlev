@@ -1277,8 +1277,9 @@ contains
                               WriteCurrents,NCOutFile,Outdir,                  &!--- CL-OGS: output Currents if requested
                               StrandingDist,storedincolor,                     &!--- CL-OGS: Stranding/settlement optionals
                               Zgrid,Zgrid_depthinterp,                         &!--- CL-OGS: coupling with MITgcm'Z-grid bathymetry and fields
-                              iprint,WindDriftFac,WindDriftDev,StokDriftFac,   &!--- CL-OGS 
-                              BndOut,dt,read_GrainSize,WindIntensity,z0,  &
+                              iprint,WindDriftFac,WindDriftDev,StokDriftFac,   &
+                              readStokDrift,                                   &
+                              BndOut,dt,read_GrainSize,WindIntensity,z0,       &
                               !readNetcdfSwdown, &
                               Write_Temp_min_max_ins,Write_Salt_min_max_ins, &
                               Write_Poly_Presence, &                            !--- CL-OGS
@@ -1887,10 +1888,33 @@ contains
                         sin(alpha - (WindDriftDev *(pi/180.0)))
 
               if(Stokes)then
+                if(readStokDrift)then
+                  if(p.eq.1)then                       
+                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
+                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
+                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
+                  else                                
+                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
+                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
+                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftf,klev) 
+                  endif                              
+                  UStokesDrift = polintd(ex,ey,3,ix(2))
+                  if(p.eq.1)then                       
+                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
+                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
+                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
+                  else                                
+                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
+                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
+                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftf,klev) 
+                  endif                              
+                  VStokesDrift = polintd(ex,ey,3,ix(2))
+                else
                   CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_depth,  &
-                                   UStokesDrift,VStokesDrift,alpha )
-                  UStokesDrift = idt * (StokDriftFac/0.016)*UStokesDrift
-                  VStokesDrift = idt * (StokDriftFac/0.016)*VStokesDrift
+                                   UStokesDrift,VStokesDrift,StokDriftFac,alpha)
+                  UStokesDrift = idt *UStokesDrift
+                  VStokesDrift = idt *VStokesDrift
+                endif
               end if
 
 

@@ -87,6 +87,7 @@ MODULE HYDRO_MOD
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_uwind, t_vwind,t_iwind                       ! 10m wind components and intensity
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_pdir                                          ! principle wave direction
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_wlen                                          ! mean wave length
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_ustokdrift,t_vstokdrift                       ! lon and lat components of the Stokes drift
   CHARACTER(len=200) :: swannm
 !      ***** END IMIOM *****
 
@@ -1448,6 +1449,7 @@ CONTAINS
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
         constW,readAks,constAks,WindIntensity,readIwind,constIwind,            &
         readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       &  !--- CL-OGS:
+        readStokDrift, &
 !      *****   IMIOM      *****
           swan_prefix, swan_suffix,swan_filenum,WindWaveModel,SigWaveHeight,   &
           MeanWavePeriod,UWind_10,VWind_10,PeakDirection,PeakWaveLength,OilOn
@@ -1470,6 +1472,7 @@ CONTAINS
                                                 romD,romU, romV
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUwind,modelVwind,&
                                                          modelIwind  !--- CL-OGS
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUstokdrift,modelVstokdrift
     !--- CL-OGS: following variables added to handle MITgcm-files
     !--- CL-OGS  (using a different file for every field variable )
     LOGICAL :: isZeta,isSalt,isTemp,isDens,isU,isV,isW,isAks,                  &
@@ -1541,6 +1544,14 @@ CONTAINS
     if(WindIntensity .and. Zgrid)then
       ALLOCATE(t_iwind(3,  rho_nodes))
       t_iwind = 0
+    endif
+    if(readStokDrift)then
+      ALLOCATE(t_ustokdrift(3, u_nodes))
+      ALLOCATE(t_ustokdrift(3, v_nodes))
+      t_ustokdrift = 0
+      t_vstokdrift = 0
+      ALLOCATE(modelUstokdrift(ui,uj,3))
+      ALLOCATE(modelVstokdrift(vi,vj,3))
     endif
     !-----------------------------------------------------
     IF(OilOn)THEN
@@ -2688,6 +2699,136 @@ CONTAINS
         endif
 
         !------------------------------------
+        !------------------------------------
+        if(isUstokdrift .and. readStokDrift)then  
+          ! **** Ustokdrift****
+          startz(1)=t_ijruv(5)  !U C-arakawa-gridpoint even if MITgcm stores stokdrift at rho grid points
+          startz(2)=t_ijruv(7)  !U C-arakawa-gridpoint
+          startz(3)=recordnum
+
+          countz(1)=t_ijruv(6)-t_ijruv(5)+1  !U C-arakawa-gridpoint
+          countz(2)=t_ijruv(8)-t_ijruv(7)+1  !U C-arakawa-gridpoint
+          countz(3)=incrstepf
+
+          if(Zgrid)then
+            write(*,*)'warning: read in MITgcm file var Ustokdrift at cell center, interpolating it at U-grid points '
+           if(hydrobytes.eq.4)then                         
+            do t=startz(3),startz(3)+countz(3)-1
+            write(*,*)'time record num=',t
+            do j=startz(2),startz(2)+countz(2)-1
+              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
+              if ( ios /= 0 ) then
+                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+                 stop " ERROR READING Ustokdrift "
+              endif
+              modelUstokdrift(1:ui,j,nf+t-startz(3))=                               &
+                0.5*(tmpvec(1:vi-1)+tmpvec(2:vi)) !--- CL-OGS: skip first data in i as is is a U-grid data
+            enddo
+            enddo
+           else
+            do t=startz(3),startz(3)+countz(3)-1
+            write(*,*)'time record num=',t
+            do j=startz(2),startz(2)+countz(2)-1
+              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
+              if ( ios /= 0 ) then
+                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+                 stop " ERROR READING Ustokdrift "
+              endif
+              modelUstokdrift(1:ui,j,nf+t-startz(3))=0.5*(dbltmpvec(1:vi-1)+        &
+                          dbltmpvec(2:vi))
+            !--- CL-OGS: skip first data in i as is is a U-grid data
+            enddo
+            enddo
+           endif
+          else
+             STATUS = NF90_INQ_VARID(NCID,'ustokes',VID)       !--- MIOSM : stokdrift stress  
+             if (STATUS .NE. NF90_NOERR) then
+               write(*,*) 'Problem find ustokes variable'
+               write(*,*) NF90_STRERROR(STATUS)
+               stop
+             endif
+         
+             STATUS = NF90_GET_VAR(NCID,VID,modelUstokdrift(t_ijruv(5):t_ijruv(6),     &
+                              t_ijruv(7):t_ijruv(8),nfn:nfnn),STARTz,COUNTz)
+             if (STATUS .NE. NF90_NOERR) then
+               write(*,*) 'Problem read ustokes array'
+               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
+               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
+               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
+               write(*,*) NF90_STRERROR(STATUS)
+               stop
+             endif
+           endif
+        endif       
+        !------------------------------------
+        if(isVstokdrift .and.readStokDrift)then  
+          ! **** Vstokdrift****
+          startz(1)=t_ijruv(9)
+          startz(2)=t_ijruv(11)
+          startz(3)=recordnum
+
+          countz(1)=t_ijruv(10)-t_ijruv(9)+1
+          countz(2)=t_ijruv(12)-t_ijruv(11)+1
+          countz(3)=incrstepf
+
+          if(Zgrid)then
+            write(*,*)'warning: read in MITgcm file var Vstokdrift at cell center, ',&
+                      ' interpolating it at V-grid points',startz(3),startz(3)+countz(3)-1,nf
+           if(hydrobytes.eq.4)then             
+            do t=startz(3),startz(3)+countz(3)-1
+            modelVstokdrift(:,:,nf+t-startz(3))=0.0
+            write(*,*)'time record num=',t
+            do j=startz(2),startz(2)+countz(2)-1 +1 !(+1) tobe able to compute average V stokdrift 
+              read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)  !start from j instead of (j+1)  tobe able to compute average V stokdrift 
+              if ( ios /= 0 ) then
+                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+                 stop " ERROR READING Vstokdrift "
+              endif
+              if(j.le.startz(2)+countz(2)-1) &
+                modelVstokdrift(1:vi,j,nf+t-startz(3))=0.5*tmpvec(1:vi)
+              if(j.gt.startz(2)) &
+                modelVstokdrift(1:vi,j-1,nf+t-startz(3))= &
+                modelVstokdrift(1:vi,j-1,nf+t-startz(3))+0.5*tmpvec(1:vi)
+            enddo
+            enddo
+           else
+            do t=startz(3),startz(3)+countz(3)-1
+            modelVstokdrift(:,:,nf+t-startz(3))=0.0
+            write(*,*)'time record num=',t
+            do j=startz(2),startz(2)+countz(2)-1+1 !(+1) tobe able to compute average V stokdrift
+              read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)!start from j instead of (j+1)  tobe able to compute average V stokdrift 
+              if ( ios /= 0 ) then
+                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+                 stop " ERROR READING Vstokdrift "
+              endif
+              if(j.le.startz(2)+countz(2)-1) &
+                modelVstokdrift(1:vi,j,nf+t-startz(3))=0.5*dbltmpvec(1:vi)
+              if(j.gt.startz(2)) &
+                modelVstokdrift(1:vi,j-1,nf+t-startz(3))= &
+                modelVstokdrift(1:vi,j-1,nf+t-startz(3))+0.5*dbltmpvec(1:vi)
+            enddo
+            enddo 
+           endif 
+          else
+             STATUS = NF90_INQ_VARID(NCID,'vstokes',VID)
+             if (STATUS .NE. NF90_NOERR) then
+               write(*,*) 'Problem find vstokes variable'
+               write(*,*) NF90_STRERROR(STATUS)
+               stop
+             endif
+         
+             STATUS = NF90_GET_VAR(NCID,VID,modelVstokdrift(t_ijruv(9):t_ijruv(10),    &
+                       t_ijruv(11):t_ijruv(12),nfn:nfnn),STARTz,COUNTz)
+             if (STATUS .NE. NF90_NOERR) then
+               write(*,*) 'Problem read vstokes array'
+               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
+               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
+               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
+               write(*,*) NF90_STRERROR(STATUS)
+               stop
+             endif
+           endif
+        endif
 
         !close the dataset and reassign the NCID
       if ( Zgrid)then
@@ -3031,6 +3172,24 @@ CONTAINS
         enddo
        enddo
       endif
+    if(readStokDrift)then
+       do j=t_ijruv(7),t_ijruv(8)
+        do i=t_ijruv(5),t_ijruv(6)
+          count = (j-1)*ui + i
+          t_ustokdrift(1,count) =    modelUstokdrift(i,j,1) *    m_u(i,j,us_tridim)
+          t_ustokdrift(2,count) =    modelUstokdrift(i,j,2) *    m_u(i,j,us_tridim)
+          t_ustokdrift(3,count) =    modelUstokdrift(i,j,3) *    m_u(i,j,us_tridim)
+        enddo
+       enddo
+       do j=t_ijruv(11),t_ijruv(12)
+        do i=t_ijruv(9),t_ijruv(10)
+          count = (j-1)*vi + i
+          t_vstokdrift(1,count) =    modelVstokdrift(i,j,1) *    m_v(i,j,us_tridim)
+          t_vstokdrift(2,count) =    modelVstokdrift(i,j,2) *    m_v(i,j,us_tridim)
+          t_vstokdrift(3,count) =    modelVstokdrift(i,j,3) *    m_v(i,j,us_tridim)
+        enddo
+       enddo
+      endif
       !  ***    IMIOM *****
       ! WIND WAVE MODEL DATA  ------------------------------------
       IF(OilOn)then
@@ -3321,6 +3480,7 @@ CONTAINS
     !DEALLOCATE SUBROUTINE VARIABLES
     DEALLOCATE(romZ,romW,romD,romKH,romS,romT,romU,romV,&
                  modelUwind,modelVwind,modelIwind)
+    if(readStokDrift) DEALLOCATE(modelUstokdrift,modelVstokdrift)
     !DEALLOCATE(romSwdown)
 
     write(*,*)'counter at end of inithydro=',counter
@@ -3355,6 +3515,7 @@ CONTAINS
                                 romUf,romVf,romWf,romKHf
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelUwindf,modelVwindf    !--- CL-OGS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelIwindf    !--- CL-OGS
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUstokdrift,modelVstokdrift
     LOGICAL :: isZeta,isSalt,isTemp,isDens,isU,isV,isW,isAks,         &
                isIwind,isUwind,isVwind,filegiven !,isSwdown
     INTEGER :: ios,nvarf,nfilesin,ktlev,waiting,rand15
@@ -3386,6 +3547,10 @@ CONTAINS
     if((Wind.and. .not. Zgrid) .and.(readUwind .or. readVwind))THEN
         ALLOCATE(romstrUf(ui,uj,1))
         ALLOCATE(romstrVf(vi,vj,1))
+    endif
+    if(readStokDrift)then
+      ALLOCATE(modelUstokdrift(ui,uj,1))
+      ALLOCATE(modelVstokdrift(vi,vj,1))
     endif
     if(OilOn)then! .and. WindWaveModel)then
         ALLOCATE(swanHsf(vi,uj,1))
@@ -4758,6 +4923,136 @@ CONTAINS
        enddo
       endif
 
+      endif
+      !------------------------------------
+      if(isUstokdrift .and. readStokDrift)then  
+        ! **** Ustokdrift****
+        startz(1)=t_ijruv(5)  !U C-arakawa-gridpoint even if MITgcm stores stokdrift at rho grid points
+        startz(2)=t_ijruv(7)  !U C-arakawa-gridpoint
+        startz(3)=stepf
+
+        countz(1)=t_ijruv(6)-t_ijruv(5)+1  !U C-arakawa-gridpoint
+        countz(2)=t_ijruv(8)-t_ijruv(7)+1  !U C-arakawa-gridpoint
+        countz(3)=1
+
+        if(Zgrid)then
+          write(*,*)'warning: read in MITgcm file var Ustokdrift at cell center, interpolating it at U-grid points '
+         modelUstokdrift(:,:,1)=0.0
+         if(hydrobytes.eq.4)then                         
+          do t=startz(3),startz(3)+countz(3)-1
+          write(*,*)'time record num=',t
+          do j=startz(2),startz(2)+countz(2)-1
+            read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
+            if ( ios /= 0 ) then
+               write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+               stop " ERROR READING Ustokdrift "
+            endif
+            modelUstokdrift(1:ui,j,1)=                               &
+              0.5*(tmpvec(1:vi-1)+tmpvec(2:vi)) !--- CL-OGS: skip first data in i as is is a U-grid data
+          enddo
+          enddo
+         else
+          do t=startz(3),startz(3)+countz(3)-1
+          write(*,*)'time record num=',t
+          do j=startz(2),startz(2)+countz(2)-1
+            read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
+            if ( ios /= 0 ) then
+               write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+               stop " ERROR READING Ustokdrift "
+            endif
+            modelUstokdrift(1:ui,j,1)=0.5*(dbltmpvec(1:vi-1)+        &
+                        dbltmpvec(2:vi))
+          !--- CL-OGS: skip first data in i as is is a U-grid data
+          enddo
+          enddo
+         endif
+        else
+           STATUS = NF90_INQ_VARID(NCID,'ustokes',VID)       !--- MIOSM : stokdrift stress  
+           if (STATUS .NE. NF90_NOERR) then
+             write(*,*) 'Problem find ustokes variable'
+             write(*,*) NF90_STRERROR(STATUS)
+             stop
+           endif
+       
+           STATUS = NF90_GET_VAR(NCID,VID,modelUstokdrift(t_ijruv(5):t_ijruv(6),     &
+                            t_ijruv(7):t_ijruv(8),:),STARTz,COUNTz)
+           if (STATUS .NE. NF90_NOERR) then
+             write(*,*) 'Problem read ustokes array'
+             write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
+             write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
+             write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
+             write(*,*) NF90_STRERROR(STATUS)
+             stop
+           endif
+         endif
+      endif       
+      !------------------------------------
+      if(isVstokdrift .and.readStokDrift)then  
+        ! **** Vstokdrift****
+        startz(1)=t_ijruv(9)
+        startz(2)=t_ijruv(11)
+        startz(3)=stepf
+
+        countz(1)=t_ijruv(10)-t_ijruv(9)+1
+        countz(2)=t_ijruv(12)-t_ijruv(11)+1
+        countz(3)=1
+
+        if(Zgrid)then
+          write(*,*)'warning: read in MITgcm file var Vstokdrift at cell center, ',&
+                    ' interpolating it at V-grid points',startz(3),startz(3)+countz(3)-1,nf
+         modelVstokdrift(:,:,1)=0.0
+         if(hydrobytes.eq.4)then             
+          do t=startz(3),startz(3)+countz(3)-1
+          write(*,*)'time record num=',t
+          do j=startz(2),startz(2)+countz(2)-1 +1 !(+1) tobe able to compute average V stokdrift 
+            read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)  !start from j instead of (j+1)  tobe able to compute average V stokdrift 
+            if ( ios /= 0 ) then
+               write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+               stop " ERROR READING Vstokdrift "
+            endif
+            if(j.le.startz(2)+countz(2)-1) &
+              modelVstokdrift(1:vi,j,1)=0.5*tmpvec(1:vi)
+            if(j.gt.startz(2)) &
+              modelVstokdrift(1:vi,j-1,1)= &
+              modelVstokdrift(1:vi,j-1,1)+0.5*tmpvec(1:vi)
+          enddo
+          enddo
+         else
+          do t=startz(3),startz(3)+countz(3)-1
+          write(*,*)'time record num=',t
+          do j=startz(2),startz(2)+countz(2)-1+1 !(+1) tobe able to compute average V stokdrift
+            read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)!start from j instead of (j+1)  tobe able to compute average V stokdrift 
+            if ( ios /= 0 ) then
+               write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
+               stop " ERROR READING Vstokdrift "
+            endif
+            if(j.le.startz(2)+countz(2)-1) &
+              modelVstokdrift(1:vi,j,1)=0.5*dbltmpvec(1:vi)
+            if(j.gt.startz(2)) &
+              modelVstokdrift(1:vi,j-1,1)= &
+              modelVstokdrift(1:vi,j-1,1)+0.5*dbltmpvec(1:vi)
+          enddo
+          enddo 
+         endif 
+        else
+           STATUS = NF90_INQ_VARID(NCID,'vstokes',VID)
+           if (STATUS .NE. NF90_NOERR) then
+             write(*,*) 'Problem find vstokes variable'
+             write(*,*) NF90_STRERROR(STATUS)
+             stop
+           endif
+       
+           STATUS = NF90_GET_VAR(NCID,VID,modelVstokdrift(t_ijruv(9):t_ijruv(10),    &
+                     t_ijruv(11):t_ijruv(12),:),STARTz,COUNTz)
+           if (STATUS .NE. NF90_NOERR) then
+             write(*,*) 'Problem read vstokes array'
+             write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
+             write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
+             write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
+             write(*,*) NF90_STRERROR(STATUS)
+             stop
+           endif
+         endif
       endif
       !------------------------------------
 
@@ -6330,6 +6625,36 @@ CONTAINS
          v2 = t_iwind(t_f,rnode2)
          v3 = t_iwind(t_f,rnode3)
          v4 = t_iwind(t_f,rnode4)
+       case(var_id_ustokdriftb)
+         v1 = t_ustokdrift(t_b,unode1)
+         v2 = t_ustokdrift(t_b,unode2)
+         v3 = t_ustokdrift(t_b,unode3)
+         v4 = t_ustokdrift(t_b,unode4)
+       case(var_id_ustokdriftc)
+         v1 = t_ustokdrift(t_c,unode1)
+         v2 = t_ustokdrift(t_c,unode2)
+         v3 = t_ustokdrift(t_c,unode3)
+         v4 = t_ustokdrift(t_c,unode4)
+       case(var_id_ustokdriftf)
+         v1 = t_ustokdrift(t_f,unode1)
+         v2 = t_ustokdrift(t_f,unode2)
+         v3 = t_ustokdrift(t_f,unode3)
+         v4 = t_ustokdrift(t_f,unode4)
+       case(var_id_vstokdriftb)
+         v1 = t_vstokdrift(t_b,vnode1)
+         v2 = t_vstokdrift(t_b,vnode2)
+         v3 = t_vstokdrift(t_b,vnode3)
+         v4 = t_vstokdrift(t_b,vnode4)
+       case(var_id_vstokdriftc)
+         v1 = t_vstokdrift(t_c,vnode1)
+         v2 = t_vstokdrift(t_c,vnode2)
+         v3 = t_vstokdrift(t_c,vnode3)
+         v4 = t_vstokdrift(t_c,vnode4)
+       case(var_id_vstokdriftf)
+         v1 = t_vstokdrift(t_f,vnode1)
+         v2 = t_vstokdrift(t_f,vnode2)
+         v3 = t_vstokdrift(t_f,vnode3)
+         v4 = t_vstokdrift(t_f,vnode4)
        CASE DEFAULT
          write(*,*) 'Problem interpolating ',var
          write(*,*) ' '
@@ -7217,7 +7542,7 @@ CONTAINS
 
   SUBROUTINE finHydro()
     USE PARAM_MOD, ONLY:Zgrid,read_GrainSize,OutDir,NCOutFile,&
-           Zgrid_depthinterp,WindIntensity
+           Zgrid_depthinterp,WindIntensity,readStokDrift
     !This subroutine closes all the module's allocatable variables
     IMPLICIT NONE
 
@@ -7257,6 +7582,7 @@ CONTAINS
     DEALLOCATE(t_uwind)
     DEALLOCATE(t_vwind)
     if(WindIntensity .and. Zgrid)DEALLOCATE(t_iwind)
+    if(readStokDrift)DEALLOCATE(t_ustokdrift,t_vstokdrift)
     DEALLOCATE(rho_mask,u_mask,v_mask)
     DEALLOCATE(m_r) 
     DEALLOCATE(m_u) 
