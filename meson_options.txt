@@ -1,0 +1,6 @@
+option('use_OMP',type:'boolean',value:false)
+option('netcdf_compiled_with_hdf5',type:'boolean',value:false)
+option('NETCDF_PATH', type : 'string', value : 'none', description : 'path to NETCDF installation folder')
+option('NETCDFF_PATH', type : 'string', value : 'none', description : 'path to NETCDFF installation folder')
+option('HDF5_PATH', type : 'string', value : 'none', description : 'path to HDF5 installation folder')
+option('CURL_PATH', type : 'string', value : 'none', description : 'path to CURL installation folder')
