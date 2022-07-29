@@ -1095,8 +1095,8 @@ contains
       write(*,*) 'write ',efile
       !--- CL-OGS: OILTRANS : moved iunit 3 -> 333 of as 3 already used as well by OILTRANS developments
       open(333,FILE=efile,STATUS='REPLACE')
-        3 format(I7,',',I7,',',I7,',', F9.4,",",F9.4,",",I7)
-        4 format(I7,',',F9.4,',',F9.4,',',I7)
+        3 format(I7,',',I7,',',I7,',', F13.8,",",F13.8,",",F13.8,",",I7)
+        4 format(I7,',',F13.8,',',F13.8,',',F13.8,',',I7)
         do n=1,numpar
           pLon = x2lon(par(n,pX),par(n,pY))
           pLat = y2lat(par(n,pY))
@@ -1104,9 +1104,9 @@ contains
           par(n,pStatus) = getStatus(n,default_stat)
           if(settlementon .and.  StrandingDist<0)then
             write(333,3) startpoly(n),endpoly(n),int(par(n,pStatus)),pLat,pLon,  &
-                       int(par(n,pLifespan))
+                       par(n,pZ),int(par(n,pLifespan))
           else
-            write(333,4) int(par(n,pStatus)),pLat,pLon,int(par(n,pLifespan))
+            write(333,4) int(par(n,pStatus)),pLat,pLon,par(n,pZ),int(par(n,pLifespan))
           endif
         enddo
       close(333)

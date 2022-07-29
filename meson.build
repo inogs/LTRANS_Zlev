@@ -15,9 +15,8 @@ message('compiler is '+ _compiler.get_id())
 _bt = get_option('buildtype')
 if _bt == 'debugoptimized' or _bt == 'release'
    if _compiler.get_id() == 'intel'
-    add_global_arguments([  '-march=native',
-                            '-funroll-loops',
-                            '-xhost',
+    add_global_arguments([  '-funroll-loops',
+                            '-assume','byterecl',
                             '-xcore-avx2',
                             '-axCORE-AVX2,AVX'
                           ],language : ['fortran'] )
@@ -99,12 +98,12 @@ _LTRANS_source_files=[]
 _LTRANS_fortran_args = []
 
 # create list of dependencies, containing for each one the array : [library_name, installation_path, compiler]
-_lib_properties=[['netcdf','NETCDF_PATH',_compiler] ] 
-_lib_properties +=[['netcdff','NETCDFF_PATH',_compiler]] 
+_lib_properties=[['netcdf','NETCDF_C_HOME_PATH',_compiler] ] 
+_lib_properties +=[['netcdff','NETCDF_F_HOME_PATH',_compiler]] 
 if get_option('netcdf_compiled_with_hdf5') == true
-   _lib_properties +=[['hdf5_hl','HDF5_PATH',_compiler]]      
-   _lib_properties +=[['hdf5','HDF5_PATH',_compiler]]      
-   _lib_properties +=[['curl','CURL_PATH',_compiler]]      
+   _lib_properties +=[['hdf5_hl','HDF5_HOME_PATH',_compiler]]      
+   _lib_properties +=[['hdf5','HDF5_HOME_PATH',_compiler]]      
+   _lib_properties +=[['curl','CURL_HOME_PATH',_compiler]]      
 endif
  
 
@@ -157,4 +156,4 @@ _LTRANS_exe=executable('LTRANS_Zlev',
            include_directories : _LTRANS_include_directories,
            dependencies : _LTRANS_dependencies,
            )
-
+subdir('SIM/tests')

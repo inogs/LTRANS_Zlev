@@ -123,10 +123,11 @@ ifdef INTEL_g100
      DEBUGFLAGS= -g -fsanitize=address -fbacktrace 
    endif
   endif
-    NETCDF_INCDIR = /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-fortran-4.5.3-sahkx4xeldetdrpxxn2labp6c35up3ao/include -I /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-c-4.7.4-xl3jfmsilrbsuok4677hw2juupld7xc5/include
-    NETCDF_LIBDIR = /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-fortran-4.5.3-sahkx4xeldetdrpxxn2labp6c35up3ao/lib -L /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/netcdf-c-4.7.4-xl3jfmsilrbsuok4677hw2juupld7xc5/lib
-    HDF5_LIBDIR = /g100_work/PROJECTS/spack/v0.16/install/0.16.2/linux-centos8-cascadelake/oneapi-2021.2.0-ifort/hdf5-1.10.7-a5umuclmg5qlhbulqk2pq6migqteqlhf/lib
-  FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend-source -assume byterecl -I$(NETCDF_INCDIR)
+    NETCDF_INCDIR = ${NETCDF_FORTRAN_HOME}/include -I ${NETCDF_C_HOME}/include
+    NETCDF_LIBDIR = ${NETCDF_FORTRAN_HOME}/lib     -L ${NETCDF_C_HOME}/lib
+    HDF5_LIBDIR = ${HDF5_HOME}/lib  -L ${CURL_HOME}/lib 
+  #FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend-source -assume byterecl -I$(NETCDF_INCDIR)
+  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -march=native -funroll-loops -xhost -xcore-avx2 -axCORE-AVX2,AVX -fpp -I$(NETCDF_INCDIR)
   ifdef Debug 
     FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
   endif
