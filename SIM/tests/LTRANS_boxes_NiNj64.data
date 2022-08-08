@@ -336,7 +336,7 @@ $oilprocs
   Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
-  Stokes             = .True.
+  Stokes             = .False.
 $end
 
 $windswaves
