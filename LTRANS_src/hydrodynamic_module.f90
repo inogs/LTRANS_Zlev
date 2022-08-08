@@ -1,5 +1,13 @@
 MODULE HYDRO_MOD                                                               
 
+#define IMIN 1
+#define IMAX 2
+#define JMIN 3
+#define JMAX 4
+#define RNODE 1
+#define UNODE 2
+#define VNODE 3
+
 !  This module handles all the input from the hydrodynamic NetCDF input files.
 !  It is the only module that interacts with NetCDF input files.  It contains
 !  all the variables read in from the NetCDF files.  It also contains all the
@@ -33,9 +41,6 @@ MODULE HYDRO_MOD
 
 !--- CL-OGS:
   INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: OMP_ruv
-  INTEGER,PARAMETER :: Rnod=1
-  INTEGER,PARAMETER :: Unod=2
-  INTEGER,PARAMETER :: Vnod=3
 
   !These variables keep track of the interpolation method and weights
   INTEGER :: numthreads
@@ -76,7 +81,7 @@ MODULE HYDRO_MOD
   
   !read in zeta,salinity,temperature,vertical diffusivity, and U,V,W velocities 
   !  at hydrodynamic back, center, and forward time
-  INTEGER :: t_b,t_c,t_f,t_ijruv(12)
+  INTEGER :: t_b,t_c,t_f,t_ijruv(4,3)
   !DOUBLE PRECISION, ALLOCATABLE, DIMENSION (:,:)  :: t_Swdown
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION (:,:)  :: t_zeta
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: t_salt,t_temp,t_KH,       &
@@ -169,9 +174,9 @@ CONTAINS
     !  element variables
     USE PARAM_MOD, ONLY: numpar,ui,vi,uj,vj,us,ws,rho_nodes,u_nodes,v_nodes,   &
         max_rho_elements,max_u_elements,    &
-        max_v_elements,NCgridfile,prefix,suffix,filenum,numdigits,  &
+        max_v_elements,NCgridfile,prefix,filenum,numdigits,  &
         Zgrid,ADJele_file,ADJele_fname,BoundaryBLNs,                           & !--- CL-OGS
-        dirin,filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
+        filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
         OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity                         !--- CL-OGS
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
@@ -472,46 +477,7 @@ CONTAINS
        nfilesin=1 ! Roms NETcdf outputs
      endif
      DO nf=1,nfilesin
-     SELECT CASE(numdigits)
-       CASE(0)
-         WRITE(filenm,'(A,A,A)')      TRIM(dirin),TRIM(prefix(nf)),             &
-                                      TRIM(suffix)
-       CASE(1)
-         WRITE(filenm,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(2)
-         WRITE(filenm,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(3)
-         WRITE(filenm,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(4)
-         WRITE(filenm,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(5)
-         WRITE(filenm,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(6)
-         WRITE(filenm,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(7)
-         WRITE(filenm,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(8)
-         WRITE(filenm,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(9)
-         WRITE(filenm,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nf)),             &
-                                      filenum,TRIM(suffix)
-       CASE(10)
-         WRITE(filenm,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nf)),           &
-                                      filenum,TRIM(suffix)
-       CASE DEFAULT
-         WRITE(*,*) 'Model presently does not support numdigits of ',numdigits
-         WRITE(*,*) 'Please use numdigit value from 1 to 10'
-         WRITE(*,*) '  OR modify code in Hydrodynamic module'
-         STOP
-     END SELECT
+       call set_filename(nf,filenum,filenm)
     ENDDO
 
     if(.not.Zgrid) then
@@ -708,7 +674,7 @@ CONTAINS
       enddo
       write(*,*)'hydro rho node arrays to copy is ',nodestocopy
       maxnodestocopy=nodestocopy
-      NUM_COPNOD(Rnod)=nodestocopy
+      NUM_COPNOD(RNODE)=nodestocopy
                     ! ----------- u nodes : --------------------------------
       nodestocopy=0
       do j=1,uj
@@ -750,7 +716,7 @@ CONTAINS
       enddo
       maxnodestocopy=max(maxnodestocopy,nodestocopy)
       write(*,*)'u nodes to copy is ',nodestocopy
-      NUM_COPNOD(Unod)=nodestocopy
+      NUM_COPNOD(UNODE)=nodestocopy
                     ! -----------  v nodes : --------------------------------
       nodestocopy=0
       do j=1,vj
@@ -792,7 +758,7 @@ CONTAINS
       enddo
       maxnodestocopy=max(maxnodestocopy,nodestocopy)
       write(*,*)'v nodes to copy is ',nodestocopy
-      NUM_COPNOD(Vnod)=nodestocopy
+      NUM_COPNOD(VNODE)=nodestocopy
 
       !-----------------------------------------------------------------------------
       ! ALLOCATE MATRIX STORING COPNOD parameters:  ! ------------------------------
@@ -825,27 +791,27 @@ CONTAINS
            tmpcoef(3)=float(mask_rho(i,max( 1,j-1),k))/summask
            tmpcoef(4)=float(mask_rho(i,min(uj,j+1),k))/summask
            if((k.eq.kmax) .or. &
-             (Coef_COPNOD(Rnod,max(1,nodestocopy),1).ne.tmpcoef(1)).or.&
-             (Coef_COPNOD(Rnod,max(1,nodestocopy),2).ne.tmpcoef(2)).or.&
-             (Coef_COPNOD(Rnod,max(1,nodestocopy),3).ne.tmpcoef(3)).or.&
-             (Coef_COPNOD(Rnod,max(1,nodestocopy),4).ne.tmpcoef(4)))then
+             (Coef_COPNOD(RNODE,max(1,nodestocopy),1).ne.tmpcoef(1)).or.&
+             (Coef_COPNOD(RNODE,max(1,nodestocopy),2).ne.tmpcoef(2)).or.&
+             (Coef_COPNOD(RNODE,max(1,nodestocopy),3).ne.tmpcoef(3)).or.&
+             (Coef_COPNOD(RNODE,max(1,nodestocopy),4).ne.tmpcoef(4)))then
                nodestocopy=nodestocopy+1
                old_i=i
                old_j=j
                old_count=count
-               Coef_COPNOD(Rnod,nodestocopy,1)=tmpcoef(1)
-               Coef_COPNOD(Rnod,nodestocopy,2)=tmpcoef(2)
-               Coef_COPNOD(Rnod,nodestocopy,3)=tmpcoef(3)
-               Coef_COPNOD(Rnod,nodestocopy,4)=tmpcoef(4)
-               Nghb_COPNOD(Rnod,nodestocopy,1)=max(1,count-1)
-               Nghb_COPNOD(Rnod,nodestocopy,2)=min(uj*vi,count+1)
-               Nghb_COPNOD(Rnod,nodestocopy,3)=max(1,count-vi)
-               Nghb_COPNOD(Rnod,nodestocopy,4)=min(uj*vi,count+vi)
-               Node_COPNOD(Rnod,nodestocopy)=count
-               klev_COPNOD(Rnod,nodestocopy,1)=k
-               klev_COPNOD(Rnod,nodestocopy,2)=k
+               Coef_COPNOD(RNODE,nodestocopy,1)=tmpcoef(1)
+               Coef_COPNOD(RNODE,nodestocopy,2)=tmpcoef(2)
+               Coef_COPNOD(RNODE,nodestocopy,3)=tmpcoef(3)
+               Coef_COPNOD(RNODE,nodestocopy,4)=tmpcoef(4)
+               Nghb_COPNOD(RNODE,nodestocopy,1)=max(1,count-1)
+               Nghb_COPNOD(RNODE,nodestocopy,2)=min(uj*vi,count+1)
+               Nghb_COPNOD(RNODE,nodestocopy,3)=max(1,count-vi)
+               Nghb_COPNOD(RNODE,nodestocopy,4)=min(uj*vi,count+vi)
+               Node_COPNOD(RNODE,nodestocopy)=count
+               klev_COPNOD(RNODE,nodestocopy,1)=k
+               klev_COPNOD(RNODE,nodestocopy,2)=k
            elseif(k.ne.kmax)then
-                klev_COPNOD(Rnod,nodestocopy,2)=k
+                klev_COPNOD(RNODE,nodestocopy,2)=k
            else
             exit
            endif
@@ -875,24 +841,24 @@ CONTAINS
            tmpcoef(3)=float(mask_u(i,max( 1,j-1),k))/summask
            tmpcoef(4)=float(mask_u(i,min(uj,j+1),k))/summask
            if((k.eq.kmax) .or. &
-             (Coef_COPNOD(Unod,max(1,nodestocopy),1).ne.tmpcoef(1)).or.&
-             (Coef_COPNOD(Unod,max(1,nodestocopy),2).ne.tmpcoef(2)).or.&
-             (Coef_COPNOD(Unod,max(1,nodestocopy),3).ne.tmpcoef(3)).or.&
-             (Coef_COPNOD(Unod,max(1,nodestocopy),4).ne.tmpcoef(4)))then
+             (Coef_COPNOD(UNODE,max(1,nodestocopy),1).ne.tmpcoef(1)).or.&
+             (Coef_COPNOD(UNODE,max(1,nodestocopy),2).ne.tmpcoef(2)).or.&
+             (Coef_COPNOD(UNODE,max(1,nodestocopy),3).ne.tmpcoef(3)).or.&
+             (Coef_COPNOD(UNODE,max(1,nodestocopy),4).ne.tmpcoef(4)))then
                nodestocopy=nodestocopy+1
-               Coef_COPNOD(Unod,nodestocopy,1)=tmpcoef(1)
-               Coef_COPNOD(Unod,nodestocopy,2)=tmpcoef(2)
-               Coef_COPNOD(Unod,nodestocopy,3)=tmpcoef(3)
-               Coef_COPNOD(Unod,nodestocopy,4)=tmpcoef(4)
-               Nghb_COPNOD(Unod,nodestocopy,1)=max(1,count-1)
-               Nghb_COPNOD(Unod,nodestocopy,2)=min(uj*ui,count+1)
-               Nghb_COPNOD(Unod,nodestocopy,3)=max(1,count-ui)
-               Nghb_COPNOD(Unod,nodestocopy,4)=min(uj*ui,count+ui)
-               Node_COPNOD(Unod,nodestocopy)=count
-               klev_COPNOD(Unod,nodestocopy,1)=k
-               klev_COPNOD(Unod,nodestocopy,2)=k
+               Coef_COPNOD(UNODE,nodestocopy,1)=tmpcoef(1)
+               Coef_COPNOD(UNODE,nodestocopy,2)=tmpcoef(2)
+               Coef_COPNOD(UNODE,nodestocopy,3)=tmpcoef(3)
+               Coef_COPNOD(UNODE,nodestocopy,4)=tmpcoef(4)
+               Nghb_COPNOD(UNODE,nodestocopy,1)=max(1,count-1)
+               Nghb_COPNOD(UNODE,nodestocopy,2)=min(uj*ui,count+1)
+               Nghb_COPNOD(UNODE,nodestocopy,3)=max(1,count-ui)
+               Nghb_COPNOD(UNODE,nodestocopy,4)=min(uj*ui,count+ui)
+               Node_COPNOD(UNODE,nodestocopy)=count
+               klev_COPNOD(UNODE,nodestocopy,1)=k
+               klev_COPNOD(UNODE,nodestocopy,2)=k
            elseif(k.ne.kmax)then  ! if(k.ne.kmax ): could be cancelled?
-                klev_COPNOD(Unod,nodestocopy,2)=k
+                klev_COPNOD(UNODE,nodestocopy,2)=k
            else   ! could be cancelled?
             exit  ! could be cancelled?
            endif
@@ -922,24 +888,24 @@ CONTAINS
            tmpcoef(3)=float(mask_v(i,max( 1,j-1),k))/summask
            tmpcoef(4)=float(mask_v(i,min(vj,j+1),k))/summask
            if((k.eq.kmax) .or. &
-             (Coef_COPNOD(Vnod,max(1,nodestocopy),1).ne.tmpcoef(1)).or.&
-             (Coef_COPNOD(Vnod,max(1,nodestocopy),2).ne.tmpcoef(2)).or.&
-             (Coef_COPNOD(Vnod,max(1,nodestocopy),3).ne.tmpcoef(3)).or.&
-             (Coef_COPNOD(Vnod,max(1,nodestocopy),4).ne.tmpcoef(4)))then
+             (Coef_COPNOD(VNODE,max(1,nodestocopy),1).ne.tmpcoef(1)).or.&
+             (Coef_COPNOD(VNODE,max(1,nodestocopy),2).ne.tmpcoef(2)).or.&
+             (Coef_COPNOD(VNODE,max(1,nodestocopy),3).ne.tmpcoef(3)).or.&
+             (Coef_COPNOD(VNODE,max(1,nodestocopy),4).ne.tmpcoef(4)))then
                nodestocopy=nodestocopy+1
-               Coef_COPNOD(Vnod,nodestocopy,1)=tmpcoef(1)
-               Coef_COPNOD(Vnod,nodestocopy,2)=tmpcoef(2)
-               Coef_COPNOD(Vnod,nodestocopy,3)=tmpcoef(3)
-               Coef_COPNOD(Vnod,nodestocopy,4)=tmpcoef(4)
-               Nghb_COPNOD(Vnod,nodestocopy,1)=max(1,count-1)
-               Nghb_COPNOD(Vnod,nodestocopy,2)=min(vj*vi,count+1)
-               Nghb_COPNOD(Vnod,nodestocopy,3)=max(1,count-vi)
-               Nghb_COPNOD(Vnod,nodestocopy,4)=min(vj*vi,count+vi)
-               Node_COPNOD(Vnod,nodestocopy)=count
-               klev_COPNOD(Vnod,nodestocopy,1)=k
-               klev_COPNOD(Vnod,nodestocopy,2)=k
+               Coef_COPNOD(VNODE,nodestocopy,1)=tmpcoef(1)
+               Coef_COPNOD(VNODE,nodestocopy,2)=tmpcoef(2)
+               Coef_COPNOD(VNODE,nodestocopy,3)=tmpcoef(3)
+               Coef_COPNOD(VNODE,nodestocopy,4)=tmpcoef(4)
+               Nghb_COPNOD(VNODE,nodestocopy,1)=max(1,count-1)
+               Nghb_COPNOD(VNODE,nodestocopy,2)=min(vj*vi,count+1)
+               Nghb_COPNOD(VNODE,nodestocopy,3)=max(1,count-vi)
+               Nghb_COPNOD(VNODE,nodestocopy,4)=min(vj*vi,count+vi)
+               Node_COPNOD(VNODE,nodestocopy)=count
+               klev_COPNOD(VNODE,nodestocopy,1)=k
+               klev_COPNOD(VNODE,nodestocopy,2)=k
            elseif(k.ne.kmax)then
-                klev_COPNOD(Vnod,nodestocopy,2)=k
+                klev_COPNOD(VNODE,nodestocopy,2)=k
            else
             exit
            endif
@@ -1443,7 +1409,7 @@ CONTAINS
     !This Subroutine reads in the hydrodynamic information for the first 
     !  iteration
     USE PARAM_MOD, ONLY: numpar,ui,vi,uj,vj,us,ws,rho_nodes,u_nodes,v_nodes,   &
-        prefix,suffix,dirin,filenum,filestep,tdim,numdigits,recordnum,days,dt, &
+        prefix,filenum,filestep,tdim,numdigits,recordnum,days,dt, &
         readZeta,constZeta,readSalt,constSalt, &
         !readNetcdfSwdown,                &
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
@@ -1492,6 +1458,7 @@ CONTAINS
     INTEGER :: startnum                                   !start record to read in file
     INTEGER :: ntloop                                     !numer of time to loop through opening new file each time
     INTEGER :: nloop                                      !loop counter
+    INTEGER,PARAMETER :: interpol_from_cell_center_to_CArakawa=1,do_not_interpolate=0
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: swanHs,swantm01,      &
                                    swanpd,swanwl,romstrU,romstrV
 !      ***** END IMIOM *****
@@ -1688,87 +1655,14 @@ CONTAINS
 
       DO nvarf=1,nfilesin
 
-        SELECT CASE(numdigits)
-          CASE(0)
-            WRITE(filenm,'(A,A,A)')      TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         TRIM(suffix)
-          CASE(1)
-            WRITE(filenm,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(2)
-            WRITE(filenm,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(3)
-            WRITE(filenm,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(4)
-            WRITE(filenm,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(5)
-            WRITE(filenm,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(6)
-            WRITE(filenm,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(7)
-            WRITE(filenm,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(8)
-            WRITE(filenm,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(9)
-            WRITE(filenm,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(10)
-            WRITE(filenm,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nvarf)),    &
-                                         counter,TRIM(suffix)
-          CASE DEFAULT
-           WRITE(*,*)'Model presently does not support numdigits of ',numdigits
-           WRITE(*,*)'Please use numdigit value from 1 to 10'
-           WRITE(*,*)'  OR modify code in Hydrodynamic module'
-           STOP
-        END SELECT
+       call set_filename(nvarf,counter,filenm)
+
 !      *****   IMIOM      *****
         IF(OilOn)THEN
          IF(WindWaveModel)THEN
           scounter = iint + swan_filenum
-          SELECT CASE(numdigits)
-           CASE(1)
-             WRITE(swannm,'(A,A,I1.1,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(2)                                                                      
-             WRITE(swannm,'(A,A,I2.2,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(3)                                                                      
-             WRITE(swannm,'(A,A,I3.3,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(4)                                                                      
-             WRITE(swannm,'(A,A,I4.4,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(5)                                                                      
-             WRITE(swannm,'(A,A,I5.5,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(6)                                                                      
-             WRITE(swannm,'(A,A,I6.6,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(7)                                                                      
-             WRITE(swannm,'(A,A,I7.7,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(8)                                                                      
-             WRITE(swannm,'(A,A,I8.8,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(9)                                                                      
-             WRITE(swannm,'(A,A,I9.9,A)') TRIM(dirin),                         &
-                         TRIM(prefix(nvarf)),scounter,TRIM(suffix)                      
-           CASE(10)                                                                     
-             WRITE(swannm,'(A,A,I10.10,A)')TRIM(dirin),                        &
-                         TRIM(prefix(nvarf)),scounter,TRIM(suffix)
-           CASE DEFAULT
-            WRITE(*,*)'Model presently does not support numdigits of',numdigits
-            WRITE(*,*)'Please use numdigit value from 1 to 10'
-            WRITE(*,*)'  OR modify code in Hydrodynamic module'
-            STOP
-          END SELECT
+
+          call set_filename(nvarf,scounter,swannm)
 
          END IF            !if WindWaveModel
         END IF            !if OilOn
@@ -1852,300 +1746,23 @@ CONTAINS
 
         ! Read in data for first three external time steps
 
-       if(Zgrid)then
-         !write(*,*)'open MITgcm datafile: ',TRIM(filenm)
-         if(filegiven)then
-           write(*,'(3a,i8)') 'initHydro : file name to open and read is ',TRIM(filenm),' with little endian'
-           open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
-                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
-            if ( ios /= 0 ) then
-                do waiting=1,10
-                        rand15=int( 15.0*genrand_real1() )
-                        call sleep(rand15)
-                        write(*,*)'waiting as opening of file ',trim(filenm),  &
-                                  ' failed . New trial after sleep ',rand15
-                        open(unit=110,file=TRIM(filenm),form='unformatted',    &
-                          status='old', action='read',access='direct',         &
-                          recl=hydrobytes*vi, iostat=ios,convert='little_endian')
-                        if ( ios == 0 ) exit
-                enddo
-            endif
-           if ( ios /= 0 )  then
-               write(*,*) " ERROR OPENING ",TRIM(filenm)
-               stop
-           endif
-         else
-           write(*,'(a,i2,2a)') "Constant value used for variable",nvarf,                &
-                       ' instead of reading the file: ',TRIM(filenm)
-         endif
-       else ! Roms NETcdf outputs
-
-        STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-
-       endif
-!!!       write(*,*) 'ncid = ', nci
-
         !------------------------------------
-
         if(isZeta.and.readZeta)then  
-          ! **** Zeta ****
-          startz(1)=t_ijruv(1)
-          startz(2)=t_ijruv(3)
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(2)-t_ijruv(1)+1
-          countz(2)=t_ijruv(4)-t_ijruv(3)+1
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            !write(*,*)'read in MITgcm file var zeta: '
-            !   write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-            !   write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-            !   write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-            if(hydrobytes.eq.4)then 
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            tmpvec=0.0
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING ZETA "
-              endif
-              romZ(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
-            enddo
-            enddo
-            else
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            dbltmpvec=0.0
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING ZETA "
-              endif
-              romZ(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
-            enddo
-            enddo
-            endif
-          else
-             STATUS = NF90_INQ_VARID(NCID,'zeta',VID)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem find zeta'
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-         
-             STATUS = NF90_GET_VAR(NCID,VID,romZ(t_ijruv(1):t_ijruv(2),        &
-                             t_ijruv(3):t_ijruv(4),nfn:nfnn),STARTz,COUNTz)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem read zeta array'
-               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-           endif
+          call read_data_from_file('zeta',vi,uj,1,nf,nfn,nfnn,romZ,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isZeta)then
           romZ = constZeta
         endif
 
         !------------------------------------
-
-       !if(isSwdown.and.readNetcdfSwdown)then 
-       !   ! **** Swdown ****
-       !  startz(1)=t_ijruv(1)
-       !  startz(2)=t_ijruv(3)
-       !  startz(3)=recordnum
-
-       !  countz(1)=t_ijruv(2)-t_ijruv(1)+1
-       !  countz(2)=t_ijruv(4)-t_ijruv(3)+1
-       !  countz(3)=incrstepf
-
-       !  if(Zgrid)then
-       !    if(hydrobytes.eq.4)then 
-       !    do t=startz(3),startz(3)+countz(3)-1
-       !    write(*,*)'time record num=',t
-       !    tmpvec=0.0
-       !    do j=startz(2),startz(2)+countz(2)-1
-       !      read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-       !      if ( ios /= 0 ) then
-       !         write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-       !         stop " ERROR READING SWDOWN "
-       !      endif
-       !      if(j==startz(2))then
-       !          write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-       !                     TRIM(filenm)
-       !          write(*,'(33f7.4)')tmpvec(51:84)
-       !      endif
-       !      romSwdown(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
-       !    enddo
-       !    enddo
-       !    else
-       !    do t=startz(3),startz(3)+countz(3)-1
-       !    write(*,*)'time record num=',t
-       !    dbltmpvec=0.0
-       !    do j=startz(2),startz(2)+countz(2)-1
-       !      read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-       !      if ( ios /= 0 ) then
-       !         write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-       !         stop " ERROR READING SWDOWN "
-       !      endif
-       !      if(j==startz(2))then
-       !          write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-       !                    TRIM(filenm)
-       !          write(*,'(33f7.4)')dbltmpvec(51:84)
-       !      endif
-       !      romSwdown(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
-       !    enddo
-       !    enddo
-       !    endif
-       !  else
-       !     STATUS = NF90_INQ_VARID(NCID,'swdown',VID)
-       !     if (STATUS .NE. NF90_NOERR) then
-       !       write(*,*) 'Problem find swdown'
-       !       write(*,*) NF90_STRERROR(STATUS)
-       !       stop
-       !     endif
-       ! 
-       !     STATUS = NF90_GET_VAR(NCID,VID,romSwdown(t_ijruv(1):t_ijruv(2),        &
-       !                     t_ijruv(3):t_ijruv(4),nfn:nfnn),STARTz,COUNTz)
-       !     if (STATUS .NE. NF90_NOERR) then
-       !       write(*,*) 'Problem read swdown array'
-       !       write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-       !       write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-       !       write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-       !       write(*,*) NF90_STRERROR(STATUS)
-       !       stop
-       !     endif
-       !   endif
-       !elseif(isSwdown)then
-       !  romSwdown = 0.0
-       !endif
-        !------------------------------------
         if(isSalt.and.readSalt)then
-          ! **** Salt ****
-          startr(1)=t_ijruv(1)
-          startr(2)=t_ijruv(3)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(2)-t_ijruv(1)+1
-          countr(2)=t_ijruv(4)-t_ijruv(3)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-            if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-             romS(:,:,:,nf+t-startr(4))=0.0
-             do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING SALT "
-                romS(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-             enddo
-            enddo
-            else
-            do t=startr(4),startr(4)+countr(4)-1
-             romS(:,:,:,nf+t-startr(4))=0.0
-             do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING SALT "
-                romS(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-             enddo
-            enddo
-            endif   
-          else
-        
-            STATUS = NF90_INQ_VARID(NCID,'salt',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find salt'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          
-            STATUS = NF90_GET_VAR(NCID,VID,romS(t_ijruv(1):t_ijruv(2),         &
-                        t_ijruv(3):t_ijruv(4),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read salt array'
-              write(*,*) ' i=',startr(1),':',startr(1)+countr(1)-1
-              write(*,*) ' j=',startr(2),':',startr(2)+countr(2)-1
-              write(*,*) ' k=',startr(3),':',startr(3)+countr(3)-1
-              write(*,*) ' t=',startr(4),':',startr(4)+countr(4)-1
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('salt',vi,uj,us,nf,nfn,nfnn,romS,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isSalt)then
           romS = constSalt
         endif
         !------------------------------------
 
         if(isTemp.and.readTemp)then  
-          ! **** Temp ****
-          startr(1)=t_ijruv(1)
-          startr(2)=t_ijruv(3)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(2)-t_ijruv(1)+1
-          countr(2)=t_ijruv(4)-t_ijruv(3)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-              romT(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING TEMP "
-                romT(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-              romT(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING TEMP "
-                romT(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'temp',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find temp'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romT(t_ijruv(1):t_ijruv(2),         &
-                         t_ijruv(3):t_ijruv(4),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read temp array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('temp',vi,uj,us,nf,nfn,nfnn,romT,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isTemp)then
           romT = constTemp
         endif
@@ -2153,67 +1770,7 @@ CONTAINS
 
 
         if(isDens.and.readDens)then  
-          ! **** Density ****
-          startr(1)=t_ijruv(1)
-          startr(2)=t_ijruv(3)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(2)-t_ijruv(1)+1
-          countr(2)=t_ijruv(4)-t_ijruv(3)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-         !write(*,*) 'isR, i=',startr(1),' :',startr(1)+countr(1)-1
-         !write(*,*) 'isR, j=',startr(2),' :',startr(2)+countr(2)-1
-         !write(*,*) 'isR, k=',startr(3),' :',startr(3)+countr(3)-1
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then               
-            do t=startr(4),startr(4)+countr(4)-1
-              romD(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING RHO "
-                romD(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else 
-            do t=startr(4),startr(4)+countr(4)-1
-              romD(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING RHO "
-                romD(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-
-           endif
-             
-          else
-
-
-            STATUS = NF90_INQ_VARID(NCID,'rho',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find rho'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romD(t_ijruv(1):t_ijruv(2),             &
-                                  t_ijruv(3):t_ijruv(4),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read rho array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('rho',vi,uj,us,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isDens)then
           romD = constDens
         endif
@@ -2221,88 +1778,7 @@ CONTAINS
         !------------------------------------
 
         if(isU.and.readU)then  
-          ! **** U velocity ****
-          startr(1)=t_ijruv(5)
-          startr(2)=t_ijruv(7)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(6)-t_ijruv(5)+1
-          countr(2)=t_ijruv(8)-t_ijruv(7)+1
-          countr(3)=us
-          countr(4)=incrstepf
-         !write(*,*) 'isU, i=',startr(1),' :',startr(1)+countr(1)-1
-         !write(*,*) 'isU, j=',startr(2),' :',startr(2)+countr(2)-1
-         !write(*,*) 'isU, k=',startr(3),' :',startr(3)+countr(3)-1
-         !write(*,*) 'isU, t=',startr(4),' :',startr(4)+countr(4)-1
-         !write(*,*) 'isU nf=',nf,' :',nf+countr(4)-1
-
-          if(Zgrid)then
-            if(hydrobytes.eq.4)then                      
-            do t=startr(4),startr(4)+countr(4)-1
-              romU(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 )then 
-                   write(*,"(11(a,i6),a)") &
-                   " ERROR READING U array of length ",vi,"* 4 Byte at pos ",ktlev+j,&
-                   " for t=",t," in [",&
-                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
-                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
-                   startr(2),',',startr(2)+countr(2)-1,"], "
-                   stop
-                endif
-                romU(1:ui,j,(us-k+1),nf+t-startr(4))=tmpvec(2:vi)
-              enddo
-              enddo
-            enddo
-            else
-            do t=startr(4),startr(4)+countr(4)-1
-              romU(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                !if(k==1 .or. k==2)write(*,'(5(a,i4))')'t=',t,' enregistrement
-                !(',k,',',j,'):',ktlev+j,' of size ni stored in k=',(us-k+1)
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 )then 
-                   write(*,"(11(a,i6),a)") &
-                   " ERROR READING U array of length ",vi,"* 8 Byte at pos ",ktlev+j,&
-                   " for t=",t," in [",&
-                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
-                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
-                   startr(2),',',startr(2)+countr(2)-1,"], "
-                   stop
-                endif
-                romU(1:ui,j,(us-k+1),nf+t-startr(4))=dbltmpvec(2:vi)     
-              enddo
-              enddo
-            enddo
-
-            endif
-             
-          else
-
-
-            STATUS = NF90_INQ_VARID(NCID,'u',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find u'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romU(t_ijruv(5):t_ijruv(6),         &
-                             t_ijruv(7):t_ijruv(8),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read u array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('u',ui,uj,us,nf,nfn,nfnn,romU,UNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isU)then
           romU = constU
         endif
@@ -2310,61 +1786,7 @@ CONTAINS
         !------------------------------------
 
         if(isV.and.readV)then  
-          ! **** V velocity ****
-          startr(1)=t_ijruv(9)
-          startr(2)=t_ijruv(11)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(10)-t_ijruv(9)+1
-          countr(2)=t_ijruv(12)-t_ijruv(11)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-              romV(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+(j+1)),IOSTAT=ios)tmpvec(1:vi) !(decal j of (+1) as V output is on v-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING V "
-                romV(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-              romV(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+(j+1)),IOSTAT=ios)dbltmpvec(1:vi) !(decal j of (+1) as V output is on v-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING V "
-                romV(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif
-               
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'v',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find v'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romV(t_ijruv(9):t_ijruv(10),        &
-                            t_ijruv(11):t_ijruv(12),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read v array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+            call read_data_from_file('v',vi,vj,us,nf,nfn,nfnn,romV,VNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isV)then
           romV = constV
         endif
@@ -2372,63 +1794,7 @@ CONTAINS
         !------------------------------------
 
         if(isW.and.readW)then  
-          ! **** W velocity ****
-          startr(1)=t_ijruv(1)
-          startr(2)=t_ijruv(3)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(2)-t_ijruv(1)+1
-          countr(2)=t_ijruv(4)-t_ijruv(3)+1
-          countr(3)=ws
-          countr(4)=incrstepf
-
-          if(Zgrid)then           
-           if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-              romW(:,:,:,nf+t-startr(4))=0.0     ! set W to null to initialize bottom values which are not present in input file
-              do k=startr(3),startr(3)+countr(3)-1 -(1) ! -1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING W "
-                romW(1:vi,j,(us-k+2),nf+t-startr(4))=tmpvec(1:vi)
-                !romW(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-               romW(:,:,:,nf+t-startr(4))=0.0     ! set W to null to initialize bottom values which are not present in input file
-              do k=startr(3),startr(3)+countr(3)-1 -(1) ! -1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING W "
-                romW(1:vi,j,(us-k+2),nf+t-startr(4))=dbltmpvec(1:vi)
-                !romW(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif
-        
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'w',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find w'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romW(t_ijruv(1):t_ijruv(2),         & 
-                       t_ijruv(3):t_ijruv(4),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read w array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('w',vi,uj,ws,nf,nfn,nfnn,romW,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isW)then
           romW = constW
         endif
@@ -2436,264 +1802,29 @@ CONTAINS
         !------------------------------------
 
         if(isAks.and.readAks)then  
-          ! **** Vertical diffusivity for salt (Aks) ****
-          startr(1)=t_ijruv(1)
-          startr(2)=t_ijruv(3)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(2)-t_ijruv(1)+1
-          countr(2)=t_ijruv(4)-t_ijruv(3)+1
-          countr(3)=ws
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then             
-            do t=startr(4),startr(4)+countr(4)-1
-              romKH(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-2 ! -1 as KH is on rho nodes for MITGCM
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING AKs "
-                romKH(1:vi,j,(us-k+2),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-              romKH(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-2 ! -1 as KH is on rho nodes for MITGCM
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING AKs "
-                romKH(1:vi,j,(us-k+2),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif        
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'AKs',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find AKs'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-            
-            STATUS = NF90_GET_VAR(NCID,VID,romKH(t_ijruv(1):t_ijruv(2),        &
-                          t_ijruv(3):t_ijruv(4),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read AKs array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('AKs',vi,uj,us,nf,nfn,nfnn,romKH,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isAks)then
           romKH = constAks
         endif
+
         !------------------------------------
+
         if(Wind .and.(isUwind .and.readUwind))then  
-          ! **** Uwind****
-          startz(1)=t_ijruv(5)  !U C-arakawa-gridpoint even if MITgcm stores wind at rho grid points
-          startz(2)=t_ijruv(7)  !U C-arakawa-gridpoint
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(6)-t_ijruv(5)+1  !U C-arakawa-gridpoint
-          countz(2)=t_ijruv(8)-t_ijruv(7)+1  !U C-arakawa-gridpoint
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            write(*,*)'warning: read in MITgcm file var Uwind at cell center, interpolating it at U-grid points '
-           if(hydrobytes.eq.4)then                         
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Uwind "
-              endif
-              modelUwind(1:ui,j,nf+t-startz(3))=                               &
-                0.5*(tmpvec(1:vi-1)+tmpvec(2:vi)) !--- CL-OGS: skip first data in i as is is a U-grid data
-            enddo
-            enddo
-           else
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Uwind "
-              endif
-              modelUwind(1:ui,j,nf+t-startz(3))=0.5*(dbltmpvec(1:vi-1)+        &
-                          dbltmpvec(2:vi))
-            !--- CL-OGS: skip first data in i as is is a U-grid data
-            enddo
-            enddo
-           endif
-          else
-             STATUS = NF90_INQ_VARID(NCID,'sustr',VID)       !--- MIOSM : wind stress  
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem find sustr'
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-         
-             STATUS = NF90_GET_VAR(NCID,VID,romstrU(t_ijruv(5):t_ijruv(6),     &
-                              t_ijruv(7):t_ijruv(8),nfn:nfnn),STARTz,COUNTz)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem read sustr array'
-               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-             do j=t_ijruv(7),t_ijruv(8)
-              do i=t_ijruv(5),t_ijruv(6)
-                DO nloop=1,3
-                if(romstrU(i,j,nloop).lt.0.0)then
-                modelUwind(i,j,nloop) = &
-                          (-20.659 * (abs(romstrU(i,j,nloop))**0.4278))
-                else
-                modelUwind(i,j,nloop)= &
-                          (20.659 * (romstrU(i,j,nloop)**0.4278)) 
-                end if
-                ENDDO
-              enddo
-            enddo
-           endif
+          call read_data_from_file('sustr',ui,uj,1,nf,nfn,nfnn,modelUwind,UNODE,recordnum,incrstepf,filenm, &
+                      interpol_from_cell_center_to_CArakawa)
         elseif(isUwind)then
           modelUwind = constUwind
         endif       
         !------------------------------------
         if(Wind .and.(isVwind .and.readVwind))then  
-          ! **** Vwind****
-          startz(1)=t_ijruv(9)
-          startz(2)=t_ijruv(11)
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(10)-t_ijruv(9)+1
-          countz(2)=t_ijruv(12)-t_ijruv(11)+1
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            write(*,*)'warning: read in MITgcm file var Vwind at cell center, ',&
-       ' interpolating it at V-grid points',startz(3),startz(3)+countz(3)-1,nf
-           if(hydrobytes.eq.4)then             
-            do t=startz(3),startz(3)+countz(3)-1
-            modelVwind(:,:,nf+t-startz(3))=0.0
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1 +1 !(+1) tobe able to compute average V wind 
-              read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)  !start from j instead of (j+1)  tobe able to compute average V wind 
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Vwind "
-              endif
-              if(j.le.startz(2)+countz(2)-1) &
-                modelVwind(1:vi,j,nf+t-startz(3))=0.5*tmpvec(1:vi)
-              if(j.gt.startz(2)) &
-                modelVwind(1:vi,j-1,nf+t-startz(3))= &
-                modelVwind(1:vi,j-1,nf+t-startz(3))+0.5*tmpvec(1:vi)
-            enddo
-            enddo
-           else
-            do t=startz(3),startz(3)+countz(3)-1
-            modelVwind(:,:,nf+t-startz(3))=0.0
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1+1 !(+1) tobe able to compute average V wind
-              read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)!start from j instead of (j+1)  tobe able to compute average V wind 
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Vwind "
-              endif
-              if(j.le.startz(2)+countz(2)-1) &
-                modelVwind(1:vi,j,nf+t-startz(3))=0.5*dbltmpvec(1:vi)
-              if(j.gt.startz(2)) &
-                modelVwind(1:vi,j-1,nf+t-startz(3))= &
-                modelVwind(1:vi,j-1,nf+t-startz(3))+0.5*dbltmpvec(1:vi)
-            enddo
-            enddo 
-           endif 
-          else
-             STATUS = NF90_INQ_VARID(NCID,'svstr',VID)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem find svstr'
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-         
-             STATUS = NF90_GET_VAR(NCID,VID,romstrV(t_ijruv(9):t_ijruv(10),    &
-                       t_ijruv(11):t_ijruv(12),nfn:nfnn),STARTz,COUNTz)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem read svstr array'
-               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-             do j=t_ijruv(11),t_ijruv(12)
-              do i=t_ijruv(9),t_ijruv(10)
-                DO nloop=1,3
-                if(romstrV(i,j,nloop).lt.0.0)then
-                  modelVwind(i,j,nloop)=                                       &
-                           (-20.659 * (abs(romstrV(i,j,nloop))**0.4278)) 
-                else
-                  modelVwind(i,j,nloop)=                                       &
-                           (20.659 * (romstrV(i,j,nloop)**0.4278))
-                end if
-                ENDDO
-              enddo
-            enddo
-           endif
+          call read_data_from_file('svstr',vi,vj,1,nf,nfn,nfnn,modelVwind,VNODE,recordnum,incrstepf,filenm, &
+                      interpol_from_cell_center_to_CArakawa)
         elseif(isVwind)then
           modelVwind = constVwind
         endif
         !------------------------------------
         if(isIwind .and.readIwind)then  
-          ! **** Iwind****
-          startz(1)=t_ijruv(1)
-          startz(2)=t_ijruv(3)
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(2)-t_ijruv(1)+1
-          countz(2)=t_ijruv(4)-t_ijruv(3)+1
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            if(hydrobytes.eq.4)then 
-            do t=startz(3),startz(3)+countz(3)-1
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Iwind "
-              endif
-              modelIwind(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
-            enddo
-            enddo
-            else
-            do t=startz(3),startz(3)+countz(3)-1
-            dbltmpvec=0.0
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Iwind "
-              endif
-              modelIwind(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
-            enddo
-            enddo
-            endif
-          else
-           write(*,*) ' ERROR Wind intensity not present in Roms files'
-           write(*,*) ' setting modelIwindf = constIwind=',constIwind
-           modelIwind = constIwind
-          endif
+          call read_data_from_file('wind_intensity',vi,uj,us,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isIwind)then
           modelIwind = constIwind
         endif
@@ -2830,12 +1961,6 @@ CONTAINS
            endif
         endif
 
-        !close the dataset and reassign the NCID
-      if ( Zgrid)then
-       if(filegiven)   CLOSE(110)
-      else
-        STATUS = NF90_CLOSE(NCID)
-      endif 
 
       ENDDO !nvarf=1,nfilesin
     ENDDO !nf=1,nfmax
@@ -2843,61 +1968,61 @@ CONTAINS
       ! Store the ranges of nodes that were update
       updatenodesbuffer=0
       ! rho node range
-      do j=t_ijruv(3),t_ijruv(4)
-        updatenodesbuffer(1,j,1) = (j-1)*vi + t_ijruv(1) ! frst rnode at latitude j
-        updatenodesbuffer(2,j,1) = (j-1)*vi + t_ijruv(2) ! last rnode at latitude j
+      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        updatenodesbuffer(1,j,1) = (j-1)*vi + t_ijruv(IMIN,RNODE) ! frst rnode at latitude j
+        updatenodesbuffer(2,j,1) = (j-1)*vi + t_ijruv(IMAX,RNODE) ! last rnode at latitude j
       enddo
-      write(*,'(2(a,2i5))')'updating rho nodes data in i=',t_ijruv(1),t_ijruv(2),         &
-                ' j=',t_ijruv(3),t_ijruv(4)
+      write(*,'(2(a,2i5))')'updating rho nodes data in i=',t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE),         &
+                ' j=',t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
 
       write(*,'(a,F10.5,a,F10.5,a)')'lon=[ ',                                  &
-       x2lon(rx(updatenodesbuffer(1,t_ijruv(3),1)),                            &
-             ry(updatenodesbuffer(1,t_ijruv(3),1))),' : ',                     &
-       x2lon(rx(updatenodesbuffer(2,t_ijruv(4),1)),                            &
-             ry(updatenodesbuffer(2,t_ijruv(4),1))),' ]'
+       x2lon(rx(updatenodesbuffer(1,t_ijruv(JMIN,RNODE),1)),                            &
+             ry(updatenodesbuffer(1,t_ijruv(JMIN,RNODE),1))),' : ',                     &
+       x2lon(rx(updatenodesbuffer(2,t_ijruv(JMAX,RNODE),1)),                            &
+             ry(updatenodesbuffer(2,t_ijruv(JMAX,RNODE),1))),' ]'
       write(*,'(a,F10.5,a,F10.5,a)')'lat=[ ',                                  &
-       y2lat(ry(updatenodesbuffer(1,t_ijruv(3),1))),' : ' ,                    &
-       y2lat(ry(updatenodesbuffer(2,t_ijruv(4),1))),' ]'
+       y2lat(ry(updatenodesbuffer(1,t_ijruv(JMIN,RNODE),1))),' : ' ,                    &
+       y2lat(ry(updatenodesbuffer(2,t_ijruv(JMAX,RNODE),1))),' ]'
 
       ! u node range
        
-      do j=t_ijruv(7),t_ijruv(8)
-        updatenodesbuffer(1,j,2) = (j-1)*ui + t_ijruv(5) ! frst unode at latitude j
-        updatenodesbuffer(2,j,2) = (j-1)*ui + t_ijruv(6) ! last unode at latitude j
+      do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+        updatenodesbuffer(1,j,2) = (j-1)*ui + t_ijruv(IMIN,UNODE) ! frst unode at latitude j
+        updatenodesbuffer(2,j,2) = (j-1)*ui + t_ijruv(IMAX,UNODE) ! last unode at latitude j
       enddo
-      write(*,*)'updating u nodes data in i=',t_ijruv(5),t_ijruv(6),' j=',     &
-                   t_ijruv(7),t_ijruv(8)
+      write(*,*)'updating u nodes data in i=',t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE),' j=',     &
+                   t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
       write(*,'(a,F10.5,a,F10.5,a)')'lon=[ ',                                  &
-       x2lon(ux(updatenodesbuffer(1,t_ijruv(7),2)),                            &
-             uy(updatenodesbuffer(1,t_ijruv(7),2))),' : ',                     &
-       x2lon(ux(updatenodesbuffer(2,t_ijruv(8),2)),                            &
-             uy(updatenodesbuffer(2,t_ijruv(8),2))),' ]'
+       x2lon(ux(updatenodesbuffer(1,t_ijruv(JMIN,UNODE),2)),                            &
+             uy(updatenodesbuffer(1,t_ijruv(JMIN,UNODE),2))),' : ',                     &
+       x2lon(ux(updatenodesbuffer(2,t_ijruv(JMAX,UNODE),2)),                            &
+             uy(updatenodesbuffer(2,t_ijruv(JMAX,UNODE),2))),' ]'
       write(*,'(a,F10.5,a,F10.5,a)')'lat=[ ',                                  &
-       y2lat(uy(updatenodesbuffer(1,t_ijruv(7),2))),' : ',                     &
-       y2lat(uy(updatenodesbuffer(2,t_ijruv(8),2))),' ]'
+       y2lat(uy(updatenodesbuffer(1,t_ijruv(JMIN,UNODE),2))),' : ',                     &
+       y2lat(uy(updatenodesbuffer(2,t_ijruv(JMAX,UNODE),2))),' ]'
 
       ! v node range
-      do j=t_ijruv(11),t_ijruv(12)
-        updatenodesbuffer(1,j,3) = (j-1)*vi + t_ijruv(9)  ! frst vnode at latitude j
-        updatenodesbuffer(2,j,3) = (j-1)*vi + t_ijruv(10) ! last vnode at latitude j
+      do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+        updatenodesbuffer(1,j,3) = (j-1)*vi + t_ijruv(IMIN,VNODE)  ! frst vnode at latitude j
+        updatenodesbuffer(2,j,3) = (j-1)*vi + t_ijruv(IMAX,VNODE) ! last vnode at latitude j
       enddo
-      write(*,*)'updating v nodes data in i=',t_ijruv(9),t_ijruv(10),' j=',    &
-                t_ijruv(11),t_ijruv(12)
+      write(*,*)'updating v nodes data in i=',t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE),' j=',    &
+                t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
       write(*,'(a,F10.5,a,F10.5,a)')'lon=[ ',                                  &
-       x2lon(vx(updatenodesbuffer(1,t_ijruv(11),3)),                           &
-             vy(updatenodesbuffer(1,t_ijruv(11),3))),' : ',                    &
-       x2lon(vx(updatenodesbuffer(2,t_ijruv(12),3)),                           &
-             vy(updatenodesbuffer(2,t_ijruv(12),3))),' ]'                        
+       x2lon(vx(updatenodesbuffer(1,t_ijruv(JMIN,VNODE),3)),                           &
+             vy(updatenodesbuffer(1,t_ijruv(JMIN,VNODE),3))),' : ',                    &
+       x2lon(vx(updatenodesbuffer(2,t_ijruv(JMAX,VNODE),3)),                           &
+             vy(updatenodesbuffer(2,t_ijruv(JMAX,VNODE),3))),' ]'                        
       write(*,'(a,F10.5,a,F10.5,a)')'lat=[ ',                                  &
-       y2lat(vy(updatenodesbuffer(1,t_ijruv(11),3))),' : ',                    &
-       y2lat(vy(updatenodesbuffer(2,t_ijruv(12),3))),' ]'
+       y2lat(vy(updatenodesbuffer(1,t_ijruv(JMIN,VNODE),3))),' : ',                    &
+       y2lat(vy(updatenodesbuffer(2,t_ijruv(JMAX,VNODE),3))),' ]'
 
 
       !Reshape input to fit node numbers assigned to elements
-      do j=t_ijruv(3),t_ijruv(4)
-        !write(*,*)'initHydro nodes',(j-1)*vi + t_ijruv(1),':',& 
-        !   (j-1)*vi + t_ijruv(2)
-        do i=t_ijruv(1),t_ijruv(2)
+      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        !write(*,*)'initHydro nodes',(j-1)*vi + t_ijruv(IMIN,RNODE),':',& 
+        !   (j-1)*vi + t_ijruv(IMAX,RNODE)
+        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
           count = (j-1)*vi + i
           do k=1,us
             kmask=min(k,us_tridim) 
@@ -2933,8 +2058,8 @@ CONTAINS
       enddo
       write(*,*)'maxval(Wvel)=',maxval(t_Wvel)
 
-      do j=t_ijruv(7),t_ijruv(8)
-        do i=t_ijruv(5),t_ijruv(6)
+      do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+        do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
           count = (j-1)*ui + i
           do k=1,us
             kmask=min(k,us_tridim) 
@@ -2945,8 +2070,8 @@ CONTAINS
         enddo
       enddo
 
-      do j=t_ijruv(11),t_ijruv(12)
-        do i=t_ijruv(9),t_ijruv(10)
+      do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+        do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
           count = (j-1)*vi + i
           do k=1,us
             kmask=min(k,us_tridim)
@@ -2961,13 +2086,13 @@ CONTAINS
       if(Zgrid)then
         ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
         nodestocopy=1
-        do j=t_ijruv(3),t_ijruv(4)
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
          !write(*,'(8(a,i4),a)')&
          !  '---------------------------------------------- j=',j,&
-         !' (in [',t_ijruv(3),',',t_ijruv(4), &
-         !']) i=[',t_ijruv(1),',',t_ijruv(2),'] --- ui=',ui, &
+         !' (in [',t_ijruv(JMIN,RNODE),',',t_ijruv(JMAX,RNODE), &
+         !']) i=[',t_ijruv(IMIN,RNODE),',',t_ijruv(IMAX,RNODE),'] --- ui=',ui, &
          !' uj=',uj,' us=',us,'----------------------------------------------'
-          do i=t_ijruv(1),t_ijruv(2)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
@@ -2977,167 +2102,167 @@ CONTAINS
               t_den(:,count,kbot-1)  = t_den(:,count,kbot) 
               t_KH(:,count,kbot-1)   = t_KH(:,count,kbot)  
              endif
-             do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-               if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+             do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+               if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+               if(Node_COPNOD(RNODE,searchnode).ge.count)exit
              enddo
-             do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-               k1=klev_COPNOD(Rnod,nodestocopy,2)
-               k2=klev_COPNOD(Rnod,nodestocopy,1)
+             do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+               k1=klev_COPNOD(RNODE,nodestocopy,2)
+               k2=klev_COPNOD(RNODE,nodestocopy,1)
                do tcopy=1,3
                  t_salt(tcopy,count,k1:k2)=(                        &
-                 t_salt(tcopy,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,1) +  &
-                 t_salt(tcopy,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,2) +  &
-                 t_salt(tcopy,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,3) +  &
-                 t_salt(tcopy,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                  t_temp(tcopy,count,k1:k2)=(                        &
-                 t_temp(tcopy,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,1) +  &
-                 t_temp(tcopy,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,2) +  &
-                 t_temp(tcopy,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,3) +  &
-                 t_temp(tcopy,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                  t_den(tcopy,count,k1:k2)=(                        &
-                 t_den(tcopy,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,1) +  &
-                 t_den(tcopy,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,2) +  &
-                 t_den(tcopy,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,3) +  &
-                 t_den(tcopy,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                  t_KH(tcopy,count,k1:k2)=(                        &
-                 t_KH(tcopy,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,1) +  &
-                 t_KH(tcopy,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,2) +  &
-                 t_KH(tcopy,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,3) +  &
-                 t_KH(tcopy,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                enddo
                nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+               if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
              enddo !while
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
 
         nodestocopy=1
-        do j=t_ijruv(7),t_ijruv(8)
-          do i=t_ijruv(5),t_ijruv(6)
+        do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+          do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
            count = (j-1)*ui + i
            kbot=BottomK(i,j,2)
            if( kbot>1)then
              if(kbot<ws)then
                t_Uvel(:,count,kbot-1) =  t_Uvel(:,count,kbot)
              endif
-             do searchnode=nodestocopy,NUM_COPNOD(Unod)
-               if(Node_COPNOD(Unod,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(Unod,searchnode).ge.count)exit
+             do searchnode=nodestocopy,NUM_COPNOD(UNODE)
+               if(Node_COPNOD(UNODE,searchnode).le.count)nodestocopy=searchnode
+               if(Node_COPNOD(UNODE,searchnode).ge.count)exit
              enddo
-             do while(Node_COPNOD(Unod,nodestocopy).eq.count)
-               k1=klev_COPNOD(Unod,nodestocopy,2)
-               k2=klev_COPNOD(Unod,nodestocopy,1)
+             do while(Node_COPNOD(UNODE,nodestocopy).eq.count)
+               k1=klev_COPNOD(UNODE,nodestocopy,2)
+               k2=klev_COPNOD(UNODE,nodestocopy,1)
                do tcopy=1,3
                  t_Uvel(tcopy,count,k1:k2)=(                        &
-                 t_Uvel(tcopy,Nghb_COPNOD(Unod,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(Unod,nodestocopy,1) +  &
-                 t_Uvel(tcopy,Nghb_COPNOD(Unod,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(Unod,nodestocopy,2) +  &
-                 t_Uvel(tcopy,Nghb_COPNOD(Unod,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(Unod,nodestocopy,3) +  &
-                 t_Uvel(tcopy,Nghb_COPNOD(Unod,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(Unod,nodestocopy,4) ) 
+                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,1),k1:k2) &
+                             *Coef_COPNOD(UNODE,nodestocopy,1) +  &
+                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,2),k1:k2) &
+                             *Coef_COPNOD(UNODE,nodestocopy,2) +  &
+                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,3),k1:k2) &
+                             *Coef_COPNOD(UNODE,nodestocopy,3) +  &
+                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,4),k1:k2) &
+                             *Coef_COPNOD(UNODE,nodestocopy,4) ) 
                enddo  !tcopy
                nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(Unod))exit
+               if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
              enddo !While
            endif
-           if(nodestocopy.gt.NUM_COPNOD(Unod))exit
+           if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Unod))exit
+          if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
         enddo
 
 
         nodestocopy=1
-        do j=t_ijruv(11),t_ijruv(12)
-          do i=t_ijruv(9),t_ijruv(10)
+        do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+          do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
            count = (j-1)*vi + i
            kbot=BottomK(i,j,3)
            if( kbot>1)then
              if(kbot<ws)then
                t_Vvel(:,count,kbot-1) =  t_Vvel(:,count,kbot)
              endif
-             do searchnode=nodestocopy,NUM_COPNOD(Vnod)
-               if(Node_COPNOD(Vnod,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(Vnod,searchnode).ge.count)exit
+             do searchnode=nodestocopy,NUM_COPNOD(VNODE)
+               if(Node_COPNOD(VNODE,searchnode).le.count)nodestocopy=searchnode
+               if(Node_COPNOD(VNODE,searchnode).ge.count)exit
              enddo
-             do while(Node_COPNOD(Vnod,nodestocopy).eq.count)
-               k1=klev_COPNOD(Vnod,nodestocopy,2)
-               k2=klev_COPNOD(Vnod,nodestocopy,1)
+             do while(Node_COPNOD(VNODE,nodestocopy).eq.count)
+               k1=klev_COPNOD(VNODE,nodestocopy,2)
+               k2=klev_COPNOD(VNODE,nodestocopy,1)
                do tcopy=1,3
                  t_Vvel(tcopy,count,k1:k2)=(                        &
-                 t_Vvel(tcopy,Nghb_COPNOD(Vnod,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(Vnod,nodestocopy,1) +  &
-                 t_Vvel(tcopy,Nghb_COPNOD(Vnod,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(Vnod,nodestocopy,2) +  &
-                 t_Vvel(tcopy,Nghb_COPNOD(Vnod,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(Vnod,nodestocopy,3) +  &
-                 t_Vvel(tcopy,Nghb_COPNOD(Vnod,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(Vnod,nodestocopy,4) ) 
+                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,1),k1:k2) &
+                             *Coef_COPNOD(VNODE,nodestocopy,1) +  &
+                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,2),k1:k2) &
+                             *Coef_COPNOD(VNODE,nodestocopy,2) +  &
+                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,3),k1:k2) &
+                             *Coef_COPNOD(VNODE,nodestocopy,3) +  &
+                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,4),k1:k2) &
+                             *Coef_COPNOD(VNODE,nodestocopy,4) ) 
                enddo  !tcopy
                nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(Vnod))exit
+               if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
              enddo !While
            endif
-           if(nodestocopy.gt.NUM_COPNOD(Vnod))exit
+           if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Vnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
         enddo      
   
         nodestocopy=1
-        do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
              if(kbot<ws)then
               t_Wvel(:,count,kbot-1) = t_Wvel(:,count,kbot)
              endif
-             do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-               if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+             do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+               if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+               if(Node_COPNOD(RNODE,searchnode).ge.count)exit
              enddo
-             do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-               k1=klev_COPNOD(Rnod,nodestocopy,2)
-               k2=klev_COPNOD(Rnod,nodestocopy,1)
+             do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+               k1=klev_COPNOD(RNODE,nodestocopy,2)
+               k2=klev_COPNOD(RNODE,nodestocopy,1)
                do tcopy=1,3
                  t_Wvel(tcopy,count,k1:k2)=(                        &
-                 t_Wvel(tcopy,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,1) +  &
-                 t_Wvel(tcopy,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,2) +  &
-                 t_Wvel(tcopy,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,3) +  &
-                 t_Wvel(tcopy,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                enddo
                nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+               if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
              enddo !while
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
 
  
@@ -3146,16 +2271,16 @@ CONTAINS
     ! --- CL-OGS : 
     write(*,*)'counter at inithydro=',counter-2*432,counter-432,counter
       ! --- CL-OGS : 
-       do j=t_ijruv(7),t_ijruv(8)
-        do i=t_ijruv(5),t_ijruv(6)
+       do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+        do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
           count = (j-1)*ui + i
           t_uwind(1,count) =    modelUwind(i,j,1) *    m_u(i,j,us_tridim)
           t_uwind(2,count) =    modelUwind(i,j,2) *    m_u(i,j,us_tridim)
           t_uwind(3,count) =    modelUwind(i,j,3) *    m_u(i,j,us_tridim)
         enddo
        enddo
-       do j=t_ijruv(11),t_ijruv(12)
-        do i=t_ijruv(9),t_ijruv(10)
+       do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+        do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
           count = (j-1)*vi + i
           t_vwind(1,count) =    modelVwind(i,j,1) *    m_v(i,j,us_tridim)
           t_vwind(2,count) =    modelVwind(i,j,2) *    m_v(i,j,us_tridim)
@@ -3163,8 +2288,8 @@ CONTAINS
         enddo
        enddo
       if(WindIntensity .and. Zgrid)then
-       do j=t_ijruv(3),t_ijruv(4)
-        do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
           count = (j-1)*vi + i
           t_iwind(1,count) =    modelIwind(i,j,1) *    m_r(i,j,us_tridim)
           t_iwind(2,count) =    modelIwind(i,j,2) *    m_r(i,j,us_tridim)
@@ -3223,44 +2348,9 @@ CONTAINS
             stepf=stepf+incrstepf
             nvarf=1
             scounter = iint + swan_filenum
-            SELECT CASE(numdigits)
-               CASE(1)
-                 WRITE(swannm,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(2)            
-                 WRITE(swannm,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(3)            
-                 WRITE(swannm,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(4)            
-                 WRITE(swannm,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(5)            
-                 WRITE(swannm,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(6)            
-                 WRITE(swannm,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(7)            
-                 WRITE(swannm,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(8)            
-                 WRITE(swannm,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(9)
-                 WRITE(swannm,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nvarf)), &
-                                              scounter,TRIM(suffix)
-               CASE(10)
-                 WRITE(swannm,'(A,A,I10.10,A)')TRIM(dirin),TRIM(prefix(nvarf)),&
-                                              scounter,TRIM(suffix)
-               CASE DEFAULT
-                 WRITE(*,*) 'Model presently does not support numdigits of ',  &
-                                              numdigits
-                 WRITE(*,*) 'Please use numdigit value from 1 to 10'
-                 WRITE(*,*) '  OR modify code in Hydrodynamic module'
-                 STOP
-            END SELECT
+
+            call set_filename(nvarf,scounter,swannm)
+
             fprefix=TRIM(prefix(nvarf) )
            
             ! Read in data for first three external time steps
@@ -3269,12 +2359,12 @@ CONTAINS
             if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
 
                 ! **** Hsig ****
-                startz(1)=t_ijruv(1)
-                startz(2)=t_ijruv(3)
+                startz(1)=t_ijruv(IMIN,RNODE)
+                startz(2)=t_ijruv(JMIN,RNODE)
                 startz(3)=recordnum
 
-                countz(1)=t_ijruv(2)-t_ijruv(1)+1
-                countz(2)=t_ijruv(4)-t_ijruv(3)+1
+                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
                 countr(3)=incrstepf
 
                 STATUS = NF90_INQ_VARID(NCID,'Hs',VID)
@@ -3284,8 +2374,8 @@ CONTAINS
                   stop
                 endif
 
-                STATUS = NF90_GET_VAR(NCID,VID,swanHs(t_ijruv(1):t_ijruv(2),   &
-                              t_ijruv(3):t_ijruv(4),nfn:nfnn),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swanHs(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),   &
+                              t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read SwanHs array'
@@ -3294,12 +2384,12 @@ CONTAINS
                 endif
 
                 ! **** tm01 ****
-                startz(1)=t_ijruv(1)
-                startz(2)=t_ijruv(3)
+                startz(1)=t_ijruv(IMIN,RNODE)
+                startz(2)=t_ijruv(JMIN,RNODE)
                 startz(3)=recordnum
 
-                countz(1)=t_ijruv(2)-t_ijruv(1)+1
-                countz(2)=t_ijruv(4)-t_ijruv(3)+1
+                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
                 countr(3)=incrstepf
 
                 STATUS = NF90_INQ_VARID(NCID,'tm01',VID)
@@ -3309,8 +2399,8 @@ CONTAINS
                   stop
                 endif
 
-                STATUS = NF90_GET_VAR(NCID,VID,swantm01(t_ijruv(1):t_ijruv(2), &
-                           t_ijruv(3):t_ijruv(4),nfn:nfnn),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swantm01(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE), &
+                           t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swantm01 array'
@@ -3319,12 +2409,12 @@ CONTAINS
                 endif
 
                 ! **** u10 ****
-                startr(1)=t_ijruv(5)
-                startr(2)=t_ijruv(7)
+                startr(1)=t_ijruv(IMIN,UNODE)
+                startr(2)=t_ijruv(JMIN,UNODE)
                 startz(3)=recordnum
 
-                countr(1)=t_ijruv(6)-t_ijruv(5)+1
-                countr(2)=t_ijruv(8)-t_ijruv(7)+1
+                countr(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1
+                countr(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1
                 countr(3)=incrstepf
 
                 STATUS = NF90_INQ_VARID(NCID,'u10',VID)
@@ -3334,8 +2424,8 @@ CONTAINS
                   stop
                 endif
 
-                STATUS=NF90_GET_VAR(NCID,VID,modelUwind(t_ijruv(5):t_ijruv(6), &
-                               t_ijruv(7):t_ijruv(8),nfn:nfnn),STARTz,COUNTz)
+                STATUS=NF90_GET_VAR(NCID,VID,modelUwind(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE), &
+                               t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanU array'
@@ -3344,12 +2434,12 @@ CONTAINS
                 endif
 
                 ! **** V10 ****
-                startr(1)=t_ijruv(9)
-                startr(2)=t_ijruv(11)
+                startr(1)=t_ijruv(IMIN,VNODE)
+                startr(2)=t_ijruv(JMIN,VNODE)
                 startz(3)=recordnum
 
-                countr(1)=t_ijruv(10)-t_ijruv(9)+1
-                countr(2)=t_ijruv(12)-t_ijruv(11)+1
+                countr(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
+                countr(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
                 countr(3)=incrstepf
 
                 STATUS = NF90_INQ_VARID(NCID,'v10',VID)
@@ -3359,8 +2449,8 @@ CONTAINS
                   stop
                 endif
 
-                STATUS=NF90_GET_VAR(NCID,VID,modelVwind(t_ijruv(9):t_ijruv(10),&
-                       t_ijruv(11):t_ijruv(12),nfn:nfnn),STARTz,COUNTz)
+                STATUS=NF90_GET_VAR(NCID,VID,modelVwind(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),&
+                       t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanV array'
@@ -3369,12 +2459,12 @@ CONTAINS
                 endif
 
                 ! **** PeakDir ****
-                startz(1)=t_ijruv(1)
-                startz(2)=t_ijruv(3)
+                startz(1)=t_ijruv(IMIN,RNODE)
+                startz(2)=t_ijruv(JMIN,RNODE)
                 startz(3)=recordnum
 
-                countz(1)=t_ijruv(2)-t_ijruv(1)+1
-                countz(2)=t_ijruv(4)-t_ijruv(3)+1
+                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
                 countr(3)=incrstepf
 
                 STATUS = NF90_INQ_VARID(NCID,'Pd',VID)
@@ -3384,8 +2474,8 @@ CONTAINS
                   stop
                 endif
 
-                STATUS=NF90_GET_VAR(NCID,VID,swanpd(t_ijruv(1):t_ijruv(2),     &
-                             t_ijruv(3):t_ijruv(4),nfn:nfnn),STARTz,COUNTz)
+                STATUS=NF90_GET_VAR(NCID,VID,swanpd(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),     &
+                             t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanpd array'
@@ -3394,12 +2484,12 @@ CONTAINS
                 endif
 
                 ! **** PeakWaveLength ****
-                startz(1)=t_ijruv(1)
-                startz(2)=t_ijruv(3)
+                startz(1)=t_ijruv(IMIN,RNODE)
+                startz(2)=t_ijruv(JMIN,RNODE)
                 startz(3)=recordnum
 
-                countz(1)=t_ijruv(2)-t_ijruv(1)+1
-                countz(2)=t_ijruv(4)-t_ijruv(3)+1
+                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
                 countr(3)=incrstepf
 
                 STATUS = NF90_INQ_VARID(NCID,'Pwl',VID)
@@ -3409,8 +2499,8 @@ CONTAINS
                   stop
                 endif
 
-                STATUS = NF90_GET_VAR(NCID,VID,swanwl(t_ijruv(1):t_ijruv(2),   &
-                                 t_ijruv(3):t_ijruv(4),nfn:nfnn),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swanwl(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),   &
+                                 t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanwl array'
@@ -3433,8 +2523,8 @@ CONTAINS
 
         !Reshape input to fit node numbers assigned to elements
         DO nloop=1,3
-         do j=t_ijruv(3),t_ijruv(4)
-            do i=t_ijruv(1),t_ijruv(2)
+         do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+            do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
               count = (j-1)*vi + i
               t_hsig(nloop,count) = swanHs(i,j,nloop) * m_r(i,j,us)
               t_tm01(nloop,count) = swantm01(i,j,nloop) * m_r(i,j,us)
@@ -3446,8 +2536,8 @@ CONTAINS
         if(windwavemodel.or.(UWind_10.ne.0 .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
               write(*,*)'overwrite ROMS U Wind'
               DO nloop=1,3
-                do j=t_ijruv(7),t_ijruv(8)
-                  do i=t_ijruv(5),t_ijruv(6)
+                do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+                  do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
                     count = (j-1)*ui + i
                     t_uwind(nloop,count) = modelUwind(i,j,nloop) * m_u(i,j,us)
                   enddo
@@ -3457,8 +2547,8 @@ CONTAINS
         if(windwavemodel.or.(VWind_10.ne.0 .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
              write(*,*)'overwrite ROMS V Wind'
               DO nloop=1,3
-                do j=t_ijruv(11),t_ijruv(12)
-                  do i=t_ijruv(9),t_ijruv(10)
+                do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+                  do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
                     count = (j-1)*vi + i
                 t_vwind(nloop,count) = modelVwind(i,j,nloop) * m_v(i,j,us)
                   enddo
@@ -3489,11 +2579,11 @@ CONTAINS
 
   SUBROUTINE updateHydro()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,tdim,rho_nodes,u_nodes,v_nodes,     &
-        prefix,suffix,filenum,numdigits,readZeta,constZeta,readSalt,constSalt, &
+        prefix,filenum,numdigits,readZeta,constZeta,readSalt,constSalt, &
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
         constW,readAks,constAks,&
         !readNetcdfSwdown,                                    &
-        startfile,filestep,dirin,                                              &
+        startfile,filestep,                                              &
         readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       &  !--- CL-OGS:
         WindIntensity,readIwind,constIwind,                                    &
 !      *****   IMIOM      *****
@@ -3600,46 +2690,9 @@ CONTAINS
        nfilesin=1 ! Roms NETcdf outputs
     endif
     DO nvarf=1,nfilesin
-         SELECT CASE(numdigits)
-          CASE(0)
-            WRITE(filenm,'(A,A,A)')      TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         TRIM(suffix)
-          CASE(1)
-            WRITE(filenm,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(2)
-            WRITE(filenm,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(3)
-            WRITE(filenm,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(4)
-            WRITE(filenm,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(5)
-            WRITE(filenm,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(6)
-            WRITE(filenm,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(7)
-            WRITE(filenm,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(8)
-            WRITE(filenm,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(9)
-            WRITE(filenm,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nvarf)),      &
-                                         counter,TRIM(suffix)
-          CASE(10)
-            WRITE(filenm,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nvarf)),    &
-                                         counter,TRIM(suffix)
-          CASE DEFAULT
-           WRITE(*,*)'Model presently does not support numdigits of ',numdigits
-           WRITE(*,*)'Please use numdigit value from 1 to 10'
-           WRITE(*,*)'  OR modify code in Hydrodynamic module'
-           STOP
-      END SELECT
+
+      call set_filename(nvarf,counter,filenm)
+
       fprefix=TRIM(prefix(nvarf) )
       
       
@@ -3753,12 +2806,12 @@ CONTAINS
       if(isZeta)then
        if(readZeta)then
         ! **** Zeta ****
-        startz(1)=t_ijruv(1)
-        startz(2)=t_ijruv(3)
+        startz(1)=t_ijruv(IMIN,RNODE)
+        startz(2)=t_ijruv(JMIN,RNODE)
         startz(3)=stepf
 
-        countz(1)=t_ijruv(2)-t_ijruv(1)+1
-        countz(2)=t_ijruv(4)-t_ijruv(3)+1
+        countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countz(3)=1
 
         if (Zgrid)then
@@ -3803,8 +2856,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romZf(t_ijruv(1):t_ijruv(2),          &
-                                t_ijruv(3):t_ijruv(4),:),STARTz,COUNTz)
+          STATUS = NF90_GET_VAR(NCID,VID,romZf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),          &
+                                t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
           if (STATUS .NE. NF90_NOERR) then
               write(*,*) 'Problem read zeta array'
               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
@@ -3820,8 +2873,8 @@ CONTAINS
        endif ! readZeta
 
        !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-         do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
            count = (j-1)*vi + i
            t_zeta(t_f,count)     = romZf(i,j,1) * m_r(i,j,us_tridim)
          enddo
@@ -3831,12 +2884,12 @@ CONTAINS
      !if(isSwdown)then
      ! if(readNetcdfSwdown)then
      !  ! **** Swdown ****
-     !  startz(1)=t_ijruv(1)
-     !  startz(2)=t_ijruv(3)
+     !  startz(1)=t_ijruv(IMIN,RNODE)
+     !  startz(2)=t_ijruv(JMIN,RNODE)
      !  startz(3)=stepf
 
-     !  countz(1)=t_ijruv(2)-t_ijruv(1)+1
-     !  countz(2)=t_ijruv(4)-t_ijruv(3)+1
+     !  countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+     !  countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
      !  countz(3)=1
 
      !  if (Zgrid)then
@@ -3883,8 +2936,8 @@ CONTAINS
      !      write(*,*) NF90_STRERROR(STATUS)
      !      stop
      !    endif
-     !    STATUS = NF90_GET_VAR(NCID,VID,romSwdownf(t_ijruv(1):t_ijruv(2),          &
-     !                          t_ijruv(3):t_ijruv(4),:),STARTz,COUNTz)
+     !    STATUS = NF90_GET_VAR(NCID,VID,romSwdownf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),          &
+     !                          t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
      !    if (STATUS .NE. NF90_NOERR) then
      !        write(*,*) 'Problem read swdown array'
      !        write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
@@ -3898,8 +2951,8 @@ CONTAINS
      !  romSwdownf = 0.0      
      ! endif
      ! !Reshape input to fit node numbers assigned to elements
-     ! do j=t_ijruv(3),t_ijruv(4)
-     !   do i=t_ijruv(1),t_ijruv(2)
+     ! do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+     !   do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
      !     count = (j-1)*vi + i
      !     t_Swdown(t_f,count)     = romSwdownf(i,j,1)
      !   enddo
@@ -3909,13 +2962,13 @@ CONTAINS
       if(isSalt)then
        if(readSalt)then
         ! **** Salt ****
-        startr(1)=t_ijruv(1)
-        startr(2)=t_ijruv(3)
+        startr(1)=t_ijruv(IMIN,RNODE)
+        startr(2)=t_ijruv(JMIN,RNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(2)-t_ijruv(1)+1
-        countr(2)=t_ijruv(4)-t_ijruv(3)+1
+        countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countr(3)=us
         countr(4)=1
 
@@ -3952,8 +3005,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romSf(t_ijruv(1):t_ijruv(2),          &
-                                t_ijruv(3):t_ijruv(4),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romSf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),          &
+                                t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read salt array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -3964,8 +3017,8 @@ CONTAINS
         romSf = constSalt
        endif
        !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-         do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
            count = (j-1)*vi + i
            do k=1,us    
              kmask=min(k,us_tridim)
@@ -3977,37 +3030,37 @@ CONTAINS
        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
        if(Zgrid)then
         nodestocopy=1
-        do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
               if(kbot<ws )then
                t_salt(t_f,count,kbot-1) =  t_salt(t_f,count,kbot)
               endif
-              do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-                if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-                if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+              do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+                if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(RNODE,searchnode).ge.count)exit
               enddo
-              do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-                k1=klev_COPNOD(Rnod,nodestocopy,2)
-                k2=klev_COPNOD(Rnod,nodestocopy,1)
+              do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(RNODE,nodestocopy,2)
+                k2=klev_COPNOD(RNODE,nodestocopy,1)
                 t_salt(t_f,count,k1:k2)=(                       &
-                  t_salt(t_f,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,1) +    &
-                  t_salt(t_f,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,2) +    &
-                  t_salt(t_f,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,3) +    &
-                  t_salt(t_f,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                              *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                  t_salt(t_f,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,1) +    &
+                  t_salt(t_f,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,2) +    &
+                  t_salt(t_f,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,3) +    &
+                  t_salt(t_f,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                              *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                 nodestocopy = nodestocopy +1
-                if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+                if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
               enddo
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
  
@@ -4018,13 +3071,13 @@ CONTAINS
       if(isTemp)then
        if(readTemp)then
         ! **** Temp ****
-        startr(1)=t_ijruv(1)
-        startr(2)=t_ijruv(3)
+        startr(1)=t_ijruv(IMIN,RNODE)
+        startr(2)=t_ijruv(JMIN,RNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(2)-t_ijruv(1)+1
-        countr(2)=t_ijruv(4)-t_ijruv(3)+1
+        countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countr(3)=us
         countr(4)=1
 
@@ -4061,8 +3114,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romTf(t_ijruv(1):t_ijruv(2),          &
-                                t_ijruv(3):t_ijruv(4),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romTf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),          &
+                                t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read temp array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -4075,8 +3128,8 @@ CONTAINS
 
 
        !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-         do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
            count = (j-1)*vi + i
            do k=1,us    
              kmask=min(k,us_tridim)
@@ -4088,37 +3141,37 @@ CONTAINS
        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
        if(Zgrid)then
         nodestocopy=1
-        do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
               if(kbot<ws )then
                t_temp(t_f,count,kbot-1) =  t_temp(t_f,count,kbot)
               endif
-              do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-                if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-                if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+              do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+                if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(RNODE,searchnode).ge.count)exit
               enddo
-              do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-                k1=klev_COPNOD(Rnod,nodestocopy,2)
-                k2=klev_COPNOD(Rnod,nodestocopy,1)
+              do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(RNODE,nodestocopy,2)
+                k2=klev_COPNOD(RNODE,nodestocopy,1)
                 t_temp(t_f,count,k1:k2)=(                       &
-                  t_temp(t_f,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,1) +    &
-                  t_temp(t_f,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,2) +    &
-                  t_temp(t_f,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                            *Coef_COPNOD(Rnod,nodestocopy,3) +    &
-                  t_temp(t_f,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                              *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                  t_temp(t_f,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,1) +    &
+                  t_temp(t_f,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,2) +    &
+                  t_temp(t_f,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                            *Coef_COPNOD(RNODE,nodestocopy,3) +    &
+                  t_temp(t_f,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                              *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                 nodestocopy = nodestocopy +1
-                if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+                if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
               enddo
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
       endif
@@ -4128,13 +3181,13 @@ CONTAINS
       if(isDens)then
        if(readDens)then
         ! **** Density ****
-        startr(1)=t_ijruv(1)
-        startr(2)=t_ijruv(3)
+        startr(1)=t_ijruv(IMIN,RNODE)
+        startr(2)=t_ijruv(JMIN,RNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(2)-t_ijruv(1)+1
-        countr(2)=t_ijruv(4)-t_ijruv(3)+1
+        countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countr(3)=us
         countr(4)=1
 
@@ -4172,8 +3225,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romDf(t_ijruv(1):t_ijruv(2),          &
-                                t_ijruv(3):t_ijruv(4),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romDf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),          &
+                                t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read rho array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -4184,8 +3237,8 @@ CONTAINS
         romDf = constDens
        endif
        !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-         do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
            count = (j-1)*vi + i
            do k=1,us    
              kmask=min(k,us_tridim)
@@ -4198,37 +3251,37 @@ CONTAINS
        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
        if(Zgrid)then
         nodestocopy=1
-        do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
               if(kbot<ws )then
                t_den(t_f,count,kbot-1) =  t_den(t_f,count,kbot)
               endif
-              do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-                if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-                if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+              do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+                if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(RNODE,searchnode).ge.count)exit
               enddo
-              do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-                k1=klev_COPNOD(Rnod,nodestocopy,2)
-                k2=klev_COPNOD(Rnod,nodestocopy,1)
+              do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(RNODE,nodestocopy,2)
+                k2=klev_COPNOD(RNODE,nodestocopy,1)
                 t_den(t_f,count,k1:k2)=(                       &
-                  t_den(t_f,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,1) +    &
-                  t_den(t_f,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,2) +    &
-                  t_den(t_f,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,3) +    &
-                  t_den(t_f,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                  t_den(t_f,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,1) +    &
+                  t_den(t_f,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,2) +    &
+                  t_den(t_f,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,3) +    &
+                  t_den(t_f,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                 nodestocopy = nodestocopy +1
-                if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+                if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
               enddo
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
       endif
@@ -4237,13 +3290,13 @@ CONTAINS
       if(isU)then
        if(readU)then
         ! **** U velocity ****
-        startr(1)=t_ijruv(5)
-        startr(2)=t_ijruv(7)
+        startr(1)=t_ijruv(IMIN,UNODE)
+        startr(2)=t_ijruv(JMIN,UNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(6)-t_ijruv(5)+1
-        countr(2)=t_ijruv(8)-t_ijruv(7)+1
+        countr(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1
+        countr(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1
         countr(3)=us
         countr(4)=1
 
@@ -4301,8 +3354,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romUf(t_ijruv(5):t_ijruv(6),              &
-                                t_ijruv(7):t_ijruv(8),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romUf(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE),              &
+                                t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read u array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -4313,8 +3366,8 @@ CONTAINS
         romUf = constU
        endif
 
-       do j=t_ijruv(7),t_ijruv(8)
-         do i=t_ijruv(5),t_ijruv(6)
+       do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+         do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
            count = (j-1)*ui + i
            do k=1,us    
              t_Uvel(t_f,count,k) = romUf(i,j,k,1) * m_u(i,j,min(k,us_tridim))
@@ -4326,37 +3379,37 @@ CONTAINS
        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
        if(Zgrid)then
         nodestocopy=1
-        do j=t_ijruv(7),t_ijruv(8)
-          do i=t_ijruv(5),t_ijruv(6)
+        do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+          do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
             count = (j-1)*ui + i
             kbot=BottomK(i,j,2)
             if(kbot>1)then
               if(kbot<ws )then
                t_Uvel(t_f,count,kbot-1) =  t_Uvel(t_f,count,kbot)
               endif
-              do searchnode=nodestocopy,NUM_COPNOD(Unod)
-                if(Node_COPNOD(Unod,searchnode).le.count)nodestocopy=searchnode
-                if(Node_COPNOD(Unod,searchnode).ge.count)exit
+              do searchnode=nodestocopy,NUM_COPNOD(UNODE)
+                if(Node_COPNOD(UNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(UNODE,searchnode).ge.count)exit
               enddo
-              do while(Node_COPNOD(Unod,nodestocopy).eq.count)
-                k1=klev_COPNOD(Unod,nodestocopy,2)
-                k2=klev_COPNOD(Unod,nodestocopy,1)
+              do while(Node_COPNOD(UNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(UNODE,nodestocopy,2)
+                k2=klev_COPNOD(UNODE,nodestocopy,1)
                   t_Uvel(t_f,count,k1:k2)=(                       &
-                  t_Uvel(t_f,Nghb_COPNOD(Unod,nodestocopy,1),k1:k2) &
-                            *Coef_COPNOD(Unod,nodestocopy,1) +    &
-                  t_Uvel(t_f,Nghb_COPNOD(Unod,nodestocopy,2),k1:k2) &
-                            *Coef_COPNOD(Unod,nodestocopy,2) +    &
-                  t_Uvel(t_f,Nghb_COPNOD(Unod,nodestocopy,3),k1:k2) &
-                            *Coef_COPNOD(Unod,nodestocopy,3) +    &
-                  t_Uvel(t_f,Nghb_COPNOD(Unod,nodestocopy,4),k1:k2) &
-                            *Coef_COPNOD(Unod,nodestocopy,4) ) 
+                  t_Uvel(t_f,Nghb_COPNOD(UNODE,nodestocopy,1),k1:k2) &
+                            *Coef_COPNOD(UNODE,nodestocopy,1) +    &
+                  t_Uvel(t_f,Nghb_COPNOD(UNODE,nodestocopy,2),k1:k2) &
+                            *Coef_COPNOD(UNODE,nodestocopy,2) +    &
+                  t_Uvel(t_f,Nghb_COPNOD(UNODE,nodestocopy,3),k1:k2) &
+                            *Coef_COPNOD(UNODE,nodestocopy,3) +    &
+                  t_Uvel(t_f,Nghb_COPNOD(UNODE,nodestocopy,4),k1:k2) &
+                            *Coef_COPNOD(UNODE,nodestocopy,4) ) 
                 nodestocopy = nodestocopy +1
-                if(nodestocopy.gt.NUM_COPNOD(Unod))exit
+                if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
               enddo
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Unod))exit
+            if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Unod))exit
+          if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
         enddo
        endif ! (Zgrid)      
 
@@ -4367,13 +3420,13 @@ CONTAINS
       if(isV)then
        if(readV)then
         ! **** V velocity ****
-        startr(1)=t_ijruv(9)
-        startr(2)=t_ijruv(11)
+        startr(1)=t_ijruv(IMIN,VNODE)
+        startr(2)=t_ijruv(JMIN,VNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(10)-t_ijruv(9)+1
-        countr(2)=t_ijruv(12)-t_ijruv(11)+1
+        countr(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
+        countr(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
         countr(3)=us
         countr(4)=1
 
@@ -4413,8 +3466,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romVf(t_ijruv(9):t_ijruv(10),         &
-                                t_ijruv(11):t_ijruv(12),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romVf(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),         &
+                                t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read v array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -4424,8 +3477,8 @@ CONTAINS
        else
         romVf = constV
        endif
-       do j=t_ijruv(11),t_ijruv(12)
-         do i=t_ijruv(9),t_ijruv(10)
+       do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+         do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
            count = (j-1)*vi + i
            do k=1,us    
              t_Vvel(t_f,count,k) = romVf(i,j,k,1) * m_v(i,j,min(k,us_tridim))
@@ -4435,37 +3488,37 @@ CONTAINS
        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
        if(Zgrid)then
         nodestocopy=1
-        do j=t_ijruv(11),t_ijruv(12)
-          do i=t_ijruv(9),t_ijruv(10)
+        do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+          do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,3)
             if(kbot>1)then
               if(kbot<ws )then
                t_Vvel(t_f,count,kbot-1) =  t_Vvel(t_f,count,kbot)
               endif
-              do searchnode=nodestocopy,NUM_COPNOD(Vnod)
-                if(Node_COPNOD(Vnod,searchnode).le.count)nodestocopy=searchnode
-                if(Node_COPNOD(Vnod,searchnode).ge.count)exit
+              do searchnode=nodestocopy,NUM_COPNOD(VNODE)
+                if(Node_COPNOD(VNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(VNODE,searchnode).ge.count)exit
               enddo
-              do while(Node_COPNOD(Vnod,nodestocopy).eq.count)
-                k1=klev_COPNOD(Vnod,nodestocopy,2)
-                k2=klev_COPNOD(Vnod,nodestocopy,1)
+              do while(Node_COPNOD(VNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(VNODE,nodestocopy,2)
+                k2=klev_COPNOD(VNODE,nodestocopy,1)
                   t_Vvel(t_f,count,k1:k2)=(                       &
-                  t_Vvel(t_f,Nghb_COPNOD(Vnod,nodestocopy,1),k1:k2) &
-                            *Coef_COPNOD(Vnod,nodestocopy,1) +    &
-                  t_Vvel(t_f,Nghb_COPNOD(Vnod,nodestocopy,2),k1:k2) &
-                            *Coef_COPNOD(Vnod,nodestocopy,2) +    &
-                  t_Vvel(t_f,Nghb_COPNOD(Vnod,nodestocopy,3),k1:k2) &
-                            *Coef_COPNOD(Vnod,nodestocopy,3) +    &
-                  t_Vvel(t_f,Nghb_COPNOD(Vnod,nodestocopy,4),k1:k2) &
-                            *Coef_COPNOD(Vnod,nodestocopy,4) ) 
+                  t_Vvel(t_f,Nghb_COPNOD(VNODE,nodestocopy,1),k1:k2) &
+                            *Coef_COPNOD(VNODE,nodestocopy,1) +    &
+                  t_Vvel(t_f,Nghb_COPNOD(VNODE,nodestocopy,2),k1:k2) &
+                            *Coef_COPNOD(VNODE,nodestocopy,2) +    &
+                  t_Vvel(t_f,Nghb_COPNOD(VNODE,nodestocopy,3),k1:k2) &
+                            *Coef_COPNOD(VNODE,nodestocopy,3) +    &
+                  t_Vvel(t_f,Nghb_COPNOD(VNODE,nodestocopy,4),k1:k2) &
+                            *Coef_COPNOD(VNODE,nodestocopy,4) ) 
                 nodestocopy = nodestocopy +1
-                if(nodestocopy.gt.NUM_COPNOD(Vnod))exit
+                if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
               enddo
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Vnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Vnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
         enddo
 
         endif ! (Zgrid)
@@ -4477,13 +3530,13 @@ CONTAINS
       if(isW)then
        if(readW)then
         ! **** W velocity ****
-        startr(1)=t_ijruv(1)
-        startr(2)=t_ijruv(3)
+        startr(1)=t_ijruv(IMIN,RNODE)
+        startr(2)=t_ijruv(JMIN,RNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(2)-t_ijruv(1)+1
-        countr(2)=t_ijruv(4)-t_ijruv(3)+1
+        countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countr(3)=ws
         countr(4)=1
 
@@ -4523,8 +3576,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romWf(t_ijruv(1):t_ijruv(2),          &
-                                t_ijruv(3):t_ijruv(4),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romWf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),          &
+                                t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read w array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -4537,8 +3590,8 @@ CONTAINS
 
 
        !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-         do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
            count = (j-1)*vi + i
            do k=1,us    
              kmask=min(k,us_tridim)
@@ -4550,37 +3603,37 @@ CONTAINS
 
        if (Zgrid)then
          nodestocopy=1
-         do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+         do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
              if(kbot<ws)then
               t_Wvel(t_f,count,kbot-1) = t_Wvel(t_f,count,kbot)
              endif
-             do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-               if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+             do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+               if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+               if(Node_COPNOD(RNODE,searchnode).ge.count)exit
              enddo
-             do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-               k1=klev_COPNOD(Rnod,nodestocopy,2)
-               k2=klev_COPNOD(Rnod,nodestocopy,1)
+             do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+               k1=klev_COPNOD(RNODE,nodestocopy,2)
+               k2=klev_COPNOD(RNODE,nodestocopy,1)
                  t_Wvel(t_f,count,k1:k2)=(                        &
-                 t_Wvel(t_f,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,1) +  &
-                 t_Wvel(t_f,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,2) +  &
-                 t_Wvel(t_f,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,3) +  &
-                 t_Wvel(t_f,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                           *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                 t_Wvel(t_f,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_Wvel(t_f,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_Wvel(t_f,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_Wvel(t_f,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+               if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
              enddo !while
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
          enddo      
        endif ! (Zgrid)
 
@@ -4591,13 +3644,13 @@ CONTAINS
       if(isAks)then
        if(readAks)then
         ! **** Vertical diffusivity for salt (Aks) ****
-        startr(1)=t_ijruv(1)
-        startr(2)=t_ijruv(3)
+        startr(1)=t_ijruv(IMIN,RNODE)
+        startr(2)=t_ijruv(JMIN,RNODE)
         startr(3)=1
         startr(4)=stepf
 
-        countr(1)=t_ijruv(2)-t_ijruv(1)+1
-        countr(2)=t_ijruv(4)-t_ijruv(3)+1
+        countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countr(3)=ws
         countr(4)=1
 
@@ -4635,8 +3688,8 @@ CONTAINS
             write(*,*) NF90_STRERROR(STATUS)
             stop
           endif
-          STATUS = NF90_GET_VAR(NCID,VID,romKHf(t_ijruv(1):t_ijruv(2),         &
-                                t_ijruv(3):t_ijruv(4),:,:),STARTr,COUNTr)
+          STATUS = NF90_GET_VAR(NCID,VID,romKHf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),         &
+                                t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,:),STARTr,COUNTr)
           if (STATUS .NE. NF90_NOERR) then
             write(*,*) 'Problem read AKs array'
             write(*,*) NF90_STRERROR(STATUS)
@@ -4647,8 +3700,8 @@ CONTAINS
         romKHf = constAks
        endif
        !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-         do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
            count = (j-1)*vi + i
            do k=1,us    
              kmask=min(k,us_tridim)
@@ -4661,37 +3714,37 @@ CONTAINS
        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
        if(Zgrid)then
         nodestocopy=1
-        do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             kbot=BottomK(i,j,1)
             if(kbot>1)then
               if(kbot<ws )then
                t_KH(t_f,count,kbot-1) =  t_KH(t_f,count,kbot)
               endif
-              do searchnode=nodestocopy,NUM_COPNOD(Rnod)
-                if(Node_COPNOD(Rnod,searchnode).le.count)nodestocopy=searchnode
-                if(Node_COPNOD(Rnod,searchnode).ge.count)exit
+              do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+                if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(RNODE,searchnode).ge.count)exit
               enddo
-              do while(Node_COPNOD(Rnod,nodestocopy).eq.count)
-                k1=klev_COPNOD(Rnod,nodestocopy,2)
-                k2=klev_COPNOD(Rnod,nodestocopy,1)
+              do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(RNODE,nodestocopy,2)
+                k2=klev_COPNOD(RNODE,nodestocopy,1)
                 t_KH(t_f,count,k1:k2)=(                       &
-                  t_KH(t_f,Nghb_COPNOD(Rnod,nodestocopy,1),k1:k2) &
-                          *Coef_COPNOD(Rnod,nodestocopy,1) +    &
-                  t_KH(t_f,Nghb_COPNOD(Rnod,nodestocopy,2),k1:k2) &
-                          *Coef_COPNOD(Rnod,nodestocopy,2) +    &
-                  t_KH(t_f,Nghb_COPNOD(Rnod,nodestocopy,3),k1:k2) &
-                          *Coef_COPNOD(Rnod,nodestocopy,3) +    &
-                  t_KH(t_f,Nghb_COPNOD(Rnod,nodestocopy,4),k1:k2) &
-                          *Coef_COPNOD(Rnod,nodestocopy,4) ) 
+                  t_KH(t_f,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                          *Coef_COPNOD(RNODE,nodestocopy,1) +    &
+                  t_KH(t_f,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                          *Coef_COPNOD(RNODE,nodestocopy,2) +    &
+                  t_KH(t_f,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                          *Coef_COPNOD(RNODE,nodestocopy,3) +    &
+                  t_KH(t_f,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                          *Coef_COPNOD(RNODE,nodestocopy,4) ) 
                 nodestocopy = nodestocopy +1
-                if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+                if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
               enddo
             endif
-            if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
           enddo    
-          if(nodestocopy.gt.NUM_COPNOD(Rnod))exit
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
       endif
@@ -4701,15 +3754,15 @@ CONTAINS
       if(Wind .and.isUwind)then
        if(readUwind)then  
         ! **** Uwind****
-        startz(1)=t_ijruv(5)  !U C-arakawa-gridpoint even if MITgcm stores wind at rho grid points
-        startz(2)=t_ijruv(7)  !U C-arakawa-gridpoint
+        startz(1)=t_ijruv(IMIN,UNODE)  !U C-arakawa-gridpoint even if MITgcm stores wind at rho grid points
+        startz(2)=t_ijruv(JMIN,UNODE)  !U C-arakawa-gridpoint
         startz(3)=stepf
 
-        countz(1)=t_ijruv(6)-t_ijruv(5)+1  !U C-arakawa-gridpoint
-        countz(2)=t_ijruv(8)-t_ijruv(7)+1  !U C-arakawa-gridpoint
+        countz(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1  !U C-arakawa-gridpoint
+        countz(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1  !U C-arakawa-gridpoint
         countz(3)=1
-        write(*,'(2(a,2i5))')'update Uwind i=',t_ijruv(5),t_ijruv(6)+1,        &
-                              ' j=',t_ijruv(7),t_ijruv(8)+1
+        write(*,'(2(a,2i5))')'update Uwind i=',t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)+1,        &
+                              ' j=',t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)+1
 
         if(Zgrid)then
             write(*,*)'warning: read in MITgcm file var Uwind at cell center', &
@@ -4744,8 +3797,8 @@ CONTAINS
              stop
            endif
        
-           STATUS = NF90_GET_VAR(NCID,VID,romstrUf(t_ijruv(5):t_ijruv(6),      &
-                                 t_ijruv(7):t_ijruv(8),:),STARTz,COUNTz)
+           STATUS = NF90_GET_VAR(NCID,VID,romstrUf(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE),      &
+                                 t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),:),STARTz,COUNTz)
            if (STATUS .NE. NF90_NOERR) then
              write(*,*) 'Problem read sustr array'
              write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
@@ -4754,8 +3807,8 @@ CONTAINS
              write(*,*) NF90_STRERROR(STATUS)
              stop
            endif
-           do j=t_ijruv(7),t_ijruv(8)
-            do i=t_ijruv(5),t_ijruv(6)
+           do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+            do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
               if(romstrUf(i,j,1).lt.0.0)then
                   modelUwindf(i,j,1)= (-20.659 *(abs(romstrUf(i,j,1))**0.4278))  
               else
@@ -4769,8 +3822,8 @@ CONTAINS
          modelUwindf = constUwind
        endif
       ! --- CL-OGS : 
-       do j=t_ijruv(7),t_ijruv(8)
-        do i=t_ijruv(5),t_ijruv(6)
+       do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+        do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
           count = (j-1)*ui + i
           !if(modelUwindf(i,j,1).eq.0.0)&
           ! write(*,'(2(a,i4),a,i6)')'matU[',j,',',i,']=1 #PLOT WIND NULL NODES',counter
@@ -4786,16 +3839,16 @@ CONTAINS
       if(Wind .and.isVwind)then
        if(readVwind)then  
         ! **** Vwind****
-        startz(1)=t_ijruv(9)
-        startz(2)=t_ijruv(11)
+        startz(1)=t_ijruv(IMIN,VNODE)
+        startz(2)=t_ijruv(JMIN,VNODE)
         startz(3)=stepf
 
-        countz(1)=t_ijruv(10)-t_ijruv(9)+1
-        countz(2)=t_ijruv(12)-t_ijruv(11)+1
+        countz(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
+        countz(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
         countz(3)=1
 
-!        write(*,'(2(a,2i5))')'update Vwind i=',t_ijruv(9),t_ijruv(10)+1,       &
-!                             ' j=',t_ijruv(11),t_ijruv(12+1)
+!        write(*,'(2(a,2i5))')'update Vwind i=',t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)+1,       &
+!                             ' j=',t_ijruv(JMIN,VNODE),t_ijruv(12+1)
         if(Zgrid)then
           write(*,*)'warning: read in MITgcm file var Vwind at cell',&
             ' center then interpolates at V-grid points'
@@ -4836,8 +3889,8 @@ CONTAINS
              stop
            endif
        
-           STATUS = NF90_GET_VAR(NCID,VID,romstrVf(t_ijruv(9):t_ijruv(10),     &
-                                 t_ijruv(11):t_ijruv(12),:),STARTz,COUNTz)
+           STATUS = NF90_GET_VAR(NCID,VID,romstrVf(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),     &
+                                 t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),:),STARTz,COUNTz)
            if (STATUS .NE. NF90_NOERR) then
              write(*,*) 'Problem read svstr array'
              write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
@@ -4846,8 +3899,8 @@ CONTAINS
              write(*,*) NF90_STRERROR(STATUS)
              stop
            endif
-         do j=t_ijruv(11),t_ijruv(12)
-          do i=t_ijruv(9),t_ijruv(10)
+         do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+          do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
             if(romstrVf(i,j,1).lt.0.0)then
               modelVwindf(i,j,1) = (-20.659 * (abs(romstrVf(i,j,1))**0.4278))  
             else
@@ -4859,8 +3912,8 @@ CONTAINS
        else
         modelVwindf = constVwind
        endif
-       do j=t_ijruv(11),t_ijruv(12)
-        do i=t_ijruv(9),t_ijruv(10)
+       do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+        do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
           count = (j-1)*vi + i
           !if(modelVwindf(i,j,1).eq.0.0)&
           ! write(*,'(2(a,i4),a,i6)')'matV[',j,',',i,']=1 #PLOT WIND NULL NODES',counter
@@ -4875,12 +3928,12 @@ CONTAINS
       if(isIwind)then
        if(readIwind)then  
         ! **** Iwind****
-        startz(1)=t_ijruv(1)
-        startz(2)=t_ijruv(3)
+        startz(1)=t_ijruv(IMIN,RNODE)
+        startz(2)=t_ijruv(JMIN,RNODE)
         startz(3)=stepf
 
-        countz(1)=t_ijruv(2)-t_ijruv(1)+1
-        countz(2)=t_ijruv(4)-t_ijruv(3)+1
+        countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+        countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
         countz(3)=1
 
         if(Zgrid)then
@@ -4915,8 +3968,8 @@ CONTAINS
         modelIwindf = constIwind
        endif
       if(WindIntensity .and. Zgrid)then
-       do j=t_ijruv(3),t_ijruv(4)
-        do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
           count = (j-1)*vi + i
           t_iwind(t_f,count) =    modelIwindf(i,j,1) *    m_r(i,j,us_tridim)
         enddo
@@ -5069,19 +4122,19 @@ CONTAINS
       ! Store the ranges of nodes that were updated
       updatenodesbuffer=0
       ! rho node range
-      do j=t_ijruv(3),t_ijruv(4)
-        updatenodesbuffer(1,j,1) = (j-1)*vi + t_ijruv(1) ! frst rnode at latitude j
-        updatenodesbuffer(2,j,1) = (j-1)*vi + t_ijruv(2) ! last rnode at latitude j
+      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        updatenodesbuffer(1,j,1) = (j-1)*vi + t_ijruv(IMIN,RNODE) ! frst rnode at latitude j
+        updatenodesbuffer(2,j,1) = (j-1)*vi + t_ijruv(IMAX,RNODE) ! last rnode at latitude j
       enddo
       ! u node range
-      do j=t_ijruv(7),t_ijruv(8)
-        updatenodesbuffer(1,j,2) = (j-1)*ui + t_ijruv(5) ! frst unode at latitude j
-        updatenodesbuffer(2,j,2) = (j-1)*ui + t_ijruv(6) ! last unode at latitude j
+      do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+        updatenodesbuffer(1,j,2) = (j-1)*ui + t_ijruv(IMIN,UNODE) ! frst unode at latitude j
+        updatenodesbuffer(2,j,2) = (j-1)*ui + t_ijruv(IMAX,UNODE) ! last unode at latitude j
       enddo
       ! v node range
-      do j=t_ijruv(11),t_ijruv(12)
-        updatenodesbuffer(1,j,3) = (j-1)*vi + t_ijruv(9)  ! frst vnode at latitude j
-        updatenodesbuffer(2,j,3) = (j-1)*vi + t_ijruv(10) ! last vnode at latitude j
+      do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+        updatenodesbuffer(1,j,3) = (j-1)*vi + t_ijruv(IMIN,VNODE)  ! frst vnode at latitude j
+        updatenodesbuffer(2,j,3) = (j-1)*vi + t_ijruv(IMAX,VNODE) ! last vnode at latitude j
       enddo
    
 
@@ -5093,43 +4146,9 @@ CONTAINS
           write(*,*)'WindWaveModel'
           nvarf=1
           scounter = iint + swan_filenum
-          SELECT CASE(numdigits)
-           CASE(1)
-             WRITE(swannm,'(A,A,I1.1,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(2)                                                                      
-             WRITE(swannm,'(A,A,I2.2,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(3)                                                                      
-             WRITE(swannm,'(A,A,I3.3,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(4)                                                                      
-             WRITE(swannm,'(A,A,I4.4,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(5)                                                                      
-             WRITE(swannm,'(A,A,I5.5,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(6)                                                                      
-             WRITE(swannm,'(A,A,I6.6,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(7)                                                                      
-             WRITE(swannm,'(A,A,I7.7,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(8)                                                                      
-             WRITE(swannm,'(A,A,I8.8,A)') TRIM(dirin),                         &
-                             TRIM(prefix(nvarf)),scounter,TRIM(suffix)       
-           CASE(9)                                                                      
-             WRITE(swannm,'(A,A,I9.9,A)') TRIM(dirin),                         &
-                         TRIM(prefix(nvarf)),scounter,TRIM(suffix)                      
-           CASE(10)                                                                     
-             WRITE(swannm,'(A,A,I10.10,A)')TRIM(dirin),                        &
-                         TRIM(prefix(nvarf)),scounter,TRIM(suffix)
-           CASE DEFAULT
-            WRITE(*,*)'Model presently does not support numdigits of',numdigits
-            WRITE(*,*)'Please use numdigit value from 1 to 10'
-            WRITE(*,*)'  OR modify code in Hydrodynamic module'
-            STOP
-          END SELECT
+
+          call set_filename(nvarf,scounter,swannm)
+
           fprefix=TRIM(prefix(nvarf) )
          
           ! Read in data for first three external time steps
@@ -5138,12 +4157,12 @@ CONTAINS
           if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
 
               ! **** Hsig ****
-              startz(1)=t_ijruv(1)
-              startz(2)=t_ijruv(3)
+              startz(1)=t_ijruv(IMIN,RNODE)
+              startz(2)=t_ijruv(JMIN,RNODE)
               startz(3)=stepf
 
-              countz(1)=t_ijruv(2)-t_ijruv(1)+1
-              countz(2)=t_ijruv(4)-t_ijruv(3)+1
+              countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+              countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
               countr(3)=1
 
               STATUS = NF90_INQ_VARID(NCID,'Hs',VID)
@@ -5153,8 +4172,8 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swanHsf(t_ijruv(1):t_ijruv(2),    &
-                                    t_ijruv(3):t_ijruv(4),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,swanHsf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),    &
+                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read SwanHs array'
@@ -5163,12 +4182,12 @@ CONTAINS
               endif
 
               ! **** tm01 ****
-              startz(1)=t_ijruv(1)
-              startz(2)=t_ijruv(3)
+              startz(1)=t_ijruv(IMIN,RNODE)
+              startz(2)=t_ijruv(JMIN,RNODE)
               startz(3)=stepf
 
-              countz(1)=t_ijruv(2)-t_ijruv(1)+1
-              countz(2)=t_ijruv(4)-t_ijruv(3)+1
+              countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+              countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
               countr(3)=1
 
               STATUS = NF90_INQ_VARID(NCID,'tm01',VID)
@@ -5178,8 +4197,8 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swantm01f(t_ijruv(1):t_ijruv(2),  &
-                                    t_ijruv(3):t_ijruv(4),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,swantm01f(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),  &
+                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swantm01 array'
@@ -5188,12 +4207,12 @@ CONTAINS
               endif
 
               ! **** u10 ****
-              startr(1)=t_ijruv(5)
-              startr(2)=t_ijruv(7)
+              startr(1)=t_ijruv(IMIN,UNODE)
+              startr(2)=t_ijruv(JMIN,UNODE)
               startz(3)=stepf
 
-              countr(1)=t_ijruv(6)-t_ijruv(5)+1
-              countr(2)=t_ijruv(8)-t_ijruv(7)+1
+              countr(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1
+              countr(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1
               countr(3)=1
 
               STATUS = NF90_INQ_VARID(NCID,'u10',VID)
@@ -5203,8 +4222,8 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,modelUwindf(t_ijruv(5):t_ijruv(6),&
-                                    t_ijruv(7):t_ijruv(8),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,modelUwindf(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE),&
+                                    t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanU array'
@@ -5213,12 +4232,12 @@ CONTAINS
               endif
 
               ! **** V10 ****
-              startr(1)=t_ijruv(9)
-              startr(2)=t_ijruv(11)
+              startr(1)=t_ijruv(IMIN,VNODE)
+              startr(2)=t_ijruv(JMIN,VNODE)
               startz(3)=stepf
 
-              countr(1)=t_ijruv(10)-t_ijruv(9)+1
-              countr(2)=t_ijruv(12)-t_ijruv(11)+1
+              countr(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
+              countr(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
               countr(3)=1
 
               STATUS = NF90_INQ_VARID(NCID,'v10',VID)
@@ -5228,8 +4247,8 @@ CONTAINS
                 stop
               endif
 
-              STATUS=NF90_GET_VAR(NCID,VID,modelVwindf(t_ijruv(9):t_ijruv(10), &
-                                    t_ijruv(11):t_ijruv(12),:),STARTz,COUNTz)
+              STATUS=NF90_GET_VAR(NCID,VID,modelVwindf(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE), &
+                                    t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanV array'
@@ -5238,12 +4257,12 @@ CONTAINS
               endif
 
               ! **** PeakDir ****
-              startz(1)=t_ijruv(1)
-              startz(2)=t_ijruv(3)
+              startz(1)=t_ijruv(IMIN,RNODE)
+              startz(2)=t_ijruv(JMIN,RNODE)
               startz(3)=stepf
 
-              countz(1)=t_ijruv(2)-t_ijruv(1)+1
-              countz(2)=t_ijruv(4)-t_ijruv(3)+1
+              countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+              countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
               countr(3)=1
 
               STATUS = NF90_INQ_VARID(NCID,'Pd',VID)
@@ -5253,8 +4272,8 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swanpdf(t_ijruv(1):t_ijruv(2),    &
-                                    t_ijruv(3):t_ijruv(4),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,swanpdf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),    &
+                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanpd array'
@@ -5263,12 +4282,12 @@ CONTAINS
               endif
 
               ! **** PeakWaveLength ****
-              startz(1)=t_ijruv(1)
-              startz(2)=t_ijruv(3)
+              startz(1)=t_ijruv(IMIN,RNODE)
+              startz(2)=t_ijruv(JMIN,RNODE)
               startz(3)=stepf
 
-              countz(1)=t_ijruv(2)-t_ijruv(1)+1
-              countz(2)=t_ijruv(4)-t_ijruv(3)+1
+              countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
+              countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
               countr(3)=1
 
               STATUS = NF90_INQ_VARID(NCID,'Pwl',VID)
@@ -5278,8 +4297,8 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swanwlf(t_ijruv(1):t_ijruv(2),    &
-                                    t_ijruv(3):t_ijruv(4),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,swanwlf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),    &
+                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanwl array'
@@ -5302,8 +4321,8 @@ CONTAINS
       endif                ! if WindWaveModel
 
       !Reshape input to fit node numbers assigned to elements
-       do j=t_ijruv(3),t_ijruv(4)
-          do i=t_ijruv(1),t_ijruv(2)
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
             count = (j-1)*vi + i
             t_hsig(t_f,count) = swanHsf(i,j,1) * m_r(i,j,us_tridim)
             t_tm01(t_f,count) = swantm01f(i,j,1) * m_r(i,j,us_tridim)
@@ -5313,8 +4332,8 @@ CONTAINS
        enddo
       if(windwavemodel.or.((.not.readUwind) .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
             write(*,*)'overwrite ROMS U Wind'
-              do j=t_ijruv(7),t_ijruv(8)
-                do i=t_ijruv(5),t_ijruv(6)
+              do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+                do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
                   count = (j-1)*ui + i
                   t_uwind(t_f,count) = modelUwindf(i,j,1) * m_u(i,j,us_tridim)
                 enddo
@@ -5322,8 +4341,8 @@ CONTAINS
       end if
       if(windwavemodel.or.((.not.readVwind) .and. (.not. Zgrid)))then    !only overwrite ROMS t_vwind (from sustr) if using windwavesmodel OR overwriting by constant V wind
            write(*,*)'overwrite ROMS V Wind'
-              do j=t_ijruv(11),t_ijruv(12)
-                do i=t_ijruv(9),t_ijruv(10)
+              do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+                do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
                   count = (j-1)*vi + i
               t_vwind(t_f,count) = modelVwindf(i,j,1) * m_v(i,j,us_tridim)
                 enddo
@@ -5766,20 +4785,20 @@ CONTAINS
       klev=P_klev(n)
       !Assign node numbers for rho,u,v calculations
 
-      OMP_ruv(1,Rnod,rank) = RE(1,P_r_element(n),klev)
-      OMP_ruv(2,Rnod,rank) = RE(2,P_r_element(n),klev)
-      OMP_ruv(3,Rnod,rank) = RE(3,P_r_element(n),klev)
-      OMP_ruv(4,Rnod,rank) = RE(4,P_r_element(n),klev)
+      OMP_ruv(1,RNODE,rank) = RE(1,P_r_element(n),klev)
+      OMP_ruv(2,RNODE,rank) = RE(2,P_r_element(n),klev)
+      OMP_ruv(3,RNODE,rank) = RE(3,P_r_element(n),klev)
+      OMP_ruv(4,RNODE,rank) = RE(4,P_r_element(n),klev)
      
-      OMP_ruv(1,Unod,rank) = UE(1,P_u_element(n),klev)
-      OMP_ruv(2,Unod,rank) = UE(2,P_u_element(n),klev)
-      OMP_ruv(3,Unod,rank) = UE(3,P_u_element(n),klev)
-      OMP_ruv(4,Unod,rank) = UE(4,P_u_element(n),klev)
+      OMP_ruv(1,UNODE,rank) = UE(1,P_u_element(n),klev)
+      OMP_ruv(2,UNODE,rank) = UE(2,P_u_element(n),klev)
+      OMP_ruv(3,UNODE,rank) = UE(3,P_u_element(n),klev)
+      OMP_ruv(4,UNODE,rank) = UE(4,P_u_element(n),klev)
      
-      OMP_ruv(1,Vnod,rank) = VE(1,P_v_element(n),klev)
-      OMP_ruv(2,Vnod,rank) = VE(2,P_v_element(n),klev)
-      OMP_ruv(3,Vnod,rank) = VE(3,P_v_element(n),klev)
-      OMP_ruv(4,Vnod,rank) = VE(4,P_v_element(n),klev)
+      OMP_ruv(1,VNODE,rank) = VE(1,P_v_element(n),klev)
+      OMP_ruv(2,VNODE,rank) = VE(2,P_v_element(n),klev)
+      OMP_ruv(3,VNODE,rank) = VE(3,P_v_element(n),klev)
+      OMP_ruv(4,VNODE,rank) = VE(4,P_v_element(n),klev)
   END SUBROUTINE setRnode
 
   SUBROUTINE setDeadOrOut(n)
@@ -6040,45 +5059,45 @@ CONTAINS
       Wgt4 = 0
       tOK = 0 !to store information on the interpolation method
       SELECT CASE(RUV)
-       CASE(Rnod)
-        x1 = rx(OMP_ruv(1,Rnod,rank))
-        x2 = rx(OMP_ruv(2,Rnod,rank))
-        x3 = rx(OMP_ruv(3,Rnod,rank))
-        x4 = rx(OMP_ruv(4,Rnod,rank))
-        y1 = ry(OMP_ruv(1,Rnod,rank))
-        y2 = ry(OMP_ruv(2,Rnod,rank))
-        y3 = ry(OMP_ruv(3,Rnod,rank))
-        y4 = ry(OMP_ruv(4,Rnod,rank))
-        elemask(1)=rho_mask(OMP_ruv(1,Rnod,rank),i)
-        elemask(2)=rho_mask(OMP_ruv(2,Rnod,rank),i)
-        elemask(3)=rho_mask(OMP_ruv(3,Rnod,rank),i)
-        elemask(4)=rho_mask(OMP_ruv(4,Rnod,rank),i)
-       CASE(Unod)
-        x1 = ux(OMP_ruv(1,Unod,rank))
-        x2 = ux(OMP_ruv(2,Unod,rank))
-        x3 = ux(OMP_ruv(3,Unod,rank))
-        x4 = ux(OMP_ruv(4,Unod,rank))
-        y1 = uy(OMP_ruv(1,Unod,rank))
-        y2 = uy(OMP_ruv(2,Unod,rank))
-        y3 = uy(OMP_ruv(3,Unod,rank))
-        y4 = uy(OMP_ruv(4,Unod,rank))
-        elemask(1)=u_mask(OMP_ruv(1,Unod,rank),i)
-        elemask(2)=u_mask(OMP_ruv(2,Unod,rank),i)
-        elemask(3)=u_mask(OMP_ruv(3,Unod,rank),i)
-        elemask(4)=u_mask(OMP_ruv(4,Unod,rank),i)
-       CASE(Vnod)
-        x1 = vx(OMP_ruv(1,Vnod,rank))
-        x2 = vx(OMP_ruv(2,Vnod,rank))
-        x3 = vx(OMP_ruv(3,Vnod,rank))
-        x4 = vx(OMP_ruv(4,Vnod,rank))
-        y1 = vy(OMP_ruv(1,Vnod,rank))
-        y2 = vy(OMP_ruv(2,Vnod,rank))
-        y3 = vy(OMP_ruv(3,Vnod,rank))
-        y4 = vy(OMP_ruv(4,Vnod,rank))
-        elemask(1)=v_mask(OMP_ruv(1,Vnod,rank),i)
-        elemask(2)=v_mask(OMP_ruv(2,Vnod,rank),i)
-        elemask(3)=v_mask(OMP_ruv(3,Vnod,rank),i)
-        elemask(4)=v_mask(OMP_ruv(4,Vnod,rank),i)
+       CASE(RNODE)
+        x1 = rx(OMP_ruv(1,RNODE,rank))
+        x2 = rx(OMP_ruv(2,RNODE,rank))
+        x3 = rx(OMP_ruv(3,RNODE,rank))
+        x4 = rx(OMP_ruv(4,RNODE,rank))
+        y1 = ry(OMP_ruv(1,RNODE,rank))
+        y2 = ry(OMP_ruv(2,RNODE,rank))
+        y3 = ry(OMP_ruv(3,RNODE,rank))
+        y4 = ry(OMP_ruv(4,RNODE,rank))
+        elemask(1)=rho_mask(OMP_ruv(1,RNODE,rank),i)
+        elemask(2)=rho_mask(OMP_ruv(2,RNODE,rank),i)
+        elemask(3)=rho_mask(OMP_ruv(3,RNODE,rank),i)
+        elemask(4)=rho_mask(OMP_ruv(4,RNODE,rank),i)
+       CASE(UNODE)
+        x1 = ux(OMP_ruv(1,UNODE,rank))
+        x2 = ux(OMP_ruv(2,UNODE,rank))
+        x3 = ux(OMP_ruv(3,UNODE,rank))
+        x4 = ux(OMP_ruv(4,UNODE,rank))
+        y1 = uy(OMP_ruv(1,UNODE,rank))
+        y2 = uy(OMP_ruv(2,UNODE,rank))
+        y3 = uy(OMP_ruv(3,UNODE,rank))
+        y4 = uy(OMP_ruv(4,UNODE,rank))
+        elemask(1)=u_mask(OMP_ruv(1,UNODE,rank),i)
+        elemask(2)=u_mask(OMP_ruv(2,UNODE,rank),i)
+        elemask(3)=u_mask(OMP_ruv(3,UNODE,rank),i)
+        elemask(4)=u_mask(OMP_ruv(4,UNODE,rank),i)
+       CASE(VNODE)
+        x1 = vx(OMP_ruv(1,VNODE,rank))
+        x2 = vx(OMP_ruv(2,VNODE,rank))
+        x3 = vx(OMP_ruv(3,VNODE,rank))
+        x4 = vx(OMP_ruv(4,VNODE,rank))
+        y1 = vy(OMP_ruv(1,VNODE,rank))
+        y2 = vy(OMP_ruv(2,VNODE,rank))
+        y3 = vy(OMP_ruv(3,VNODE,rank))
+        y4 = vy(OMP_ruv(4,VNODE,rank))
+        elemask(1)=v_mask(OMP_ruv(1,VNODE,rank),i)
+        elemask(2)=v_mask(OMP_ruv(2,VNODE,rank),i)
+        elemask(3)=v_mask(OMP_ruv(3,VNODE,rank),i)
+        elemask(4)=v_mask(OMP_ruv(4,VNODE,rank),i)
       END SELECT     
 
      !Ensure there is no friction near land (the free slip condition) !ewn.v.2
@@ -6258,18 +5277,18 @@ CONTAINS
      endif 
 
  
-     rnode1 = OMP_ruv(1,Rnod,rank)  
-     rnode2 = OMP_ruv(2,Rnod,rank)  
-     rnode3 = OMP_ruv(3,Rnod,rank)  
-     rnode4 = OMP_ruv(4,Rnod,rank)  
-     unode1 = OMP_ruv(1,Unod,rank)  
-     unode2 = OMP_ruv(2,Unod,rank)  
-     unode3 = OMP_ruv(3,Unod,rank)  
-     unode4 = OMP_ruv(4,Unod,rank)  
-     vnode1 = OMP_ruv(1,Vnod,rank)  
-     vnode2 = OMP_ruv(2,Vnod,rank)  
-     vnode3 = OMP_ruv(3,Vnod,rank)  
-     vnode4 = OMP_ruv(4,Vnod,rank)  
+     rnode1 = OMP_ruv(1,RNODE,rank)  
+     rnode2 = OMP_ruv(2,RNODE,rank)  
+     rnode3 = OMP_ruv(3,RNODE,rank)  
+     rnode4 = OMP_ruv(4,RNODE,rank)  
+     unode1 = OMP_ruv(1,UNODE,rank)  
+     unode2 = OMP_ruv(2,UNODE,rank)  
+     unode3 = OMP_ruv(3,UNODE,rank)  
+     unode4 = OMP_ruv(4,UNODE,rank)  
+     vnode1 = OMP_ruv(1,VNODE,rank)  
+     vnode2 = OMP_ruv(2,VNODE,rank)  
+     vnode3 = OMP_ruv(3,VNODE,rank)  
+     vnode4 = OMP_ruv(4,VNODE,rank)  
   
      !Determine which data to interpolate from
 
@@ -6859,18 +5878,18 @@ CONTAINS
      rank=1
      !$ rank=OMP_GET_THREAD_NUM () +1
    
-    rnode1 = OMP_ruv(1,Rnod,rank)  
-    rnode2 = OMP_ruv(2,Rnod,rank)  
-    rnode3 = OMP_ruv(3,Rnod,rank)  
-    rnode4 = OMP_ruv(4,Rnod,rank)  
-    unode1 = OMP_ruv(1,Unod,rank)  
-    unode2 = OMP_ruv(2,Unod,rank)  
-    unode3 = OMP_ruv(3,Unod,rank)  
-    unode4 = OMP_ruv(4,Unod,rank)  
-    vnode1 = OMP_ruv(1,Vnod,rank)  
-    vnode2 = OMP_ruv(2,Vnod,rank)  
-    vnode3 = OMP_ruv(3,Vnod,rank)  
-    vnode4 = OMP_ruv(4,Vnod,rank)  
+    rnode1 = OMP_ruv(1,RNODE,rank)  
+    rnode2 = OMP_ruv(2,RNODE,rank)  
+    rnode3 = OMP_ruv(3,RNODE,rank)  
+    rnode4 = OMP_ruv(4,RNODE,rank)  
+    unode1 = OMP_ruv(1,UNODE,rank)  
+    unode2 = OMP_ruv(2,UNODE,rank)  
+    unode3 = OMP_ruv(3,UNODE,rank)  
+    unode4 = OMP_ruv(4,UNODE,rank)  
+    vnode1 = OMP_ruv(1,VNODE,rank)  
+    vnode2 = OMP_ruv(2,VNODE,rank)  
+    vnode3 = OMP_ruv(3,VNODE,rank)  
+    vnode4 = OMP_ruv(4,VNODE,rank)  
    conflictin=conflict
    if(conflictin<0)write(*,*)' HCONFLICT GetDepth at ',x2lon(Xpos,Ypos),y2lat(Ypos) 
    DepthRefRnode=-1
@@ -7462,18 +6481,6 @@ CONTAINS
 
     INTEGER :: i,j,n,n1
 
-    !t_ijruv  1 - rho_imin
-    !         2 - rho_imax
-    !         3 - rho_jmin
-    !         4 - rho_jmax
-    !         5 - u_imin
-    !         6 - u_imax
-    !         7 - u_jmin
-    !         8 - u_jmax
-    !         9 - v_imin
-    !        10 - v_imax
-    !        11 - v_jmin
-    !        12 - v_jmax
     n1=1
     do n=1,numpar
       if(.not.DeadOrOut(n))then
@@ -7485,55 +6492,55 @@ CONTAINS
     !rho
     i = mod(RE(1,P_r_element(n1),P_klev(n1))-1,vi)+1
     j = (RE(1,P_r_element(n1),P_klev(n1))-1)/vi + 1
-    t_ijruv(1) = max(i-ijbuff,1)
-    t_ijruv(2) = min(i+ijbuff+1,vi)
-    t_ijruv(3) = max(j-ijbuff,1)
-    t_ijruv(4) = min(j+ijbuff+1,uj)
+    t_ijruv(IMIN,RNODE) = max(i-ijbuff,1)
+    t_ijruv(IMAX,RNODE) = min(i+ijbuff+1,vi)
+    t_ijruv(JMIN,RNODE) = max(j-ijbuff,1)
+    t_ijruv(JMAX,RNODE) = min(j+ijbuff+1,uj)
 
     do n=n1+1,numpar
       if(DeadOrOut(n)) cycle   
       i = mod(RE(1,P_r_element(n),P_klev(n))-1 ,vi)+ 1
       j = (RE(1,P_r_element(n),P_klev(n))-1)/vi + 1
-      if((i-ijbuff  ) < t_ijruv(1)) t_ijruv(1) = max(i-ijbuff,1)
-      if((i+ijbuff+1) > t_ijruv(2)) t_ijruv(2) = min(i+ijbuff+1,vi)
-      if((j-ijbuff  ) < t_ijruv(3)) t_ijruv(3) = max(j-ijbuff,1)
-      if((j+ijbuff+1) > t_ijruv(4)) t_ijruv(4) = min(j+ijbuff+1,uj)
+      if((i-ijbuff  ) < t_ijruv(IMIN,RNODE)) t_ijruv(IMIN,RNODE) = max(i-ijbuff,1)
+      if((i+ijbuff+1) > t_ijruv(IMAX,RNODE)) t_ijruv(IMAX,RNODE) = min(i+ijbuff+1,vi)
+      if((j-ijbuff  ) < t_ijruv(JMIN,RNODE)) t_ijruv(JMIN,RNODE) = max(j-ijbuff,1)
+      if((j+ijbuff+1) > t_ijruv(JMAX,RNODE)) t_ijruv(JMAX,RNODE) = min(j+ijbuff+1,uj)
     enddo
 
     !u
     i = mod(UE(1,P_u_element(n1),P_klev(n1))-1,ui)+1
     j = (UE(1,P_u_element(n1),P_klev(n1))-1)/ui + 1
-    t_ijruv(5) = max(i-ijbuff,1)
-    t_ijruv(6) = min(i+ijbuff+1,ui)
-    t_ijruv(7) = max(j-ijbuff,1)
-    t_ijruv(8) = min(j+ijbuff+1,uj)
+    t_ijruv(IMIN,UNODE) = max(i-ijbuff,1)
+    t_ijruv(IMAX,UNODE) = min(i+ijbuff+1,ui)
+    t_ijruv(JMIN,UNODE) = max(j-ijbuff,1)
+    t_ijruv(JMAX,UNODE) = min(j+ijbuff+1,uj)
 
     do n=n1+1,numpar
       if(DeadOrOut(n)) cycle   
       i = mod(UE(1,P_u_element(n),P_klev(n))-1,ui)+1
       j = (UE(1,P_u_element(n),P_klev(n))-1)/ui + 1
-      if((i-ijbuff  ) < t_ijruv(5)) t_ijruv(5) = max(i-ijbuff,1)
-      if((i+ijbuff+1) > t_ijruv(6)) t_ijruv(6) = min(i+ijbuff+1,ui)
-      if((j-ijbuff  ) < t_ijruv(7)) t_ijruv(7) = max(j-ijbuff,1)
-      if((j+ijbuff+1) > t_ijruv(8)) t_ijruv(8) = min(j+ijbuff+1,uj)
+      if((i-ijbuff  ) < t_ijruv(IMIN,UNODE)) t_ijruv(IMIN,UNODE) = max(i-ijbuff,1)
+      if((i+ijbuff+1) > t_ijruv(IMAX,UNODE)) t_ijruv(IMAX,UNODE) = min(i+ijbuff+1,ui)
+      if((j-ijbuff  ) < t_ijruv(JMIN,UNODE)) t_ijruv(JMIN,UNODE) = max(j-ijbuff,1)
+      if((j+ijbuff+1) > t_ijruv(JMAX,UNODE)) t_ijruv(JMAX,UNODE) = min(j+ijbuff+1,uj)
     enddo
 
     !v
     i = mod(VE(1,P_v_element(n1),P_klev(n1))-1,vi)+1
     j = (VE(1,P_v_element(n1),P_klev(n1))-1)/vi + 1
-    t_ijruv( 9) = max(i-ijbuff,1)
-    t_ijruv(10) = min(i+ijbuff+1,vi)
-    t_ijruv(11) = max(j-ijbuff,1)
-    t_ijruv(12) = min(j+ijbuff+1,vj)
+    t_ijruv(IMIN,VNODE) = max(i-ijbuff,1)
+    t_ijruv(IMAX,VNODE) = min(i+ijbuff+1,vi)
+    t_ijruv(JMIN,VNODE) = max(j-ijbuff,1)
+    t_ijruv(JMAX,VNODE) = min(j+ijbuff+1,vj)
 
     do n=n1+1,numpar
       if(DeadOrOut(n)) cycle   
       i = mod(VE(1,P_v_element(n),P_klev(n))-1,vi)+1
       j = (VE(1,P_v_element(n),P_klev(n))-1)/vi + 1
-      if((i-ijbuff  ) < t_ijruv( 9)) t_ijruv( 9) = max(i-ijbuff,1)
-      if((i+ijbuff+1) > t_ijruv(10)) t_ijruv(10) = min(i+ijbuff+1,vi)
-      if((j-ijbuff  ) < t_ijruv(11)) t_ijruv(11) = max(j-ijbuff,1)
-      if((j+ijbuff+1) > t_ijruv(12)) t_ijruv(12) = min(j+ijbuff+1,vj)
+      if((i-ijbuff  ) < t_ijruv(IMIN,VNODE)) t_ijruv(IMIN,VNODE) = max(i-ijbuff,1)
+      if((i+ijbuff+1) > t_ijruv(IMAX,VNODE)) t_ijruv(IMAX,VNODE) = min(i+ijbuff+1,vi)
+      if((j-ijbuff  ) < t_ijruv(JMIN,VNODE)) t_ijruv(JMIN,VNODE) = max(j-ijbuff,1)
+      if((j+ijbuff+1) > t_ijruv(JMAX,VNODE)) t_ijruv(JMAX,VNODE) = min(j+ijbuff+1,vj)
     enddo
 
 
@@ -9146,4 +8153,232 @@ CONTAINS
     enddo
   END SUBROUTINE printpython_bounds
 
+  SUBROUTINE set_filename(nfile,counter,filename)
+   USE PARAM_MOD, ONLY: numdigits,dirin,prefix,suffix
+   IMPLICIT NONE
+   integer, intent(in):: nfile,counter
+   CHARACTER(len=200),intent(inout) :: filename
+
+        SELECT CASE(numdigits)
+          CASE(0)
+            WRITE(filename,'(A,A,A)')      TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         TRIM(suffix)
+          CASE(1)
+            WRITE(filename,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(2)
+            WRITE(filename,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(3)
+            WRITE(filename,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(4)
+            WRITE(filename,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(5)
+            WRITE(filename,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(6)
+            WRITE(filename,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(7)
+            WRITE(filename,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(8)
+            WRITE(filename,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(9)
+            WRITE(filename,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+                                         counter,TRIM(suffix)
+          CASE(10)
+            WRITE(filename,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nfile)),    &
+                                         counter,TRIM(suffix)
+          CASE DEFAULT
+           WRITE(*,*)'Model presently does not support numdigits of ',numdigits
+           WRITE(*,*)'Please use numdigit value from 1 to 10'
+           WRITE(*,*)'  OR modify code in Hydrodynamic module'
+           STOP
+        END SELECT
+  END SUBROUTINE
+
+  SUBROUTINE read_data_from_file(varname,ni,nj,nk,tarray,tf1,tff,  &
+                                 field,RUVnod,recordnum,incrstepf,filename,interpolate)
+   USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid,hydrobytes,Zgrid
+   USE RANDOM_MOD, ONLY: genrand_real1
+   USE netcdf
+   IMPLICIT NONE
+   INCLUDE 'netcdf.inc'
+   character(*),intent(in):: varname
+   character(*),intent(in):: filename
+   integer, intent(in):: ni,nj,nk,tarray,tf1,tff
+   double precision, intent(inout):: field(ni,nj,nk,3)
+   integer,intent(in):: RUVnod,recordnum,incrstepf
+   integer,intent(in):: interpolate
+   integer:: start_index(3),count_index(3),nk_file,ios,waiting
+   integer:: interpol_uv,one_if_interpol_v,rand15,t,k,j,i,ktlev
+   REAL, ALLOCATABLE, DIMENSION(:) :: vec_prev
+   REAL, ALLOCATABLE, DIMENSION(:) :: real_vec_read
+   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: dbl_vec_read
+   double precision:: field_read(ni,nj,nk,3)
+
+    INTEGER :: STATUS,NCID,VID
+   if(interpolate>0)then
+      interpol_uv=RUVnod
+      write(*,'(5a,i8)')'warning: read in MITgcm file var ',trim(varname), &
+      ' at cell center, interpolating it on the cell borders from file ',TRIM(filename),' for time record num=',start_index(3)
+
+   else
+      interpol_uv=0
+      write(*,'(5a,i8)')'read in MITgcm file var ',trim(varname),' from file',TRIM(filename),' for time record num=',start_index(3)
+   endif
+   if(interpol_uv==VNODE)then
+     ALLOCATE(vec_prev(vi))
+     one_if_interpol_v=1 
+   else
+     one_if_interpol_v=0 
+   endif
+   ALLOCATE(real_vec_read(vi))
+   ALLOCATE(dbl_vec_read(vi))
+
+     start_index(1)=t_ijruv(IMIN,RUVnod)
+     start_index(2)=t_ijruv(JMIN,RUVnod)
+     start_index(3)=recordnum
+     count_index(1)=t_ijruv(IMAX,RUVnod)-t_ijruv(IMIN,RUVnod)+1
+     count_index(2)=t_ijruv(JMAX,RUVnod)-t_ijruv(JMIN,RUVnod)+1
+     count_index(3)=incrstepf
+
+     if(Zgrid)then
+       !write(*,*)'time record num=',start_index(3)
+       open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
+             action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
+        if ( ios /= 0 ) then
+            do waiting=1,10
+                    rand15=int( 15.0*genrand_real1() )
+                    call sleep(rand15)
+                    write(*,*)'waiting as opening of file ',trim(filename),  &
+                              ' failed . New trial after sleep ',rand15
+                    open(unit=110,file=TRIM(filename),form='unformatted',    &
+                      status='old', action='read',access='direct',         &
+                      recl=hydrobytes*vi, iostat=ios,convert='little_endian')
+                    if ( ios == 0 ) exit
+            enddo
+        endif
+       if ( ios /= 0 )  then
+           write(*,*) " ERROR OPENING ",TRIM(filename)
+           stop
+       endif
+       nk_file=min(us,nk)! here using us even when nk=uw=us+1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
+
+        !write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1,' and (1:',ni,')=vec(',vi-ni+1,':',vi,')'
+        !write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1+one_if_interpol_v
+        !write(*,*) ' k=',1,':',nk_file
+        !write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+
+       do t=start_index(3),start_index(3)+count_index(3)-1
+         real_vec_read=0.0
+         dbl_vec_read=0.0
+         field(:,:,:,tarray+t-start_index(3))=0.0
+         do k=1,nk_file 
+           ktlev=(t-1)*(nk_file*uj)+(k-1)*uj
+           do j=start_index(2),start_index(2)+count_index(2)-1+one_if_interpol_v
+             !write(*,'(3(a,i4),2(a,i8),6(a,i4))')'i=',1,':',ni,' t=',t,' ktlev=',ktlev,' rec=',ktlev+j+(uj-nj)-one_if_interpol_v,' j=',j,' -> i=',1,':',ni,' j=',j,' k=',(nk-k+1),' t=',tarray+t-start_index(3)
+             if(hydrobytes.eq.4)then 
+               read(110,rec=(ktlev+j+(uj-nj-one_if_interpol_v)),IOSTAT=ios)real_vec_read(1:vi) ! adding +(uj-nj)=1 for v nodes as mitgcm output is on uj nodes = vj+1
+               if ( ios == 0 ) then
+                 if(interpol_uv==UNODE) real_vec_read(2:vi)=0.5*(real_vec_read(1:vi-1)+real_vec_read(2:vi)) 
+                 ! adding +(nk-nk_file)=+1 to skip bottom values for Wtype nodes that have nk-us=1
+                 if(interpol_uv==VNODE.and.j.gt.start_index(2))then
+                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(3))=             &
+                               0.5*(real_vec_read(vi-ni+1:vi)+vec_prev(vi-ni+1:vi))
+                 else
+                    field(1:ni,j,(nk-k+1),tarray+t-start_index(3))=real_vec_read(vi-ni+1:vi)
+                 endif
+                 if(interpol_uv==VNODE) vec_prev=real_vec_read 
+               endif
+             else
+               read(110,rec=(ktlev+j+(uj-nj-one_if_interpol_v)),IOSTAT=ios)dbl_vec_read(1:vi) ! adding +(uj-nj)=1 for v nodes as mitgcm output is on uj nodes = vj+1
+               if ( ios == 0 ) then
+                 if(interpol_uv==UNODE)dbl_vec_read(2:vi)=0.5*(dbl_vec_read(1:vi-1)+dbl_vec_read(2:vi))
+                 ! for nk=ws, nk-k+1=us-k+2 : skipping bottom values for Wtype nodes that have nk-us=ws-us=1
+                 if(interpol_uv==VNODE.and.j.gt.start_index(2))then
+                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(3))=             &
+                               0.5*(dbl_vec_read(vi-ni+1:vi)+vec_prev(vi-ni+1:vi))
+                 else
+                    field(1:ni,j,(nk-k+1),tarray+t-start_index(3))=dbl_vec_read(vi-ni+1:vi)
+                 endif
+                 if(interpol_uv==VNODE) vec_prev=dbl_vec_read 
+               endif
+             endif
+             if ( ios /= 0 ) then
+                write(*,*) 'Problem reading  ',varname
+                write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
+                write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
+                write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+                stop " ERROR READING FIELD "
+             endif
+           enddo
+         enddo
+       enddo
+       if(interpol_uv==VNODE)then
+         DEALLOCATE(vec_prev)
+       endif
+
+       CLOSE(110)
+
+     else ! Roms NETcdf outputs
+      
+       STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
+       if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
+       if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      
+       STATUS = NF90_INQ_VARID(NCID,varname,VID)
+       if (STATUS .NE. NF90_NOERR) then
+         write(*,*) 'Problem finding ',varname
+         write(*,*) NF90_STRERROR(STATUS)
+         stop
+       endif
+       field_read=field 
+         STATUS = NF90_GET_VAR(NCID,VID,field(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod), &
+                         t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod),1:nk,tf1:tff),     &
+                         STARTr,COUNTr)
+       if (STATUS .NE. NF90_NOERR) then
+         write(*,*) 'Problem reading ',varname
+         write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
+         write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
+         write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+         write(*,*) NF90_STRERROR(STATUS)
+         stop
+       endif
+       if(varname=='sustr')then
+          do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
+           do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
+             DO t=tf1,tff
+             if(field_read(i,j,1,t).lt.0.0)then
+             field(i,j,1,t) = (-20.659 * (abs(field_read(i,j,1,t))**0.4278))
+             else
+             field(i,j,1,t)= (20.659 * (field_read(i,j,1,t)**0.4278)) 
+             end if
+             ENDDO
+           enddo
+          enddo
+       elseif(varname=='svstr')then
+          do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
+           do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
+             DO t=tf1,tff
+             if(field_read(i,j,1,t).lt.0.0)then
+               field(i,j,1,t)= (-20.659 * (abs(field_read(i,j,1,t))**0.4278)) 
+             else
+               field(i,j,1,t)= (20.659 * (field_read(i,j,1,t)**0.4278))
+             end if
+             ENDDO
+           enddo
+          enddo
+       else
+         field=field_read
+       endif
+       !close the dataset and reassign the NCID
+       STATUS = NF90_CLOSE(NCID)
+     endif
+
+  END SUBROUTINE
 END MODULE HYDRO_MOD

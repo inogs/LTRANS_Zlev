@@ -1,0 +1,6 @@
+option('use_OMP',type:'boolean',value:false)
+option('netcdf_compiled_with_hdf5',type:'boolean',value:false)
+option('NETCDF_C_HOME_PATH', type : 'string', value : 'none', description : 'path to NETCDF-c home installation folder')
+option('NETCDF_F_HOME_PATH', type : 'string', value : 'none', description : 'path to NETCDF-fortran home installation folder')
+option('HDF5_HOME_PATH', type : 'string', value : 'none', description : 'path to HDF5 home installation folder')
+option('CURL_HOME_PATH', type : 'string', value : 'none', description : 'path to CURL home installation folder')
