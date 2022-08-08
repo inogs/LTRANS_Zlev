@@ -24,16 +24,12 @@ rm $_LTRANS_input
 echo "cp ${_test_dir}/$_LTRANS_input "
 cp ${_test_dir}/$_LTRANS_input $_LTRANS_input  
 
-if [ ! -L ${_test_dir}/../input ]; then
+if [ ! -L ../input ]; then
    echo "link ${_test_dir}/../input "
-   ln -s ${_test_dir}/../input ../input > /dev/null 2>&1
-fi
-if [ ! -L ${_test_dir}/../MITgcm_outputs ]; then
-   echo "link ${_test_dir}/../MITgcm_outputs "
-   ln -s ${_test_dir}/../MITgcm_outputs ../MITgcm_outputs > /dev/null 2>&1
+   ln -s ${_test_dir}/../input ../input  > /dev/null 2>&1
 fi
 
-if [ -f Adjacentelements-boxes_NiNj64-c1.data ]; then
+if [ -f ${_test_dir}/../input/Adjacentelements-boxes_NiNj64-c1.data ]; then
    sed -i "s/ADJele_file= .False./ADJele_file= .True./" $_LTRANS_input
 fi
 

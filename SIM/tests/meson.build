@@ -2,12 +2,30 @@ _prefix = meson.current_source_dir()
 
 message('- - - - - [ meson configuring running tests ] - - - - - - - - - - ')
 
-_get_MITgcm_outputs = find_program('get_MITgcm_outputs.sh')
-test('--------------- get MITgcm outputs from zenodo -----------------------------------',
-          _get_MITgcm_outputs,
-          workdir:meson.current_source_dir()+'/..',
-          timeout:1800,
-          priority:100)
+#_get_MITgcm_outputs = find_program('get_MITgcm_outputs.sh')
+#test('--------------- get MITgcm outputs from zenodo -----------------------------------',
+#          _get_MITgcm_outputs,
+#          workdir:meson.current_source_dir()+'/..',
+#          timeout:1800,
+#          priority:100)
+
+python_exe = find_program('python3', 'python')
+params = files('check_python_libs.py')
+r = run_command(python_exe, params,  check: true)
+if r.returncode() != 0
+  error('could not run python with the required python module libraries, next test will fail, please set up an adeguate python environment and try again.')
+endif
+
+
+_create_MITgcm_fake_fields = find_program('create_MITgcm_fake_fields.sh')
+test('---------------- create fake MITgcm outputs fields --------------------------------',
+       _create_MITgcm_fake_fields, 
+       args:[
+             _prefix+'/'
+            ],
+       workdir:meson.current_build_dir(),
+       timeout:300,
+       priority:100)
 
 _synch = find_program('synch.sh')
 test('--------------- barrier insuring MITgcm_output files are downloaded --------------',

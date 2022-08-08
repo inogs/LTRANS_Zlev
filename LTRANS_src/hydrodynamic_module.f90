@@ -1455,6 +1455,7 @@ CONTAINS
     INTEGER :: startnum                                   !start record to read in file
     INTEGER :: ntloop                                     !numer of time to loop through opening new file each time
     INTEGER :: nloop                                      !loop counter
+    INTEGER,PARAMETER :: interpol_from_cell_center_to_CArakawa=1,do_not_interpolate=0
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: swanHs,swantm01,      &
                                    swanpd,swanwl,romstrU,romstrV
 !      ***** END IMIOM *****
@@ -1734,300 +1735,23 @@ CONTAINS
 
         ! Read in data for first three external time steps
 
-       if(Zgrid)then
-         !write(*,*)'open MITgcm datafile: ',TRIM(filenm)
-         if(filegiven)then
-           write(*,'(3a,i8)') 'initHydro : file name to open and read is ',TRIM(filenm),' with little endian'
-           open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
-                 action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
-            if ( ios /= 0 ) then
-                do waiting=1,10
-                        rand15=int( 15.0*genrand_real1() )
-                        call sleep(rand15)
-                        write(*,*)'waiting as opening of file ',trim(filenm),  &
-                                  ' failed . New trial after sleep ',rand15
-                        open(unit=110,file=TRIM(filenm),form='unformatted',    &
-                          status='old', action='read',access='direct',         &
-                          recl=hydrobytes*vi, iostat=ios,convert='little_endian')
-                        if ( ios == 0 ) exit
-                enddo
-            endif
-           if ( ios /= 0 )  then
-               write(*,*) " ERROR OPENING ",TRIM(filenm)
-               stop
-           endif
-         else
-           write(*,'(a,i2,2a)') "Constant value used for variable",nvarf,                &
-                       ' instead of reading the file: ',TRIM(filenm)
-         endif
-       else ! Roms NETcdf outputs
-
-        STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-
-       endif
-!!!       write(*,*) 'ncid = ', nci
-
         !------------------------------------
-
         if(isZeta.and.readZeta)then  
-          ! **** Zeta ****
-          startz(1)=t_ijruv(IMIN,RNODE)
-          startz(2)=t_ijruv(JMIN,RNODE)
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countz(3)=incrstepf
-          
-          if(Zgrid)then
-            !write(*,*)'read in MITgcm file var zeta: '
-            !   write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-            !   write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-            !   write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-            if(hydrobytes.eq.4)then 
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            tmpvec=0.0
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING ZETA "
-              endif
-              romZ(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
-            enddo
-            enddo
-            else
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            dbltmpvec=0.0
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING ZETA "
-              endif
-              romZ(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
-            enddo
-            enddo
-            endif
-          else
-             STATUS = NF90_INQ_VARID(NCID,'zeta',VID)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem find zeta'
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-         
-             STATUS = NF90_GET_VAR(NCID,VID,romZ(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),        &
-                             t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem read zeta array'
-               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-           endif
+          call read_data_from_file('zeta',vi,uj,1,nf,nfn,nfnn,romZ,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isZeta)then
           romZ = constZeta
         endif
 
         !------------------------------------
-
-       !if(isSwdown.and.readNetcdfSwdown)then 
-       !   ! **** Swdown ****
-       !  startz(1)=t_ijruv(IMIN,RNODE)
-       !  startz(2)=t_ijruv(JMIN,RNODE)
-       !  startz(3)=recordnum
-
-       !  countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-       !  countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-       !  countz(3)=incrstepf
-
-       !  if(Zgrid)then
-       !    if(hydrobytes.eq.4)then 
-       !    do t=startz(3),startz(3)+countz(3)-1
-       !    write(*,*)'time record num=',t
-       !    tmpvec=0.0
-       !    do j=startz(2),startz(2)+countz(2)-1
-       !      read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-       !      if ( ios /= 0 ) then
-       !         write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-       !         stop " ERROR READING SWDOWN "
-       !      endif
-       !      if(j==startz(2))then
-       !          write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-       !                     TRIM(filenm)
-       !          write(*,'(33f7.4)')tmpvec(51:84)
-       !      endif
-       !      romSwdown(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
-       !    enddo
-       !    enddo
-       !    else
-       !    do t=startz(3),startz(3)+countz(3)-1
-       !    write(*,*)'time record num=',t
-       !    dbltmpvec=0.0
-       !    do j=startz(2),startz(2)+countz(2)-1
-       !      read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-       !      if ( ios /= 0 ) then
-       !         write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-       !         stop " ERROR READING SWDOWN "
-       !      endif
-       !      if(j==startz(2))then
-       !          write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim',vi,  &
-       !                    TRIM(filenm)
-       !          write(*,'(33f7.4)')dbltmpvec(51:84)
-       !      endif
-       !      romSwdown(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
-       !    enddo
-       !    enddo
-       !    endif
-       !  else
-       !     STATUS = NF90_INQ_VARID(NCID,'swdown',VID)
-       !     if (STATUS .NE. NF90_NOERR) then
-       !       write(*,*) 'Problem find swdown'
-       !       write(*,*) NF90_STRERROR(STATUS)
-       !       stop
-       !     endif
-       ! 
-       !     STATUS = NF90_GET_VAR(NCID,VID,romSwdown(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),        &
-       !                     t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
-       !     if (STATUS .NE. NF90_NOERR) then
-       !       write(*,*) 'Problem read swdown array'
-       !       write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-       !       write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-       !       write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-       !       write(*,*) NF90_STRERROR(STATUS)
-       !       stop
-       !     endif
-       !   endif
-       !elseif(isSwdown)then
-       !  romSwdown = 0.0
-       !endif
-        !------------------------------------
         if(isSalt.and.readSalt)then
-          ! **** Salt ****
-          startr(1)=t_ijruv(IMIN,RNODE)
-          startr(2)=t_ijruv(JMIN,RNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-            if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-             romS(:,:,:,nf+t-startr(4))=0.0
-             do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING SALT "
-                romS(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-             enddo
-            enddo
-            else
-            do t=startr(4),startr(4)+countr(4)-1
-             romS(:,:,:,nf+t-startr(4))=0.0
-             do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING SALT "
-                romS(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-             enddo
-            enddo
-            endif   
-          else
-        
-            STATUS = NF90_INQ_VARID(NCID,'salt',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find salt'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          
-            STATUS = NF90_GET_VAR(NCID,VID,romS(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),         &
-                        t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read salt array'
-              write(*,*) ' i=',startr(1),':',startr(1)+countr(1)-1
-              write(*,*) ' j=',startr(2),':',startr(2)+countr(2)-1
-              write(*,*) ' k=',startr(3),':',startr(3)+countr(3)-1
-              write(*,*) ' t=',startr(4),':',startr(4)+countr(4)-1
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('salt',vi,uj,us,nf,nfn,nfnn,romS,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isSalt)then
           romS = constSalt
         endif
         !------------------------------------
 
         if(isTemp.and.readTemp)then  
-          ! **** Temp ****
-          startr(1)=t_ijruv(IMIN,RNODE)
-          startr(2)=t_ijruv(JMIN,RNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-              romT(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING TEMP "
-                romT(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-              romT(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING TEMP "
-                romT(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'temp',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find temp'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romT(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),         &
-                         t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read temp array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('temp',vi,uj,us,nf,nfn,nfnn,romT,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isTemp)then
           romT = constTemp
         endif
@@ -2035,67 +1759,7 @@ CONTAINS
 
 
         if(isDens.and.readDens)then  
-          ! **** Density ****
-          startr(1)=t_ijruv(IMIN,RNODE)
-          startr(2)=t_ijruv(JMIN,RNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-         !write(*,*) 'isR, i=',startr(1),' :',startr(1)+countr(1)-1
-         !write(*,*) 'isR, j=',startr(2),' :',startr(2)+countr(2)-1
-         !write(*,*) 'isR, k=',startr(3),' :',startr(3)+countr(3)-1
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then               
-            do t=startr(4),startr(4)+countr(4)-1
-              romD(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING RHO "
-                romD(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else 
-            do t=startr(4),startr(4)+countr(4)-1
-              romD(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING RHO "
-                romD(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-
-           endif
-             
-          else
-
-
-            STATUS = NF90_INQ_VARID(NCID,'rho',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find rho'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romD(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),             &
-                                  t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read rho array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('rho',vi,uj,us,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isDens)then
           romD = constDens
         endif
@@ -2103,88 +1767,7 @@ CONTAINS
         !------------------------------------
 
         if(isU.and.readU)then  
-          ! **** U velocity ****
-          startr(1)=t_ijruv(IMIN,UNODE)
-          startr(2)=t_ijruv(JMIN,UNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1
-          countr(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1
-          countr(3)=us
-          countr(4)=incrstepf
-         !write(*,*) 'isU, i=',startr(1),' :',startr(1)+countr(1)-1
-         !write(*,*) 'isU, j=',startr(2),' :',startr(2)+countr(2)-1
-         !write(*,*) 'isU, k=',startr(3),' :',startr(3)+countr(3)-1
-         !write(*,*) 'isU, t=',startr(4),' :',startr(4)+countr(4)-1
-         !write(*,*) 'isU nf=',nf,' :',nf+countr(4)-1
-
-          if(Zgrid)then
-            if(hydrobytes.eq.4)then                      
-            do t=startr(4),startr(4)+countr(4)-1
-              romU(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 )then 
-                   write(*,"(11(a,i6),a)") &
-                   " ERROR READING U array of length ",vi,"* 4 Byte at pos ",ktlev+j,&
-                   " for t=",t," in [",&
-                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
-                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
-                   startr(2),',',startr(2)+countr(2)-1,"], "
-                   stop
-                endif
-                romU(1:ui,j,(us-k+1),nf+t-startr(4))=tmpvec(2:vi)
-              enddo
-              enddo
-            enddo
-            else
-            do t=startr(4),startr(4)+countr(4)-1
-              romU(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                !if(k==1 .or. k==2)write(*,'(5(a,i4))')'t=',t,' enregistrement
-                !(',k,',',j,'):',ktlev+j,' of size ni stored in k=',(us-k+1)
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                !(-1 on udim as U output is on u-nodes-1 for MITgcm)
-                if ( ios /= 0 )then 
-                   write(*,"(11(a,i6),a)") &
-                   " ERROR READING U array of length ",vi,"* 8 Byte at pos ",ktlev+j,&
-                   " for t=",t," in [",&
-                   startr(4),',',startr(4)+countr(4)-1,"], k=",k," in [", & 
-                   startr(3),',',startr(3)+countr(3)-1,"],  j=",j," in [", & 
-                   startr(2),',',startr(2)+countr(2)-1,"], "
-                   stop
-                endif
-                romU(1:ui,j,(us-k+1),nf+t-startr(4))=dbltmpvec(2:vi)     
-              enddo
-              enddo
-            enddo
-
-            endif
-             
-          else
-
-
-            STATUS = NF90_INQ_VARID(NCID,'u',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find u'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romU(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE),         &
-                             t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read u array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('u',ui,uj,us,nf,nfn,nfnn,romU,UNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isU)then
           romU = constU
         endif
@@ -2192,61 +1775,7 @@ CONTAINS
         !------------------------------------
 
         if(isV.and.readV)then  
-          ! **** V velocity ****
-          startr(1)=t_ijruv(IMIN,VNODE)
-          startr(2)=t_ijruv(JMIN,VNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
-          countr(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
-          countr(3)=us
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-              romV(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+(j+1)),IOSTAT=ios)tmpvec(1:vi) !(decal j of (+1) as V output is on v-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING V "
-                romV(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-              romV(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-1
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+(j+1)),IOSTAT=ios)dbltmpvec(1:vi) !(decal j of (+1) as V output is on v-nodes-1 for MITgcm)
-                if ( ios /= 0 ) stop " ERROR READING V "
-                romV(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif
-               
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'v',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find v'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romV(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),        &
-                            t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read v array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+            call read_data_from_file('v',vi,vj,us,nf,nfn,nfnn,romV,VNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isV)then
           romV = constV
         endif
@@ -2254,63 +1783,7 @@ CONTAINS
         !------------------------------------
 
         if(isW.and.readW)then  
-          ! **** W velocity ****
-          startr(1)=t_ijruv(IMIN,RNODE)
-          startr(2)=t_ijruv(JMIN,RNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countr(3)=ws
-          countr(4)=incrstepf
-
-          if(Zgrid)then           
-           if(hydrobytes.eq.4)then          
-            do t=startr(4),startr(4)+countr(4)-1
-              romW(:,:,:,nf+t-startr(4))=0.0     ! set W to null to initialize bottom values which are not present in input file
-              do k=startr(3),startr(3)+countr(3)-1 -(1) ! -1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING W "
-                romW(1:vi,j,(us-k+2),nf+t-startr(4))=tmpvec(1:vi)
-                !romW(1:vi,j,(us-k+1),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-               romW(:,:,:,nf+t-startr(4))=0.0     ! set W to null to initialize bottom values which are not present in input file
-              do k=startr(3),startr(3)+countr(3)-1 -(1) ! -1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING W "
-                romW(1:vi,j,(us-k+2),nf+t-startr(4))=dbltmpvec(1:vi)
-                !romW(1:vi,j,(us-k+1),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif
-        
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'w',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find w'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-       
-            STATUS = NF90_GET_VAR(NCID,VID,romW(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),         & 
-                       t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read w array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('w',vi,uj,ws,nf,nfn,nfnn,romW,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isW)then
           romW = constW
         endif
@@ -2318,276 +1791,35 @@ CONTAINS
         !------------------------------------
 
         if(isAks.and.readAks)then  
-          ! **** Vertical diffusivity for salt (Aks) ****
-          startr(1)=t_ijruv(IMIN,RNODE)
-          startr(2)=t_ijruv(JMIN,RNODE)
-          startr(3)=1
-          startr(4)=recordnum
-
-          countr(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countr(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countr(3)=ws
-          countr(4)=incrstepf
-
-          if(Zgrid)then
-           if(hydrobytes.eq.4)then             
-            do t=startr(4),startr(4)+countr(4)-1
-              romKH(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-2 ! -1 as KH is on rho nodes for MITGCM
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)tmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING AKs "
-                romKH(1:vi,j,(us-k+2),nf+t-startr(4))=tmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           else
-            do t=startr(4),startr(4)+countr(4)-1
-              romKH(:,:,:,nf+t-startr(4))=0.0
-              do k=startr(3),startr(3)+countr(3)-2 ! -1 as KH is on rho nodes for MITGCM
-              ktlev=(t-1)*(us*uj)+(k-1)*uj
-              do j=startr(2),startr(2)+countr(2)-1
-                read(110,rec=(ktlev+j),IOSTAT=ios)dbltmpvec(1:vi)
-                if ( ios /= 0 ) stop " ERROR READING AKs "
-                romKH(1:vi,j,(us-k+2),nf+t-startr(4))=dbltmpvec(1:vi)
-              enddo
-              enddo
-            enddo
-           endif        
-          else
-
-            STATUS = NF90_INQ_VARID(NCID,'AKs',VID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem find AKs'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-            
-            STATUS = NF90_GET_VAR(NCID,VID,romKH(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),        &
-                          t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:,nfn:nfnn),STARTr,COUNTr)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem read AKs array'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-          endif
+          call read_data_from_file('AKs',vi,uj,us,nf,nfn,nfnn,romKH,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isAks)then
           romKH = constAks
         endif
+
         !------------------------------------
+
         if(Wind .and.(isUwind .and.readUwind))then  
-          ! **** Uwind****
-          startz(1)=t_ijruv(IMIN,UNODE)  !U C-arakawa-gridpoint even if MITgcm stores wind at rho grid points
-          startz(2)=t_ijruv(JMIN,UNODE)  !U C-arakawa-gridpoint
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1  !U C-arakawa-gridpoint
-          countz(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1  !U C-arakawa-gridpoint
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            write(*,*)'warning: read in MITgcm file var Uwind at cell center, interpolating it at U-grid points '
-           if(hydrobytes.eq.4)then                         
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Uwind "
-              endif
-              modelUwind(1:ui,j,nf+t-startz(3))=                               &
-                0.5*(tmpvec(1:vi-1)+tmpvec(2:vi)) !--- CL-OGS: skip first data in i as is is a U-grid data
-            enddo
-            enddo
-           else
-            do t=startz(3),startz(3)+countz(3)-1
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Uwind "
-              endif
-              modelUwind(1:ui,j,nf+t-startz(3))=0.5*(dbltmpvec(1:vi-1)+        &
-                          dbltmpvec(2:vi))
-            !--- CL-OGS: skip first data in i as is is a U-grid data
-            enddo
-            enddo
-           endif
-          else
-             STATUS = NF90_INQ_VARID(NCID,'sustr',VID)       !--- MIOSM : wind stress  
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem find sustr'
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-         
-             STATUS = NF90_GET_VAR(NCID,VID,romstrU(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE),     &
-                              t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),nfn:nfnn),STARTz,COUNTz)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem read sustr array'
-               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-             do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-              do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-                DO nloop=1,3
-                if(romstrU(i,j,nloop).lt.0.0)then
-                modelUwind(i,j,nloop) = &
-                          (-20.659 * (abs(romstrU(i,j,nloop))**0.4278))
-                else
-                modelUwind(i,j,nloop)= &
-                          (20.659 * (romstrU(i,j,nloop)**0.4278)) 
-                end if
-                ENDDO
-              enddo
-            enddo
-           endif
+          call read_data_from_file('sustr',ui,uj,1,nf,nfn,nfnn,modelUwind,UNODE,recordnum,incrstepf,filenm, &
+                      interpol_from_cell_center_to_CArakawa)
         elseif(isUwind)then
           modelUwind = constUwind
         endif       
         !------------------------------------
         if(Wind .and.(isVwind .and.readVwind))then  
-          ! **** Vwind****
-          startz(1)=t_ijruv(IMIN,VNODE)
-          startz(2)=t_ijruv(JMIN,VNODE)
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
-          countz(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            write(*,*)'warning: read in MITgcm file var Vwind at cell center, ',&
-       ' interpolating it at V-grid points',startz(3),startz(3)+countz(3)-1,nf
-           if(hydrobytes.eq.4)then             
-            do t=startz(3),startz(3)+countz(3)-1
-            modelVwind(:,:,nf+t-startz(3))=0.0
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1 +1 !(+1) tobe able to compute average V wind 
-              read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)  !start from j instead of (j+1)  tobe able to compute average V wind 
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Vwind "
-              endif
-              if(j.le.startz(2)+countz(2)-1) &
-                modelVwind(1:vi,j,nf+t-startz(3))=0.5*tmpvec(1:vi)
-              if(j.gt.startz(2)) &
-                modelVwind(1:vi,j-1,nf+t-startz(3))= &
-                modelVwind(1:vi,j-1,nf+t-startz(3))+0.5*tmpvec(1:vi)
-            enddo
-            enddo
-           else
-            do t=startz(3),startz(3)+countz(3)-1
-            modelVwind(:,:,nf+t-startz(3))=0.0
-            write(*,*)'time record num=',t
-            do j=startz(2),startz(2)+countz(2)-1+1 !(+1) tobe able to compute average V wind
-              read(110,rec=((j)+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)!start from j instead of (j+1)  tobe able to compute average V wind 
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Vwind "
-              endif
-              if(j.le.startz(2)+countz(2)-1) &
-                modelVwind(1:vi,j,nf+t-startz(3))=0.5*dbltmpvec(1:vi)
-              if(j.gt.startz(2)) &
-                modelVwind(1:vi,j-1,nf+t-startz(3))= &
-                modelVwind(1:vi,j-1,nf+t-startz(3))+0.5*dbltmpvec(1:vi)
-            enddo
-            enddo 
-           endif 
-          else
-             STATUS = NF90_INQ_VARID(NCID,'svstr',VID)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem find svstr'
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-         
-             STATUS = NF90_GET_VAR(NCID,VID,romstrV(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),    &
-                       t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),nfn:nfnn),STARTz,COUNTz)
-             if (STATUS .NE. NF90_NOERR) then
-               write(*,*) 'Problem read svstr array'
-               write(*,*) ' i=',startz(1),':',startz(1)+countz(1)-1
-               write(*,*) ' j=',startz(2),':',startz(2)+countz(2)-1
-               write(*,*) ' t=',startz(3),':',startz(3)+countz(3)-1
-               write(*,*) NF90_STRERROR(STATUS)
-               stop
-             endif
-             do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-              do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-                DO nloop=1,3
-                if(romstrV(i,j,nloop).lt.0.0)then
-                  modelVwind(i,j,nloop)=                                       &
-                           (-20.659 * (abs(romstrV(i,j,nloop))**0.4278)) 
-                else
-                  modelVwind(i,j,nloop)=                                       &
-                           (20.659 * (romstrV(i,j,nloop)**0.4278))
-                end if
-                ENDDO
-              enddo
-            enddo
-           endif
+          call read_data_from_file('svstr',vi,vj,1,nf,nfn,nfnn,modelVwind,VNODE,recordnum,incrstepf,filenm, &
+                      interpol_from_cell_center_to_CArakawa)
         elseif(isVwind)then
           modelVwind = constVwind
         endif
         !------------------------------------
         if(isIwind .and.readIwind)then  
-          ! **** Iwind****
-          startz(1)=t_ijruv(IMIN,RNODE)
-          startz(2)=t_ijruv(JMIN,RNODE)
-          startz(3)=recordnum
-
-          countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-          countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-          countz(3)=incrstepf
-
-          if(Zgrid)then
-            if(hydrobytes.eq.4)then 
-            do t=startz(3),startz(3)+countz(3)-1
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)tmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Iwind "
-              endif
-              modelIwind(1:vi,j,nf+t-startz(3))=tmpvec(1:vi)
-            enddo
-            enddo
-            else
-            do t=startz(3),startz(3)+countz(3)-1
-            dbltmpvec=0.0
-            do j=startz(2),startz(2)+countz(2)-1
-              read(110,rec=(j+(t-1)*uj),IOSTAT=ios)dbltmpvec(1:vi)
-              if ( ios /= 0 ) then
-                 write(*,*)'t=',t,' j=',j,' rec=',(j+(t-1)*uj),' of dim ',vi
-                 stop " ERROR READING Iwind "
-              endif
-              modelIwind(1:vi,j,nf+t-startz(3))=dbltmpvec(1:vi)
-            enddo
-            enddo
-            endif
-          else
-           write(*,*) ' ERROR Wind intensity not present in Roms files'
-           write(*,*) ' setting modelIwindf = constIwind=',constIwind
-           modelIwind = constIwind
-          endif
+          call read_data_from_file('wind_intensity',vi,uj,us,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isIwind)then
           modelIwind = constIwind
         endif
 
         !------------------------------------
 
-        !close the dataset and reassign the NCID
-      if ( Zgrid)then
-       if(filegiven)   CLOSE(110)
-      else
-        STATUS = NF90_CLOSE(NCID)
-      endif 
 
       ENDDO !nvarf=1,nfilesin
     ENDDO !nf=1,nfmax
@@ -8643,4 +7875,184 @@ CONTAINS
         END SELECT
   END SUBROUTINE
 
+  SUBROUTINE read_data_from_file(varname,ni,nj,nk,tarray,tf1,tff,  &
+                                 field,RUVnod,recordnum,incrstepf,filename,interpolate)
+   USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid,hydrobytes,Zgrid
+   USE RANDOM_MOD, ONLY: genrand_real1
+   USE netcdf
+   IMPLICIT NONE
+   INCLUDE 'netcdf.inc'
+   character(*),intent(in):: varname
+   character(*),intent(in):: filename
+   integer, intent(in):: ni,nj,nk,tarray,tf1,tff
+   double precision, intent(inout):: field(ni,nj,nk,3)
+   integer,intent(in):: RUVnod,recordnum,incrstepf
+   integer,intent(in):: interpolate
+   integer:: start_index(3),count_index(3),nk_file,ios,waiting
+   integer:: interpol_uv,one_if_interpol_v,rand15,t,k,j,i,ktlev
+   REAL, ALLOCATABLE, DIMENSION(:) :: vec_prev
+   REAL, ALLOCATABLE, DIMENSION(:) :: real_vec_read
+   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: dbl_vec_read
+   double precision:: field_read(ni,nj,nk,3)
+
+    INTEGER :: STATUS,NCID,VID
+   if(interpolate>0)then
+      interpol_uv=RUVnod
+      write(*,'(5a,i8)')'warning: read in MITgcm file var ',trim(varname), &
+      ' at cell center, interpolating it on the cell borders from file ',TRIM(filename),' for time record num=',start_index(3)
+
+   else
+      interpol_uv=0
+      write(*,'(5a,i8)')'read in MITgcm file var ',trim(varname),' from file',TRIM(filename),' for time record num=',start_index(3)
+   endif
+   if(interpol_uv==VNODE)then
+     ALLOCATE(vec_prev(vi))
+     one_if_interpol_v=1 
+   else
+     one_if_interpol_v=0 
+   endif
+   ALLOCATE(real_vec_read(vi))
+   ALLOCATE(dbl_vec_read(vi))
+
+     start_index(1)=t_ijruv(IMIN,RUVnod)
+     start_index(2)=t_ijruv(JMIN,RUVnod)
+     start_index(3)=recordnum
+     count_index(1)=t_ijruv(IMAX,RUVnod)-t_ijruv(IMIN,RUVnod)+1
+     count_index(2)=t_ijruv(JMAX,RUVnod)-t_ijruv(JMIN,RUVnod)+1
+     count_index(3)=incrstepf
+
+     if(Zgrid)then
+       !write(*,*)'time record num=',start_index(3)
+       open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
+             action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
+        if ( ios /= 0 ) then
+            do waiting=1,10
+                    rand15=int( 15.0*genrand_real1() )
+                    call sleep(rand15)
+                    write(*,*)'waiting as opening of file ',trim(filename),  &
+                              ' failed . New trial after sleep ',rand15
+                    open(unit=110,file=TRIM(filename),form='unformatted',    &
+                      status='old', action='read',access='direct',         &
+                      recl=hydrobytes*vi, iostat=ios,convert='little_endian')
+                    if ( ios == 0 ) exit
+            enddo
+        endif
+       if ( ios /= 0 )  then
+           write(*,*) " ERROR OPENING ",TRIM(filename)
+           stop
+       endif
+       nk_file=min(us,nk)! here using us even when nk=uw=us+1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
+
+        !write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1,' and (1:',ni,')=vec(',vi-ni+1,':',vi,')'
+        !write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1+one_if_interpol_v
+        !write(*,*) ' k=',1,':',nk_file
+        !write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+
+       do t=start_index(3),start_index(3)+count_index(3)-1
+         real_vec_read=0.0
+         dbl_vec_read=0.0
+         field(:,:,:,tarray+t-start_index(3))=0.0
+         do k=1,nk_file 
+           ktlev=(t-1)*(nk_file*uj)+(k-1)*uj
+           do j=start_index(2),start_index(2)+count_index(2)-1+one_if_interpol_v
+             !write(*,'(3(a,i4),2(a,i8),6(a,i4))')'i=',1,':',ni,' t=',t,' ktlev=',ktlev,' rec=',ktlev+j+(uj-nj)-one_if_interpol_v,' j=',j,' -> i=',1,':',ni,' j=',j,' k=',(nk-k+1),' t=',tarray+t-start_index(3)
+             if(hydrobytes.eq.4)then 
+               read(110,rec=(ktlev+j+(uj-nj-one_if_interpol_v)),IOSTAT=ios)real_vec_read(1:vi) ! adding +(uj-nj)=1 for v nodes as mitgcm output is on uj nodes = vj+1
+               if ( ios == 0 ) then
+                 if(interpol_uv==UNODE) real_vec_read(2:vi)=0.5*(real_vec_read(1:vi-1)+real_vec_read(2:vi)) 
+                 ! adding +(nk-nk_file)=+1 to skip bottom values for Wtype nodes that have nk-us=1
+                 if(interpol_uv==VNODE.and.j.gt.start_index(2))then
+                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(3))=             &
+                               0.5*(real_vec_read(vi-ni+1:vi)+vec_prev(vi-ni+1:vi))
+                 else
+                    field(1:ni,j,(nk-k+1),tarray+t-start_index(3))=real_vec_read(vi-ni+1:vi)
+                 endif
+                 if(interpol_uv==VNODE) vec_prev=real_vec_read 
+               endif
+             else
+               read(110,rec=(ktlev+j+(uj-nj-one_if_interpol_v)),IOSTAT=ios)dbl_vec_read(1:vi) ! adding +(uj-nj)=1 for v nodes as mitgcm output is on uj nodes = vj+1
+               if ( ios == 0 ) then
+                 if(interpol_uv==UNODE)dbl_vec_read(2:vi)=0.5*(dbl_vec_read(1:vi-1)+dbl_vec_read(2:vi))
+                 ! for nk=ws, nk-k+1=us-k+2 : skipping bottom values for Wtype nodes that have nk-us=ws-us=1
+                 if(interpol_uv==VNODE.and.j.gt.start_index(2))then
+                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(3))=             &
+                               0.5*(dbl_vec_read(vi-ni+1:vi)+vec_prev(vi-ni+1:vi))
+                 else
+                    field(1:ni,j,(nk-k+1),tarray+t-start_index(3))=dbl_vec_read(vi-ni+1:vi)
+                 endif
+                 if(interpol_uv==VNODE) vec_prev=dbl_vec_read 
+               endif
+             endif
+             if ( ios /= 0 ) then
+                write(*,*) 'Problem reading  ',varname
+                write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
+                write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
+                write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+                stop " ERROR READING FIELD "
+             endif
+           enddo
+         enddo
+       enddo
+       if(interpol_uv==VNODE)then
+         DEALLOCATE(vec_prev)
+       endif
+
+       CLOSE(110)
+
+     else ! Roms NETcdf outputs
+      
+       STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
+       if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
+       if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      
+       STATUS = NF90_INQ_VARID(NCID,varname,VID)
+       if (STATUS .NE. NF90_NOERR) then
+         write(*,*) 'Problem finding ',varname
+         write(*,*) NF90_STRERROR(STATUS)
+         stop
+       endif
+       field_read=field 
+         STATUS = NF90_GET_VAR(NCID,VID,field(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod), &
+                         t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod),1:nk,tf1:tff),     &
+                         STARTr,COUNTr)
+       if (STATUS .NE. NF90_NOERR) then
+         write(*,*) 'Problem reading ',varname
+         write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
+         write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
+         write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+         write(*,*) NF90_STRERROR(STATUS)
+         stop
+       endif
+       if(varname=='sustr')then
+          do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
+           do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
+             DO t=tf1,tff
+             if(field_read(i,j,1,t).lt.0.0)then
+             field(i,j,1,t) = (-20.659 * (abs(field_read(i,j,1,t))**0.4278))
+             else
+             field(i,j,1,t)= (20.659 * (field_read(i,j,1,t)**0.4278)) 
+             end if
+             ENDDO
+           enddo
+          enddo
+       elseif(varname=='svstr')then
+          do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
+           do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
+             DO t=tf1,tff
+             if(field_read(i,j,1,t).lt.0.0)then
+               field(i,j,1,t)= (-20.659 * (abs(field_read(i,j,1,t))**0.4278)) 
+             else
+               field(i,j,1,t)= (20.659 * (field_read(i,j,1,t)**0.4278))
+             end if
+             ENDDO
+           enddo
+          enddo
+       else
+         field=field_read
+       endif
+       !close the dataset and reassign the NCID
+       STATUS = NF90_CLOSE(NCID)
+     endif
+
+  END SUBROUTINE
 END MODULE HYDRO_MOD

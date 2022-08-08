@@ -7,14 +7,14 @@ i
 
 !*** NUMBER OF PARTICLES ***
 $numparticles
-  numpar =  6              ! Number of particles (total number for whole simulation)
+  numpar =  676              ! Number of particles (total number for whole simulation)
                               ! numpar should equal the number of rows in the particle 
                               ! locations input file
 $end
 
 !*** TIME PARAMETERS ***
 $timeparam
-  days   =  0.2          ! Number of days to run the model (float)
+  days   =  0.16          ! Number of days to run the model (float)
   iprint =  3600             ! Print interval for LTRANS output (s); 3600 = every hour
   iprinto=     0             ! Initial delay in printing after Ext0, in seconds (leave to 0 to start printing at Ext0) 
   dt =      3600       ! External time step (duration between hydro model predictions) (s) 
@@ -26,8 +26,8 @@ $end
 
 !*** HYDRODYNAMIC MODULE PARAMETERS ***
 $hydroparam
-  us         = 60       ! Number of Rho grid s-levels in hydro model
-  ws         = 61       ! Number of W grid s-levels in hydro model
+  us         = 5       ! Number of Rho grid s-levels in hydro model
+  ws         = 6       ! Number of W grid s-levels in hydro model
   tdim       = 1              ! Number of time steps per hydro predictions file
   recordnum    = 1               ! Record number of first time step to be read (when no previous time steps in the hydro file: recordnum=1)
   hc         = 0.2               ! Min Depth - used in ROMS S-level transformations
@@ -39,7 +39,7 @@ $hydroparam
   BottomLayerThickness = 2.0     ! If > 0.0 this value will be used instead of the half height of the bottom grid cell
   PercentVelinBottomLayer = 0.0  ! If > 0.0 this value will be used instead of the logarithmic law (must be in range ]0.0,1.0[)
   PercentVel_under_z0 =0.05      ! This value will be used to perform advection between botttom and z0
-  readZeta   = .FALSE.          ! If .TRUE. read in sea-surface height   (zeta) from NetCDF file, else use constZeta
+  readZeta   = .TRUE.          ! If .TRUE. read in sea-surface height   (zeta) from NetCDF file, else use constZeta
   constZeta  = 0.0               ! Constant value for Zeta if readZeta is .FALSE.
   readSalt   = .FALSE.          ! If .TRUE. read in salinity             (salt) from NetCDF file, else use constSalt
   constSalt  = 0.0               ! Constant value for Salt if readSalt is .FALSE.
@@ -57,14 +57,14 @@ $hydroparam
   readDens   = .FALSE.
   constDens  = 1000.0 
 
-  readUwind  = .FALSE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
+  readUwind  = .TRUE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
   constUwind = 0.00             ! Constant value for Uwind if readUwind is .FALSE.
-  readVwind  = .FALSE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
+  readVwind  = .TRUE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
 
-  Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .True.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -211,7 +211,7 @@ $hydromodelgrid
   Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= '../Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
+  ADJele_fname= '../../input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .False.                                        ! set to True if file already exists
 $end
 
@@ -220,7 +220,7 @@ $end
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
   dirin='../../MITgcm_outputs/'
-  prefix= 'U_hr_ave.','V_hr_ave.','W_hr_ave.','Eta.','RHOAnoma.','S.','T.','KPPdiffS.','EXFuwind.','EXFvwind.'   ! NetCDF Input Filename prefix                     
+  prefix= 'U.','V.','W.','Eta.','RHOAnoma.','S.','T.','KPPdiffS.','EXFuwind.','EXFvwind.'   ! NetCDF Input Filename prefix                     
   numdigits = 10                  ! Number of digits in number portion of file name (with leading zeros)
   suffix='.data'                       ! NetCDF Input Filename suffix
   filenum = 1224                      ! Number in first NetCDF input filename
@@ -233,7 +233,7 @@ $end
 ! ** Particle Location Input File **
   !Note: the path to the file is necessary if the file is not in the same folder as the code
 $parloc
-  parfile  = '../../input//Iniparloc_example.csv'    !Particle locations
+  parfile  = '../../input/Iniparloc_boxes_NiNj64_every_10-i_10-j_rhowaternode.csv'    !Particle locations
 $end
 
 
@@ -336,7 +336,7 @@ $oilprocs
   Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
-  Stokes             = .False.
+  Stokes             = .True.
 $end
 
 $windswaves
