@@ -1876,7 +1876,7 @@ contains
                         sin(alpha - (WindDriftDev *(pi/180.0)))
 
               if(Stokes)then
-                  CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_depth,  &
+                  CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_surfdist,  &
                                    UStokesDrift,VStokesDrift,alpha )
                   UStokesDrift = idt * (StokDriftFac/0.016)*UStokesDrift
                   VStokesDrift = idt * (StokDriftFac/0.016)*VStokesDrift
