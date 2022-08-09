@@ -63,6 +63,7 @@ $hydroparam
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
+  readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
   Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  

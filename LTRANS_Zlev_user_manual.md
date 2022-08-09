@@ -479,6 +479,8 @@ $hydroparam
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
+  readStokDrift = .FALSE.       ! If .TRUE. read in StokDrift from NetCDF file, 
+                                ! otherwise use StokDriftFac and wind fields to compute Stokes Drift
 
   Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute  
@@ -515,7 +517,9 @@ New parameters specific to the Zlev version of LTRANS are
 - `WindWeatherFac` allows to use, during the weathering processes, only a percentage of the wind intensity (read or calculated by LTRANS)  which may be useful in case of high time resolution fields presenting peaks of elevated intensity.
 - `WindDriftFac`, `WindDriftDev` and `StokDriftFac` allow to customize the wind drift factor and deviation (in degrees) to the right hand side of the wind vector, as well as the Stokes Drift Factor. 
 - `LinearVInterp` flag, when set to `.True.`, enables the linear interpolation of the hydrodynamic fields in the vertical direction, instead of using the TSPACK tension spine fitting.
-
+- `readStokDrift` flag: when `Wind` and `Stokes` are true, if `readStokDrif=.True.` then read in StokDrift from input binary file, otherwise if `readStokDrif=.False.` then use StokDriftFac and wind fields to compute Stokes Drift. 
+ - For ROMS input binary files the Stokes Drift components must be names `ustokes` and `vstokes`. As it is already the case for the U and V components of the wind speed, for ROMs input file the variables `ustokes` and `vstokes` must be defined on the staggered C-Arakawa grid ar the place of the U and V nodes respectively. 
+ - For MITgcm binary input files the prefix of the Stokes Drift files must be respectively `STKu` and `STKv`. Moreover, for MITgcm input files, as it is already the case for the U and V components of the wind speed, it is supposed that the Stokes drift contained in the files of prefix `STKu` and `STKv` are defined at the `rho` nodes and LTRANS-Zlev interpolates them on the C-Arakawa grid at the place of the U and V nodes respectively.
 
 
 ##### 6.4 Turbulence parameters
