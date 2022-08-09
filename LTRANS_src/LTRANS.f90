@@ -1914,7 +1914,7 @@ contains
                   endif                              
                   VStokesDrift = polintd(ex,ey,3,ix(2))
                 else
-                  CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_depth,  &
+                  CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_surfdist,  &
                                    UStokesDrift,VStokesDrift,StokDriftFac,alpha)
                   UStokesDrift = idt *UStokesDrift
                   VStokesDrift = idt *VStokesDrift
