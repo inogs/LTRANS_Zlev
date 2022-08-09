@@ -1305,7 +1305,7 @@ contains
 
     ! Particle tracking
     DOUBLE PRECISION :: Xpar,Ypar,Zpar,newXpos,newYpos,newZpos,P_zb,P_zc,P_zf, &
-      nP_depth,P_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf,ey(3),        &
+      nP_depth,P_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf,P_surfdist,ey(3),        &
       AdvecUwind,AdvecVwind
     
     ! Behavior and Turbulence
@@ -1502,7 +1502,11 @@ contains
       P_zetab = getInterp(Xpar,Ypar,VAR_ID_zetab,klev)
       P_zetac = getInterp(Xpar,Ypar,VAR_ID_zetac,klev)
       P_zetaf = getInterp(Xpar,Ypar,VAR_ID_zetaf,klev)
-      endif                                 !--- CL-OGS: added in v.Zlev, but is it right ??
+      endif              
+      P_surfdist=Zpar-P_zetac
+      if(P_surfdist>0)P_surfdist=Zpar-P_zetab
+      if(P_surfdist>0)P_surfdist=Zpar-P_zetaf
+      P_surfdist=min(-0.000001,P_surfdist)
 
 !--- CL-OGS : shouldn'be moved here the SETTLEMENT SECTION ?            
 
@@ -2205,20 +2209,20 @@ contains
          !endif
          !If(ele_err .ne.  0)then 
          ! write(*,*) "pb setEle UNSOLVED !!! "
-              write(*,'(a,i12,a,i2,a,3f7.2,3(a,f7.2,a,i3,a,f7.2),(a,i5),10(a,f6.2),a)') &
-                  'ERROR it',it,'on 2nd setEle call, error number is ',ele_err, &
-                 'local old, present and next depth is ',&
+              write(*,'(a,i8,a,i2,a,3f8.2,2(a,f7.2,a,i3,a,f7.2),(a,i5),10(a,f8.2),a)') &
+                  'ERROR it ',it,' on 2nd setEle call, error number is ',ele_err, &
+                 '. Local old, present and next depth are ',&
                     par(n,pZ),P_depth,nP_depth, &
-                 'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
+                 ' at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
                             Pwc_wzc(getKRlevel(par(n,pZ))),  &
-                  'at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
+                  ' at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
                             Pwc_wzc(getKRlevel(newZpos)) ,  &
-                  'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
-                  'm : newZ=',newZpos,              & 
-                  '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
-                   ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
-                   ']) +reflectsup[',reflectsup,']+ reflectinf[',reflectinf,&
-                   ']+ pushedup[',pushedup,']'
+                  '; PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
+                  'meters : newZ=',newZpos,              & 
+                  ' =min(depth[',P_depth, ' ], oldZ[',par(n,pZ),            &
+                   ' ] + Adv[', AdvectZ,' ] + Tu[',TurbV,' ] + Bhv[',ZBehav,       &
+                   ' ]) + reflectsup[',reflectsup,' ] + reflectinf[',reflectinf,&
+                   ' ] + pushedup[',pushedup,']'
            call handleERROR('setEle    ',2,ele_err,n,     &
                         par(n,pX),par(n,pY),par(n,pZ), &
                         newXpos,newYpos,par(n,pZ),docycle  )
