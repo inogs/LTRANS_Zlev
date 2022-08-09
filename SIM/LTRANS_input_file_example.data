@@ -269,7 +269,7 @@ $output
   OutDir       = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/output_boxes_NiNj64/metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
-  StartedOn    = '01 December 2019'
+  StartedOn    = '08 august 2022'
 $end
 
 

@@ -128,7 +128,7 @@
                     & constV,readW,constW,readAks,constAks,readDens,constDens,   &
                     & readUwind,constUwind,readVwind,constVwind,                 & !--- CL-OGS: additional variables
                     & recordnum,Wind,WindDriftFac,WindDriftDev,                  &
-                    & readStokDriftFac,StokDriftFac,                             & 
+                    & readStokDrift,StokDriftFac,                             & 
                     & VInterpUVinSurfWater,LinearVInterp,                        &  !--- CL-OGS
                     & BottomLayerThickness,PercentVelinBottomLayer,              &   !--- CL-OGS
                     & PercentVel_under_z0,                                       &  !--- CL-OGS
