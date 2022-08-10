@@ -5038,9 +5038,9 @@ CONTAINS
         conflict=-2
         !stop     
     endif 
-! 00 ! 01 ! 02 ! 03 ! 04 ! 05 ! 06 ! 07 ! 08 ! 09 ! 10 ! 11 ! 12 ! 13 ! 14 ! 15 !  16  !  17  !  18  !  19 
-! .. ! x. ! .. ! x. ! .x ! xx !    ! xx ! .. !    ! .. ! x. ! .x ! xx ! .x ! xx ! \.\x ! ./x/ ! \x\. !  x/./ 
-! .. ! .. ! x. ! x. ! .. ! .. !    ! x. ! .x !    ! xx ! xx ! .x ! .x ! xx ! xx ! x\.\ ! /x/. ! .\x\ !  /./x
+! 00 ! 01 ! 02 ! 03 ! 04 ! 05 ! 06 ! 07 ! 08 ! 09 ! 10 ! 11 ! 12 ! 13 ! 14 ! 15 !  16  !  17  !  18  !  19        !
+! .. ! x. ! .. ! x. ! .x ! xx !    ! xx ! .. !    ! .. ! x. ! .x ! xx ! .x ! xx ! \.\x ! ./x/ ! \x\. !  x/./      !
+! .. ! .. ! x. ! x. ! .. ! .. !    ! x. ! .x !    ! xx ! xx ! .x ! .x ! xx ! xx ! x\.\ ! /x/. ! .\x\ !  /./x      !
     kbottom=-1
     tri_ext=.FALSE. 
      !--------------------------------------------------------------------------------------------------------- 
@@ -5118,9 +5118,9 @@ CONTAINS
       kbottom=1
       if(closernode.eq.modrnode1)then
         do k=us,1,-1
-             select case(eleform(i,j,k))        ! 03 ! 07 ! 10 ! 11 ! 13 ! 14 ! 15 !  17  !  18  
-               case(3,7,10,11,13,14,15,17,18)   ! x. ! xx ! .. ! x. ! xx ! .x ! xx ! ./x/ ! \x\.  
-                kbottom=k+1                     ! x. ! x. ! xx ! xx ! .x ! xx ! xx ! /x/. ! .\x\      
+             select case(eleform(i,j,k))        ! 03 ! 07 ! 10 ! 11 ! 13 ! 14 ! 15 !  17  !  18      ! 
+               case(3,7,10,11,13,14,15,17,18)   ! x. ! xx ! .. ! x. ! xx ! .x ! xx ! ./x/ ! \x\.     !
+                kbottom=k+1                     ! x. ! x. ! xx ! xx ! .x ! xx ! xx ! /x/. ! .\x\     !    
                 exit
                case default
                 cycle
@@ -5128,9 +5128,9 @@ CONTAINS
           enddo
        elseif(closernode.eq.modrnode2)then
            do k=us,1,-1
-              select case(eleform(i,j,k))           ! 07 ! 10 ! 11 ! 12 ! 13 ! 14 ! 15 !  17  !  18  
-                case(7,10,11,12,13,14,15,17,18)     ! xx ! .. ! x. ! .x ! xx ! .x ! xx ! ./x/ ! \x\. 
-                 kbottom=k+1                        ! x. ! xx ! xx ! .x ! .x ! xx ! xx ! /x/. ! .\x\ 
+              select case(eleform(i,j,k))           ! 07 ! 10 ! 11 ! 12 ! 13 ! 14 ! 15 !  17  !  18        !  
+                case(7,10,11,12,13,14,15,17,18)     ! xx ! .. ! x. ! .x ! xx ! .x ! xx ! ./x/ ! \x\.       !
+                 kbottom=k+1                        ! x. ! xx ! xx ! .x ! .x ! xx ! xx ! /x/. ! .\x\       !
                  exit
                 case default
                  cycle
@@ -5138,9 +5138,9 @@ CONTAINS
            enddo
        elseif(closernode.eq.modrnode3)then
            do k=us,1,-1
-              select case(eleform(i,j,k))         ! 05 ! 07 ! 11 ! 12 ! 13 ! 14 ! 15 !  17  !  18  
-                case(5,7,11,12,13,14,15,17,18)    ! xx ! xx ! x. ! .x ! xx ! .x ! xx ! ./x/ ! \x\. 
-                 kbottom=k+1                      ! .. ! x. ! xx ! .x ! .x ! xx ! xx ! /x/. ! .\x\ 
+              select case(eleform(i,j,k))         ! 05 ! 07 ! 11 ! 12 ! 13 ! 14 ! 15 !  17  !  18       ! 
+                case(5,7,11,12,13,14,15,17,18)    ! xx ! xx ! x. ! .x ! xx ! .x ! xx ! ./x/ ! \x\.      !
+                 kbottom=k+1                      ! .. ! x. ! xx ! .x ! .x ! xx ! xx ! /x/. ! .\x\      !
                  exit
                 case default
                  cycle
@@ -5148,9 +5148,9 @@ CONTAINS
            enddo
        else
           do k=us,1,-1
-             select case(eleform(i,j,k))         ! 03 ! 05 ! 07 ! 11 ! 13 ! 14 ! 15 !  17  !  18  
-               case(3,5,7,11,13,14,15,17,18)     ! x. ! xx ! xx ! x. ! xx ! .x ! xx ! ./x/ ! \x\. 
-                kbottom=k+1                      ! x. ! .. ! x. ! xx ! .x ! xx ! xx ! /x/. ! .\x\ 
+             select case(eleform(i,j,k))         ! 03 ! 05 ! 07 ! 11 ! 13 ! 14 ! 15 !  17  !  18        ! 
+               case(3,5,7,11,13,14,15,17,18)     ! x. ! xx ! xx ! x. ! xx ! .x ! xx ! ./x/ ! \x\.       !
+                kbottom=k+1                      ! x. ! .. ! x. ! xx ! .x ! xx ! xx ! /x/. ! .\x\       !
                  exit
                case default
                 cycle
@@ -5328,9 +5328,9 @@ CONTAINS
            kbot=1
            do k=us,1,-1
               write(*,*)'k=',k,'eleform=',eleform(i,j,k)
-              select case(eleform(i,j,k))         ! 03 ! 05 ! 07 ! 11 ! 13 ! 14 ! 15 !  17  !  18  
-                case(3,5,7,11,13,14,15,17,18)     ! .. ! .x ! .x ! x. ! xx ! xx ! xx ! ./x/ ! \x\. 
-                 kbot=k+1                      ! xx ! .x ! xx ! xx ! .x ! x. ! xx ! /x/. ! .\x\ 
+              select case(eleform(i,j,k))         ! 03 ! 05 ! 07 ! 11 ! 13 ! 14 ! 15 !  17  !  18    !
+                case(3,5,7,11,13,14,15,17,18)     ! .. ! .x ! .x ! x. ! xx ! xx ! xx ! ./x/ ! \x\.   !
+                 kbot=k+1                         ! xx ! .x ! xx ! xx ! .x ! x. ! xx ! /x/. ! .\x\   !
                  exit
                 case default
                  cycle

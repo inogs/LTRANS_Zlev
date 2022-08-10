@@ -85,8 +85,8 @@ MODULE BEHAVIOR_MOD
   !vertical velocity provided for every particle as input file 
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: G_vvel
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: G_vvel_time
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: G_ext2int
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: G_int2ext
+  INTEGER, ALLOCATABLE, DIMENSION(:) :: G_ext2int
+  INTEGER, ALLOCATABLE, DIMENSION(:) :: G_int2ext
 
   !For behavior 8, Larval Size increasing according to growth function
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: LarvSize
