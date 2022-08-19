@@ -18,7 +18,7 @@ endif
 
 
 _create_MITgcm_fake_fields = find_program('create_MITgcm_fake_fields.sh')
-test('---------------- create fake MITgcm outputs fields --------------------------------',
+test('--------------- create fake MITgcm outputs fields --------------------------------',
        _create_MITgcm_fake_fields, 
        args:[
              _prefix+'/'
@@ -28,7 +28,7 @@ test('---------------- create fake MITgcm outputs fields -----------------------
        priority:100)
 
 _synch = find_program('synch.sh')
-test('--------------- barrier insuring MITgcm_output files are downloaded --------------',
+test('--------------- barrier insuring MITgcm fields are present -----------------------',
     _synch,
     args:[],
     workdir:meson.current_build_dir(),
@@ -52,5 +52,5 @@ test('--------------- running LTRANS -------------------------------------------
                ],
           workdir:meson.current_build_dir(),
           priority:_priority,
-          timeout:180,
+          timeout:300,
           is_parallel : true)
