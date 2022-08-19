@@ -1758,21 +1758,19 @@ CONTAINS
 
         !------------------------------------
         if(isZeta.and.readZeta)then  
-          call read_data_from_file('zeta',vi,uj,1,nf,nfn,nfnn,romZ,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('zeta',vi,uj,1,3,nf,nfn,nfnn,romZ,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isZeta)then
           romZ = constZeta
         endif
-
         !------------------------------------
         if(isSalt.and.readSalt)then
-          call read_data_from_file('salt',vi,uj,us,nf,nfn,nfnn,romS,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('salt',vi,uj,us,3,nf,nfn,nfnn,romS,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isSalt)then
           romS = constSalt
         endif
         !------------------------------------
-
         if(isTemp.and.readTemp)then  
-          call read_data_from_file('temp',vi,uj,us,nf,nfn,nfnn,romT,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('temp',vi,uj,us,3,nf,nfn,nfnn,romT,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isTemp)then
           romT = constTemp
         endif
@@ -1780,7 +1778,7 @@ CONTAINS
 
 
         if(isDens.and.readDens)then  
-          call read_data_from_file('rho',vi,uj,us,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('rho',vi,uj,us,3,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isDens)then
           romD = constDens
         endif
@@ -1788,7 +1786,7 @@ CONTAINS
         !------------------------------------
 
         if(isU.and.readU)then  
-          call read_data_from_file('u',ui,uj,us,nf,nfn,nfnn,romU,UNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('u',ui,uj,us,3,nf,nfn,nfnn,romU,UNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isU)then
           romU = constU
         endif
@@ -1796,7 +1794,7 @@ CONTAINS
         !------------------------------------
 
         if(isV.and.readV)then  
-            call read_data_from_file('v',vi,vj,us,nf,nfn,nfnn,romV,VNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+            call read_data_from_file('v',vi,vj,us,3,nf,nfn,nfnn,romV,VNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isV)then
           romV = constV
         endif
@@ -1804,7 +1802,7 @@ CONTAINS
         !------------------------------------
 
         if(isW.and.readW)then  
-          call read_data_from_file('w',vi,uj,ws,nf,nfn,nfnn,romW,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('w',vi,uj,ws,3,nf,nfn,nfnn,romW,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isW)then
           romW = constW
         endif
@@ -1812,7 +1810,7 @@ CONTAINS
         !------------------------------------
 
         if(isAks.and.readAks)then  
-          call read_data_from_file('AKs',vi,uj,us,nf,nfn,nfnn,romKH,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('AKs',vi,uj,us,3,nf,nfn,nfnn,romKH,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isAks)then
           romKH = constAks
         endif
@@ -1820,21 +1818,21 @@ CONTAINS
         !------------------------------------
 
         if(Wind .and.(isUwind .and.readUwind))then  
-          call read_data_from_file('sustr',ui,uj,1,nf,nfn,nfnn,modelUwind,UNODE,recordnum,incrstepf,filenm, &
+          call read_data_from_file('sustr',ui,uj,1,3,nf,nfn,nfnn,modelUwind,UNODE,recordnum,incrstepf,filenm, &
                       interpol_from_cell_center_to_CArakawa)
         elseif(isUwind)then
           modelUwind = constUwind
         endif       
         !------------------------------------
         if(Wind .and.(isVwind .and.readVwind))then  
-          call read_data_from_file('svstr',vi,vj,1,nf,nfn,nfnn,modelVwind,VNODE,recordnum,incrstepf,filenm, &
+          call read_data_from_file('svstr',vi,vj,1,3,nf,nfn,nfnn,modelVwind,VNODE,recordnum,incrstepf,filenm, &
                       interpol_from_cell_center_to_CArakawa)
         elseif(isVwind)then
           modelVwind = constVwind
         endif
         !------------------------------------
         if(isIwind .and.readIwind)then  
-          call read_data_from_file('wind_intensity',vi,uj,1,nf,nfn,nfnn,modelIwind,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
+          call read_data_from_file('wind_intensity',vi,uj,1,3,nf,nfn,nfnn,modelIwind,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
         elseif(isIwind)then
           modelIwind = constIwind
         endif
@@ -1843,7 +1841,7 @@ CONTAINS
 
         if(isUstokdrift)then
          if(readStokDrift)then  
-          call read_data_from_file('ustokes',ui,uj,1,nf,nfn,nfnn,modelUstokdrift,UNODE,recordnum,incrstepf,filenm, &
+          call read_data_from_file('ustokes',ui,uj,1,3,nf,nfn,nfnn,modelUstokdrift,UNODE,recordnum,incrstepf,filenm, &
                       interpol_from_cell_center_to_CArakawa)
          endif       
         endif       
@@ -1852,7 +1850,7 @@ CONTAINS
 
         if(isVstokdrift)then
          if(readStokDrift)then  
-          call read_data_from_file('vstokes',vi,vj,1,nf,nfn,nfnn,modelVstokdrift,VNODE,recordnum,incrstepf,filenm, &
+          call read_data_from_file('vstokes',vi,vj,1,3,nf,nfn,nfnn,modelVstokdrift,VNODE,recordnum,incrstepf,filenm, &
                       interpol_from_cell_center_to_CArakawa)
          endif       
         endif       
@@ -2683,7 +2681,7 @@ CONTAINS
 
       if(isZeta)then
        if(readZeta)then
-          call read_data_from_file('zeta',vi,uj,1,1,1,1,romZf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('zeta',vi,uj,1,1,1,1,1,romZf,RNODE,stepf,1,filenm,do_not_interpolate)
        else  !  if not readZeta
         romZf = constZeta
        endif ! readZeta
@@ -2701,7 +2699,7 @@ CONTAINS
 
       if(isSalt)then
        if(readSalt)then
-          call read_data_from_file('salt',vi,uj,us,1,1,1,romSf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('salt',vi,uj,us,1,1,1,1,romSf,RNODE,stepf,1,filenm,do_not_interpolate)
        else
         romSf = constSalt
        endif
@@ -2759,7 +2757,7 @@ CONTAINS
 
       if(isTemp)then
        if(readTemp)then
-          call read_data_from_file('temp',vi,uj,us,1,1,1,romTf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('temp',vi,uj,us,1,1,1,1,romTf,RNODE,stepf,1,filenm,do_not_interpolate)
        else
         romTf = constTemp
        endif
@@ -2818,7 +2816,7 @@ CONTAINS
 
       if(isDens)then
        if(readDens)then
-          call read_data_from_file('rho',vi,uj,us,1,1,1,romDf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('rho',vi,uj,us,1,1,1,1,romDf,RNODE,stepf,1,filenm,do_not_interpolate)
        else
         romDf = constDens
        endif
@@ -2876,7 +2874,7 @@ CONTAINS
 
       if(isU)then
        if(readU)then
-          call read_data_from_file('u',ui,uj,us,1,1,1,romUf,UNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('u',ui,uj,us,1,1,1,1,romUf,UNODE,stepf,1,filenm,do_not_interpolate)
        else
         romUf = constU
        endif
@@ -2934,7 +2932,7 @@ CONTAINS
 
       if(isV)then
        if(readV)then
-          call read_data_from_file('v',vi,vj,us,1,1,1,romVf,VNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('v',vi,vj,us,1,1,1,1,romVf,VNODE,stepf,1,filenm,do_not_interpolate)
        else
         romVf = constV
        endif
@@ -2990,7 +2988,7 @@ CONTAINS
 
       if(isW)then
        if(readW)then
-          call read_data_from_file('w',vi,uj,ws,1,1,1,romWf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('w',vi,uj,ws,1,1,1,1,romWf,RNODE,stepf,1,filenm,do_not_interpolate)
        else
         romWf = constW
        endif
@@ -3051,7 +3049,7 @@ CONTAINS
       if(isAks)then
        if(readAks)then
         ! **** Vertical diffusivity for salt (Aks) ****
-          call read_data_from_file('AKs',vi,uj,us,1,1,1,romKHf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('AKs',vi,uj,us,1,1,1,1,romKHf,RNODE,stepf,1,filenm,do_not_interpolate)
        else
         romKHf = constAks
        endif
@@ -3109,7 +3107,7 @@ CONTAINS
 
       if(Wind .and.isUwind)then
        if(readUwind)then  
-          call read_data_from_file('sustr',ui,uj,1,1,1,1,modelUwindf,UNODE,stepf,1,filenm,interpol_from_cell_center_to_CArakawa)
+          call read_data_from_file('sustr',ui,uj,1,1,1,1,1,modelUwindf,UNODE,stepf,1,filenm,interpol_from_cell_center_to_CArakawa)
        else
          modelUwindf = constUwind
        endif
@@ -3127,7 +3125,7 @@ CONTAINS
 
       if(Wind .and.isVwind)then
        if(readVwind)then  
-          call read_data_from_file('svstr',vi,vj,1,1,1,1,modelVwindf,VNODE,stepf,1,filenm,interpol_from_cell_center_to_CArakawa)
+          call read_data_from_file('svstr',vi,vj,1,1,1,1,1,modelVwindf,VNODE,stepf,1,filenm,interpol_from_cell_center_to_CArakawa)
        else
         modelVwindf = constVwind
        endif
@@ -3145,7 +3143,7 @@ CONTAINS
       if(isIwind)then
        if(readIwind)then  
         if(Zgrid)then
-          call read_data_from_file('wind_intensity',vi,uj,1,1,1,1,modelIwindf,RNODE,stepf,1,filenm,do_not_interpolate)
+          call read_data_from_file('wind_intensity',vi,uj,1,1,1,1,1,modelIwindf,RNODE,stepf,1,filenm,do_not_interpolate)
         else
            write(*,*) ' ERROR Wind intensity not present in Roms files'
            write(*,*) ' setting modelIwindf = constIwind=',constIwind
@@ -3171,7 +3169,7 @@ CONTAINS
         if(isUstokdrift)then
          if(readStokDrift)then  
 
-          call read_data_from_file('ustokes',ui,uj,1,1,1,1,modelUstokdrift,UNODE,stepf,1,filenm, &
+          call read_data_from_file('ustokes',ui,uj,1,1,1,1,1,modelUstokdrift,UNODE,stepf,1,filenm, &
                       interpol_from_cell_center_to_CArakawa)
 
            do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
@@ -3189,7 +3187,7 @@ CONTAINS
         if(isVstokdrift)then
          if(readStokDrift)then  
 
-          call read_data_from_file('vstokes',vi,vj,1,1,1,1,modelVstokdrift,VNODE,stepf,1,filenm, &
+          call read_data_from_file('vstokes',vi,vj,1,1,1,1,1,modelVstokdrift,VNODE,stepf,1,filenm, &
                       interpol_from_cell_center_to_CArakawa)
 
           do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
@@ -7289,7 +7287,7 @@ CONTAINS
         END SELECT
   END SUBROUTINE
 
-  SUBROUTINE read_data_from_file(varname,ni,nj,nk,tarray,tf1,tff,  &
+  SUBROUTINE read_data_from_file(varname,ni,nj,nk,nt,tarray,tf1,tff,  &
                                  field,RUVnod,recordnum,incrstepf,filename,interpolate)
    USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid,hydrobytes,Zgrid
    USE RANDOM_MOD, ONLY: genrand_real1
@@ -7298,45 +7296,65 @@ CONTAINS
    INCLUDE 'netcdf.inc'
    character(*),intent(in):: varname
    character(*),intent(in):: filename
-   integer, intent(in):: ni,nj,nk,tarray,tf1,tff
-   double precision, intent(inout):: field(ni,nj,nk,3)
+   integer, intent(in):: ni,nj,nk,nt,tarray,tf1,tff
+   double precision, intent(inout):: field(ni,nj,nk,nt)
    integer,intent(in):: RUVnod,recordnum,incrstepf
    integer,intent(in):: interpolate
-   integer:: start_index(3),count_index(3),nk_file,ios,waiting
+   integer, allocatable, dimension(:):: start_index,count_index
+   integer:: nk_MITfile,ios,waiting
    integer:: interpol_uv,one_if_interpol_v,rand15,t,k,j,i,ktlev
    REAL, ALLOCATABLE, DIMENSION(:) :: vec_prev
-   REAL, ALLOCATABLE, DIMENSION(:) :: real_vec_read
-   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: dbl_vec_read
-   double precision:: field_read(ni,nj,nk,3)
-
-    INTEGER :: STATUS,NCID,VID
-   if(interpolate>0)then
-      interpol_uv=RUVnod
-      write(*,'(5a,i8)')'warning: read in MITgcm file var ',trim(varname), &
-      ' at cell center, interpolating it on the cell borders from file ',TRIM(filename),' for time record num=',start_index(3)
-
+   REAL :: real_vec_read(vi)
+   DOUBLE PRECISION :: dbl_vec_read(vi)
+   INTEGER:: STATUS,NCID,VID
+   if(Zgrid .or. nk>1)then
+     allocate(start_index(4))
+     allocate(count_index(4))
    else
-      interpol_uv=0
-      write(*,'(5a,i8)')'read in MITgcm file var ',trim(varname),' from file',TRIM(filename),' for time record num=',start_index(3)
+     allocate(start_index(3))
+     allocate(count_index(3))
    endif
-   if(interpol_uv==VNODE)then
-     ALLOCATE(vec_prev(vi))
-     one_if_interpol_v=1 
-   else
-     one_if_interpol_v=0 
-   endif
-   ALLOCATE(real_vec_read(vi))
-   ALLOCATE(dbl_vec_read(vi))
+   start_index(1)=t_ijruv(IMIN,RUVnod)
+   start_index(2)=t_ijruv(JMIN,RUVnod)
+   count_index(1)=t_ijruv(IMAX,RUVnod)-t_ijruv(IMIN,RUVnod)+1
+   count_index(2)=t_ijruv(JMAX,RUVnod)-t_ijruv(JMIN,RUVnod)+1
+   if(Zgrid)then
+     nk_MITfile=min(us,nk)! here using us even when nk=uw=us+1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
+     start_index(3)=1
+     start_index(4)=recordnum
+     count_index(3)=nk_MITfile
+     count_index(4)=incrstepf
+     if(interpolate>0)then
+        interpol_uv=RUVnod
+        write(*,'(4a,3(a,i8))')'read in MITgcm file var ',trim(varname),'  at cell center, interpolating it on the cell borders from file',TRIM(filename), &
+          ' for time record num=',start_index(4),':',start_index(4)+count_index(4)-1,' nk=',nk
 
-     start_index(1)=t_ijruv(IMIN,RUVnod)
-     start_index(2)=t_ijruv(JMIN,RUVnod)
-     start_index(3)=recordnum
-     count_index(1)=t_ijruv(IMAX,RUVnod)-t_ijruv(IMIN,RUVnod)+1
-     count_index(2)=t_ijruv(JMAX,RUVnod)-t_ijruv(JMIN,RUVnod)+1
-     count_index(3)=incrstepf
+     else
+        interpol_uv=0
+        write(*,'(4a,3(a,i8))')'read in MITgcm file var ',trim(varname),' from file',TRIM(filename), &
+          ' for time record num=',start_index(4),':',start_index(4)+count_index(4)-1,' nk=',nk
+     endif
+    else
+     if(nk==1)then
+       start_index(3)=recordnum
+       count_index(3)=incrstepf
+     else
+       start_index(3)=1
+       start_index(4)=recordnum
+       count_index(3)=nk
+       count_index(4)=incrstepf
+     endif
+     write(*,'(4a,3(a,i8))')'read in ROMs file var ',trim(varname),' from file',TRIM(filename),' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk
+    endif
+     if(interpol_uv==VNODE)then
+       ALLOCATE(vec_prev(vi))
+       one_if_interpol_v=1 
+     else
+       one_if_interpol_v=0 
+     endif
 
      if(Zgrid)then
-       !write(*,*)'time record num=',start_index(3)
+       !write(*,*)'time record num=',start_index(4)
        open (unit=110,file=TRIM(filenm),form='unformatted',status='old',   & 
              action='read',access='direct', recl=hydrobytes*vi, iostat=ios,convert='little_endian')          !--- CL-OGS: all var are read with dim vi !
         if ( ios /= 0 ) then
@@ -7355,31 +7373,29 @@ CONTAINS
            write(*,*) " ERROR OPENING ",TRIM(filename)
            stop
        endif
-       nk_file=min(us,nk)! here using us even when nk=uw=us+1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
 
         !write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1,' and (1:',ni,')=vec(',vi-ni+1,':',vi,')'
         !write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1+one_if_interpol_v
-        !write(*,*) ' k=',1,':',nk_file
+        !write(*,*) ' k=',1,':',nk_MITfile
         !write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
 
-       do t=start_index(3),start_index(3)+count_index(3)-1
+       do t=start_index(4),start_index(4)+count_index(4)-1
          real_vec_read=0.0
          dbl_vec_read=0.0
-         field(:,:,:,tarray+t-start_index(3))=0.0
-         do k=1,nk_file 
-           ktlev=(t-1)*(nk_file*uj)+(k-1)*uj
+         field(:,:,:,tarray+t-start_index(4))=0.0
+         do k=start_index(3),start_index(3)+count_index(3)-1
+           ktlev=(t-1)*(nk_MITfile*uj)+(k-1)*uj
            do j=start_index(2),start_index(2)+count_index(2)-1+one_if_interpol_v
-             !write(*,'(3(a,i4),2(a,i8),6(a,i4))')'i=',1,':',ni,' t=',t,' ktlev=',ktlev,' rec=',ktlev+j+(uj-nj)-one_if_interpol_v,' j=',j,' -> i=',1,':',ni,' j=',j,' k=',(nk-k+1),' t=',tarray+t-start_index(3)
              if(hydrobytes.eq.4)then 
                read(110,rec=(ktlev+j+(uj-nj-one_if_interpol_v)),IOSTAT=ios)real_vec_read(1:vi) ! adding +(uj-nj)=1 for v nodes as mitgcm output is on uj nodes = vj+1
                if ( ios == 0 ) then
                  if(interpol_uv==UNODE) real_vec_read(2:vi)=0.5*(real_vec_read(1:vi-1)+real_vec_read(2:vi)) 
-                 ! adding +(nk-nk_file)=+1 to skip bottom values for Wtype nodes that have nk-us=1
+                 ! adding +(nk-nk_MITfile)=+1 to skip bottom values for Wtype nodes that have nk-us=1
                  if(interpol_uv==VNODE.and.j.gt.start_index(2))then
-                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(3))=             &
+                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(4))=             &
                                0.5*(real_vec_read(vi-ni+1:vi)+vec_prev(vi-ni+1:vi))
                  else
-                    field(1:ni,j,(nk-k+1),tarray+t-start_index(3))=real_vec_read(vi-ni+1:vi)
+                    field(1:ni,j,(nk-k+1),tarray+t-start_index(4))=real_vec_read(vi-ni+1:vi)
                  endif
                  if(interpol_uv==VNODE) vec_prev=real_vec_read 
                endif
@@ -7389,20 +7405,24 @@ CONTAINS
                  if(interpol_uv==UNODE)dbl_vec_read(2:vi)=0.5*(dbl_vec_read(1:vi-1)+dbl_vec_read(2:vi))
                  ! for nk=ws, nk-k+1=us-k+2 : skipping bottom values for Wtype nodes that have nk-us=ws-us=1
                  if(interpol_uv==VNODE.and.j.gt.start_index(2))then
-                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(3))=             &
+                    field(1:ni,j-1,(nk-k+1),tarray+t-start_index(4))=             &
                                0.5*(dbl_vec_read(vi-ni+1:vi)+vec_prev(vi-ni+1:vi))
                  else
-                    field(1:ni,j,(nk-k+1),tarray+t-start_index(3))=dbl_vec_read(vi-ni+1:vi)
+                    field(1:ni,j,(nk-k+1),tarray+t-start_index(4))=dbl_vec_read(vi-ni+1:vi)
                  endif
                  if(interpol_uv==VNODE) vec_prev=dbl_vec_read 
                endif
              endif
              if ( ios /= 0 ) then
                 write(*,*) 'Problem reading  ',varname
+                write(*,'(4(a,i4),2(a,i8),6(a,i4))')'i=',vi-ni+1,':',vi,' t=',t,' k=',k, &
+                             ' ktlev=',ktlev,' rec=',ktlev+j+(uj-nj-one_if_interpol_v), &
+                ' j=',j,' -> i=',1,':',ni,' j=',j,' k=',(nk-k+1),' t=',tarray+t-start_index(4)
                 write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
                 write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
-                write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
-                stop " ERROR READING FIELD "
+                write(*,*) ' k=',start_index(3),':',start_index(3)+count_index(3)-1
+                write(*,*) ' t=',start_index(4),':',start_index(4)+count_index(4)-1
+                stop " ERROR READING FIELD "//varname
              endif
            enddo
          enddo
@@ -7414,7 +7434,6 @@ CONTAINS
        CLOSE(110)
 
      else ! Roms NETcdf outputs
-      
        STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
@@ -7425,15 +7444,15 @@ CONTAINS
          write(*,*) NF90_STRERROR(STATUS)
          stop
        endif
-       field_read=field 
          STATUS = NF90_GET_VAR(NCID,VID,field(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod), &
                          t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod),1:nk,tf1:tff),     &
-                         STARTr,COUNTr)
+                         start_index,count_index )
        if (STATUS .NE. NF90_NOERR) then
          write(*,*) 'Problem reading ',varname
          write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
          write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
-         write(*,*) ' t=',start_index(3),':',start_index(3)+count_index(3)-1
+         write(*,*) ' k=',1,':',nk
+         write(*,*) ' t=',recordnum,':',recordnum+incrstepf-1
          write(*,*) NF90_STRERROR(STATUS)
          stop
        endif
@@ -7441,10 +7460,10 @@ CONTAINS
           do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
            do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
              DO t=tf1,tff
-             if(field_read(i,j,1,t).lt.0.0)then
-             field(i,j,1,t) = (-20.659 * (abs(field_read(i,j,1,t))**0.4278))
+             if(field(i,j,1,t).lt.0.0)then
+             field(i,j,1,t) = (-20.659 * (abs(field(i,j,1,t))**0.4278))
              else
-             field(i,j,1,t)= (20.659 * (field_read(i,j,1,t)**0.4278)) 
+             field(i,j,1,t)= (20.659 * (field(i,j,1,t)**0.4278)) 
              end if
              ENDDO
            enddo
@@ -7453,20 +7472,19 @@ CONTAINS
           do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
            do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
              DO t=tf1,tff
-             if(field_read(i,j,1,t).lt.0.0)then
-               field(i,j,1,t)= (-20.659 * (abs(field_read(i,j,1,t))**0.4278)) 
+             if(field(i,j,1,t).lt.0.0)then
+               field(i,j,1,t)= (-20.659 * (abs(field(i,j,1,t))**0.4278)) 
              else
-               field(i,j,1,t)= (20.659 * (field_read(i,j,1,t)**0.4278))
+               field(i,j,1,t)= (20.659 * (field(i,j,1,t)**0.4278))
              end if
              ENDDO
            enddo
           enddo
-       else
-         field=field_read
        endif
        !close the dataset and reassign the NCID
        STATUS = NF90_CLOSE(NCID)
      endif
+     deallocate(start_index,count_index)
 
   END SUBROUTINE
 END MODULE HYDRO_MOD
