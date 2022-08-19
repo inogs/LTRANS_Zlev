@@ -209,6 +209,10 @@ CONTAINS
       !P_deadage(n) = P_pediage(n) + (7. + norm()*0.5)*24.*3600.
 
       !Calculate slope and intercept for age-dependent linear swimming speed
+      if(abs(P_pediage(n) - swimstart)<1e-7)then
+         write(*,*)'error pediage must be greater than swimstart'
+         stop 'error increate pediage or decrease swimstart'
+      endif
       P_swim(n,1) = (swimfast - swimslow)/(P_pediage(n) - swimstart) !slope
       P_swim(n,2) = swimfast - P_swim(n,1)*P_pediage(n)              !intercept
       P_swim(n,3) = 0.0                                  !swimming speed (m/s)

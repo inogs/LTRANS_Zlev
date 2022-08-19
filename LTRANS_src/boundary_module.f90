@@ -2646,9 +2646,9 @@ END SUBROUTINE getNext
     bcx2_array=bnd_x2(:,klev)
     bcy1_array=bnd_y1(:,klev)
     bcy2_array=bnd_y2(:,klev)
-    dist=    sqrt((bcx1- Xpos)**2+(bcy1- Ypos)**2) 
-    dist=min(sqrt((bcx2- Xpos)**2+(bcy2- Ypos)**2),dist)
-    dist=min(sqrt((bcx2-nXpos)**2+(bcy2-nYpos)**2),dist)
+    dist=    sqrt((bcx1_array- Xpos)**2+(bcy1_array- Ypos)**2) 
+    dist=min(sqrt((bcx2_array- Xpos)**2+(bcy2_array- Ypos)**2),dist)
+    dist=min(sqrt((bcx2_array-nXpos)**2+(bcy2_array-nYpos)**2),dist)
 
     do i=1,nbounds(klev)
 

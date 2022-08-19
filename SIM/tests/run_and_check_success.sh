@@ -20,7 +20,8 @@ _threshold=$6
 #fi
 
 #ln -s ${_test_dir}mesh.${_num_mpi_procs}.bas mesh.${_num_mpi_procs}.bas > /dev/null 2>&1
-rm $_LTRANS_input
+rm $_LTRANS_input > /dev/null 2>&1
+
 echo "cp ${_test_dir}/$_LTRANS_input "
 cp ${_test_dir}/$_LTRANS_input $_LTRANS_input  
 
@@ -29,7 +30,7 @@ if [ ! -L ../input ]; then
    ln -s ${_test_dir}/../input ../input  > /dev/null 2>&1
 fi
 
-if [ -f ${_test_dir}/../input/Adjacentelements-boxes_NiNj64-c1.data ]; then
+if [ -f ${_test_dir}/Adjacentelements-boxes_NiNj64-c1.data ]; then
    sed -i "s/ADJele_file= .False./ADJele_file= .True./" $_LTRANS_input
 fi
 

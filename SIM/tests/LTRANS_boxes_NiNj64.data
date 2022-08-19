@@ -214,7 +214,7 @@ $hydromodelgrid
   Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= '../../input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
+  ADJele_fname= '../Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .False.                                        ! set to True if file already exists
 $end
 
