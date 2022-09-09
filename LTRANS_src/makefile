@@ -107,13 +107,13 @@ ifdef INTEL_g100
    F90C = ifort
    CC = icc
    ifdef Debug
-     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB
+     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB -assume byterecl
    endif
    ifdef DebugOptimized
-     DEBUGFLAGS= -g -traceback -trace -fpe0 -ftrapuv   -ggdb -g3  -check all -debug all
+     DEBUGFLAGS= -g -traceback -trace -fpe0 -ftrapuv   -ggdb -g3  -check all -debug all -assume byterecl
    endif
    ifdef DebugO0
-     DEBUGFLAGS= -g -trace -traceback -fpe0 -fp-stack-check -ftrapuv -CB -qopt-report=5 -qopt-report-phase=all 
+     DEBUGFLAGS= -g -trace -traceback -fpe0 -fp-stack-check -ftrapuv -CB -qopt-report=5 -qopt-report-phase=all  -assume byterecl
    endif
   else
    FC = gfortran
@@ -127,7 +127,7 @@ ifdef INTEL_g100
     NETCDF_LIBDIR = ${NETCDF_FORTRAN_HOME}/lib     -L ${NETCDF_C_HOME}/lib
     HDF5_LIBDIR = ${HDF5_HOME}/lib  -L ${CURL_HOME}/lib 
   #FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend-source -assume byterecl -I$(NETCDF_INCDIR)
-  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -march=native -funroll-loops -xhost -xcore-avx2 -axCORE-AVX2,AVX -fpp -I$(NETCDF_INCDIR)
+  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -march=native -funroll-loops -xhost -xcore-avx2 -axCORE-AVX2,AVX -fpp -assume byterecl -I$(NETCDF_INCDIR)
   ifdef Debug 
     FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
   endif
