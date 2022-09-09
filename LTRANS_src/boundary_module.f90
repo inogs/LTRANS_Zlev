@@ -2642,10 +2642,10 @@ END SUBROUTINE getNext
       ylow = Ypos
     endif
 
-    bcx1_array=bnd_x1(:,klev)
-    bcx2_array=bnd_x2(:,klev)
-    bcy1_array=bnd_y1(:,klev)
-    bcy2_array=bnd_y2(:,klev)
+    bcx1_array=bnd_x1(:nbounds(klev),klev)
+    bcx2_array=bnd_x2(:nbounds(klev),klev)
+    bcy1_array=bnd_y1(:nbounds(klev),klev)
+    bcy2_array=bnd_y2(:nbounds(klev),klev)
     dist=    sqrt((bcx1_array- Xpos)**2+(bcy1_array- Ypos)**2) 
     dist=min(sqrt((bcx2_array- Xpos)**2+(bcy2_array- Ypos)**2),dist)
     dist=min(sqrt((bcx2_array-nXpos)**2+(bcy2_array-nYpos)**2),dist)
