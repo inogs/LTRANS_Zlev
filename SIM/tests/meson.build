@@ -17,9 +17,9 @@ if r.returncode() != 0
 endif
 
 
-_create_MITgcm_fake_fields = find_program('create_MITgcm_fake_fields.sh')
-test('--------------- create fake MITgcm outputs fields --------------------------------',
-       _create_MITgcm_fake_fields, 
+_create_fake_input_files = find_program('create_fake_input_files.sh')
+test('--------------- create fake input files (grid and fields)--------------------------',
+       _create_fake_input_files, 
        args:[
              _prefix+'/'
             ],
@@ -28,7 +28,7 @@ test('--------------- create fake MITgcm outputs fields ------------------------
        priority:100)
 
 _synch = find_program('synch.sh')
-test('--------------- barrier insuring MITgcm fields are present -----------------------',
+test('--------------- barrier insuring that the input files are present -----------------------',
     _synch,
     args:[],
     workdir:meson.current_build_dir(),
@@ -40,13 +40,29 @@ _priority=98
 _run_and_check_success = find_program('run_and_check_success.sh')
 _threshold='1E-05'
 #_threshold='none'
-test('--------------- running LTRANS ---------------------------------------------------',
+test('--------------- running LTRANS with Zlevels case -----------------------------------------',
           _run_and_check_success,
           args:[
                 _LTRANS_exe.full_path(),
-                'LTRANS_boxes_NiNj64.data',
-                'boxes_NiNj64-endfile.ref',
-                'boxes_NiNj64-endfile.csv',
+                'LTRANS_fake_Zlevels.data',
+                'fake_Zlevels-endfile.ref',
+                'fake_Zlevels-endfile.csv',
+                'Adjacentelements-Zlevels.data',
+                _prefix+'/',
+                _threshold,
+               ],
+          workdir:meson.current_build_dir(),
+          priority:_priority,
+          timeout:300,
+          is_parallel : true)
+test('--------------- running LTRANS with Slevels case -----------------------------------------',
+          _run_and_check_success,
+          args:[
+                _LTRANS_exe.full_path(),
+                'LTRANS_fake_Slevels.data',
+                'fake_Slevels-endfile.ref',
+                'fake_Slevels-endfile.csv',
+                'Adjacentelements-Slevels.data',
                 _prefix+'/',
                 _threshold,
                ],
