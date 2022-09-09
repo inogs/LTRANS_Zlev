@@ -13,12 +13,13 @@ _compiler = meson.get_compiler('fortran')
 message('compiler is '+ _compiler.get_id())
 #------------------- eventually setup optimization arguments -------------
 _bt = get_option('buildtype')
-if _bt == 'debugoptimized' or _bt == 'release'
+if _bt == 'release'
    if _compiler.get_id() == 'intel'
     add_global_arguments([  '-funroll-loops',
                             '-assume','byterecl',
                             '-xcore-avx2',
-                            '-axCORE-AVX2,AVX'
+                            '-axCORE-AVX2,AVX',
+                            '-O',
                           ],language : ['fortran'] )
   elif _compiler.get_id() == 'gcc'
     add_global_arguments([  '-march=native',
@@ -26,6 +27,30 @@ if _bt == 'debugoptimized' or _bt == 'release'
                             '-ftree-vectorize',
                             '-ftree-vectorizer-verbose=0',
                             '-funroll-loops',
+                            '-O',
+                          ],language : ['fortran'] )
+  endif
+endif
+if _bt == 'debugoptimized' 
+   if _compiler.get_id() == 'intel'
+    add_global_arguments([  '-funroll-loops',
+                            '-assume','byterecl',
+                            '-xcore-avx2',
+                            '-axCORE-AVX2,AVX',
+                            '-check','all','-ftrapuv',
+                            '-O',
+                            '-trace',
+                            '-fp-model','precise',
+                            '-g','-traceback','-fpe0',
+                          ],language : ['fortran'] )
+  elif _compiler.get_id() == 'gcc'
+    add_global_arguments([  '-march=native',
+                            '-ffast-math',
+                            '-ftree-vectorize',
+                            '-ftree-vectorizer-verbose=0',
+                            '-funroll-loops',
+                            '-Wuninitialized',
+                            '-O',
                           ],language : ['fortran'] )
   endif
 endif
@@ -33,14 +58,17 @@ if _bt == 'debug'
   if _compiler.get_id() == 'intel'
     add_global_arguments([ 
                           '-trace',
+                          '-assume','byterecl',
                           '-qopt-report=5',
                           '-qopt-report-phase=all',
-                          '-diag-disable 10397', #disables info on qoptr files creation
+                          '-diag-disable','10397', #disables info on qoptr files creation
                           '-traceback',
                           '-fp-stack-check',
                           '-fpe0',
                           '-ftrapuv',
                           '-CB',#'-fp-model source','-debug all',
+                          '-check','all','-ftrapuv',
+                          '-g',
                           ],language : ['fortran'] )
   else
     add_global_arguments([
