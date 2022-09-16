@@ -62,6 +62,14 @@ fi
   _ref_output_full_name=${_test_dir}/${_ref_output_base_name}
 #echo "paste -d', ' $_ref_output_full_name $_gen_output_full_name"
 #paste -d', ' $_ref_output_full_name $_gen_output_full_name
+if [ ! -f $_ref_output_full_name ]; then
+    echo "file $_ref_output_full_name NOT FOUND"
+    exit 1
+fi
+if [ ! -f $_gen_output_full_name ]; then
+    echo "file $_ref_output_full_name NOT FOUND"
+    exit 1
+fi
   RESULTS=$(paste -d', ' $_ref_output_full_name $_gen_output_full_name | awk -v threshold=$_threshold '
                  function abs(v) {return v < 0 ? -v : v} 
                  function max(v1,v2) {return v1<v2 ? v2 : v1 } 
