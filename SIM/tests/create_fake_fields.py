@@ -102,6 +102,29 @@ for t in range(0,nt):
  
 sustr=np.where(Uwind<0,-(abs(Uwind)/20.659)**(1.0/0.4278),(Uwind/20.659)**(1.0/0.4278))
 svstr=np.where(Vwind<0,-(abs(Vwind)/20.659)**(1.0/0.4278),(Vwind/20.659)**(1.0/0.4278))
+
+Ustokes=np.zeros((nt,nij,nij),dtype=float)
+for t in range(0,nt):
+ for j in range(0,nij):
+  for i in range(0,nij):
+   Ustokes[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/float(nij)*math.pi)+((t+1.)/2.)*0.3*math.sin(float(i)/float(nij)*math.pi))/50.
+ ax.cla()
+ cax.cla()
+ im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Ustokes[t])
+ fig.colorbar(im, cax=cax, orientation='vertical')
+ fig.savefig(outdir+'/'+'Ustokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.png')
+
+Vstokes=np.zeros((nt,nij,nij),dtype=float)
+for t in range(0,nt):
+ for j in range(0,nij):
+  for i in range(0,nij):
+   Vstokes[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j+i)/float(nij)*math.pi)+((t+1.)/2.)*0.6*math.sin(float(i-j)/float(nij)*math.pi))/50.
+ ax.cla()
+ cax.cla()
+ im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Vstokes[t])
+ fig.colorbar(im, cax=cax, orientation='vertical')
+ fig.savefig(outdir+'/'+'Vstokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.png')
+ 
 ##################################################################################
 for t in range(0,nt):
  output_file = open(outdir+'/'+'U.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
@@ -131,6 +154,16 @@ for t in range(0,nt):
 for t in range(0,nt):
  output_file = open(outdir+'/'+'EXFvwind.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
  float_array = array('d',Vwind[t].flatten())
+ float_array.tofile(output_file)
+ output_file.close()
+for t in range(0,nt):
+ output_file = open(outdir+'/'+'Ustokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ float_array = array('d',Ustokes[t].flatten())
+ float_array.tofile(output_file)
+ output_file.close()
+for t in range(0,nt):
+ output_file = open(outdir+'/'+'Vstokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ float_array = array('d',Vstokes[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 
@@ -222,6 +255,18 @@ for tfile in range(0,nt,6):
   setattr(SVstr,'axis'               , 'Y')
   setattr(SVstr,'valid_min'          , np.min(svstr))
   setattr(SVstr,'valid_max'          , np.max(svstr))
+  Ustk=ncfile.createVariable("ustokes", 'f', ('ocean_time', 'eta_u', 'xi_u',))
+  setattr(Ustk,'long_name'          , 'surface stokes-drift component in x-direction')
+  setattr(Ustk,'standard_name'      , 'ustokes')
+  setattr(Ustk,'axis'               , 'X')
+  setattr(Ustk,'valid_min'          , np.min(Ustokes))
+  setattr(Ustk,'valid_max'          , np.max(Ustokes))
+  Vstk=ncfile.createVariable("vstokes", 'f', ('ocean_time', 'eta_v', 'xi_v',))
+  setattr(Vstk,'long_name'          , 'surface stokes-drift component in y-direction')
+  setattr(Vstk,'standard_name'      , 'vstokes')
+  setattr(Vstk,'axis'               , 'Y')
+  setattr(Vstk,'valid_min'          , np.min(Vstokes))
+  setattr(Vstk,'valid_max'          , np.max(Vstokes))
   s_rho=ncfile.createVariable("s_rho", 'f', ('s_rho',))
   setattr(s_rho,'long_name'          , 'S-coordinate at RHO-points')
   setattr(s_rho,'standard_name'      , 's_rho')
@@ -260,6 +305,8 @@ for tfile in range(0,nt,6):
     Vwnd[i,:,:]=Vwind[t,1:,:]
     SUstr[i,:,:]=sustr[t,:,1:]
     SVstr[i,:,:]=svstr[t,1:,:]
+    Ustk[i,:,:]=Ustokes[t,:,1:]
+    Vstk[i,:,:]=Vstokes[t,1:,:]
 
   ncfile.close()
 
