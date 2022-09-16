@@ -1,7 +1,7 @@
 # LTRANS_Zlev
 This is **version 0** of LTRANS Zlev, first published in https://github.com/inogs/LTRANS_Zlev in December 2019 and later subject to various revisions.
 
-The most recent version of the user manual is available on the repository at the address : [LTRANS_Zlev_user_manual.md](https://github.com/inogs/LTRANS_Zlev/blob/master/LTRANS_Zlev_user_manual.md) 
+The most recent version of the user manual is available on the repository at the address : [LTRANS_Zlev_user_manual.md](https://github.com/inogs/LTRANS_Zlev/blob/plastics/LTRANS_Zlev_user_manual.md) 
 
 
 
