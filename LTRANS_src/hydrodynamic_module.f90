@@ -1512,7 +1512,7 @@ CONTAINS
     endif
     if(readStokDrift)then
       ALLOCATE(t_ustokdrift(3, u_nodes))
-      ALLOCATE(t_ustokdrift(3, v_nodes))
+      ALLOCATE(t_vstokdrift(3, v_nodes))
       t_ustokdrift = 0
       t_vstokdrift = 0
       ALLOCATE(modelUstokdrift(ui,uj,3))
@@ -2365,6 +2365,7 @@ CONTAINS
                                 romUf,romVf,romWf,romKHf
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelUwindf,modelVwindf    !--- CL-OGS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelIwindf    !--- CL-OGS
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUstokdrift,modelVstokdrift
     INTEGER :: ios,nvarf,nfilesin,ktlev,waiting,rand15
     INTEGER :: searchnode,nodestocopy, k1, k2
     REAL, ALLOCATABLE, DIMENSION(:) :: tmpvec
@@ -6979,7 +6980,8 @@ CONTAINS
   SUBROUTINE set_filename(var_id,counter,filename)
    USE PARAM_MOD, ONLY: numdigits,dirin, &
         prefix_Zeta,prefix_Salt,prefix_Temp,prefix_Uvel,prefix_Vvel,prefix_Wvel, & 
-        prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind,prefix_Iwind,suffix
+        prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind,prefix_Iwind, &
+        prefix_Ustokes,prefix_Vstokes,suffix
    IMPLICIT NONE
 #include "VAR_IDs.h"
    integer, intent(in):: var_id,counter
