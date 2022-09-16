@@ -221,7 +221,17 @@ $end
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
   dirin='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/MITgcm_outputs/'
-  prefix= 'U_hr_ave','V_hr_ave','W_hr_ave','Eta.','RHOAnoma.','S.','T.','KPPdiffS.','EXFuwind.','EXFvwind.'   ! NetCDF Input Filename prefix                     
+  prefix_Zeta = 'Eta.'      
+  prefix_Salt = 'S.'      
+  prefix_Temp = 'T.'      
+  prefix_Uvel = 'U.'      
+  prefix_Vvel = 'V.'      
+  prefix_Wvel = 'W.'      
+  prefix_Aks  = 'KPPdiffS.'      
+  prefix_Dens = 'RHOAnoma.'      
+  prefix_Uwind= 'EXFuwind.'      
+  prefix_Vwind= 'EXFvwind.'      
+  prefix_Iwind= 'EXFiwind.'      
   numdigits = 10                ! Number of digits in number portion of file name (with leading zeros)
   suffix='.data'                ! NetCDF Input Filename suffix
   filenum = 1260                ! Number in first NetCDF input filename
