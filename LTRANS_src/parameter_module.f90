@@ -37,9 +37,16 @@ CONTAINS
     CHARACTER(len=100), INTENT(in) :: inputdatafile     
     write(*,*)'Reading parameters from file ',trim(inputdatafile)
     err = 0
-    do count=1,11
-      PREFIX(count)=''
-    enddo
+    prefix_Salt  = '' 
+    prefix_Temp  = '' 
+    prefix_Uvel  = '' 
+    prefix_Vvel  = '' 
+    prefix_Wvel  = '' 
+    prefix_Aks   = '' 
+    prefix_Dens  = '' 
+    prefix_Uwind = '' 
+    prefix_Vwind = '' 
+    prefix_Iwind = '' 
     Adjele_fname='Adjacentelements.data'
     ADJele_file= .FALSE.
     habitatfile='NONE'

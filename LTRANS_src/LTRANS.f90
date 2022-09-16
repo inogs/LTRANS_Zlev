@@ -3379,42 +3379,9 @@ contains
     else 
       nfilesin=1
     endif
-    DO nf=1,nfilesin
-    SELECT CASE(numdigits)
-       CASE(0)
-         WRITE(filenm,'(A,A,A)')     TRIM(dirin),TRIM(prefix(nf)),TRIM(suffix)
-      CASE(1)
-        WRITE(filenm,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(2)
-        WRITE(filenm,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(3)
-        WRITE(filenm,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(4)
-        WRITE(filenm,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(5)
-        WRITE(filenm,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(6)
-        WRITE(filenm,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(7)
-        WRITE(filenm,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(8)
-        WRITE(filenm,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(9)
-        WRITE(filenm,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(10)
-        WRITE(filenm,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE DEFAULT
-        WRITE(*,*) 'Model presently does not support numdigits of ',numdigits
-        WRITE(*,*) 'Please use numdigit value from 1 to 10'
-        WRITE(*,*) '  OR modify code in Hydrodynamic module'
-        STOP
-    END SELECT
-    !write(*,*)'file to open is ',TRIM(filenm)
-    ENDDO
 
     write(*,*) ' '
     write(*,*) ' Grid File:             = ',NCgridfile
-    write(*,*) ' First Hydro File:      = ',TRIM(filenm)
 
     write(*,*) ' '
     write(tmp,'(I10)') seed

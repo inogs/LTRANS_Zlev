@@ -173,14 +173,15 @@ CONTAINS
     !  element variables
     USE PARAM_MOD, ONLY: numpar,ui,vi,uj,vj,us,ws,rho_nodes,u_nodes,v_nodes,   &
         max_rho_elements,max_u_elements,    &
-        max_v_elements,NCgridfile,prefix,filenum,numdigits,  &
+        max_v_elements,NCgridfile,  &
         Zgrid,ADJele_file,ADJele_fname,BoundaryBLNs,                           & !--- CL-OGS
         filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
-        OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity                         !--- CL-OGS
+        OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum                         !--- CL-OGS
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
     USE netcdf
     !$ use OMP_LIB          
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INCLUDE 'netcdf.inc'
@@ -475,9 +476,8 @@ CONTAINS
      else 
        nfilesin=1 ! Roms NETcdf outputs
      endif
-     DO nf=1,nfilesin
-       call set_filename(nf,filenum,filenm)
-    ENDDO
+
+     call set_filename(VAR_ID_salt,filenum,filenm)
 
     if(.not.Zgrid) then
       STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
@@ -1408,7 +1408,7 @@ CONTAINS
     !This Subroutine reads in the hydrodynamic information for the first 
     !  iteration
     USE PARAM_MOD, ONLY: numpar,ui,vi,uj,vj,us,ws,rho_nodes,u_nodes,v_nodes,   &
-        prefix,filenum,filestep,tdim,numdigits,recordnum,days,dt, &
+        filenum,filestep,tdim,numdigits,recordnum,days,dt, &
         readZeta,constZeta,readSalt,constSalt, &
         !readNetcdfSwdown,                &
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
@@ -1422,6 +1422,7 @@ CONTAINS
     USE netcdf
     USE RANDOM_MOD, ONLY: genrand_real1 !--- CL-OGS
     USE CONVERT_MOD, ONLY: x2lon,y2lat  !--- CL-OGS
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INCLUDE 'netcdf.inc'
@@ -1438,11 +1439,8 @@ CONTAINS
                                                          modelIwind  !--- CL-OGS
     !--- CL-OGS: following variables added to handle MITgcm-files
     !--- CL-OGS  (using a different file for every field variable )
-    LOGICAL :: isZeta,isSalt,isTemp,isDens,isU,isV,isW,isAks,                  &
-               isUwind,isVwind,isIwind,filegiven !,isSwdown
     INTEGER :: ios,nvarf,nfilesin,ktlev,waiting,rand15
     INTEGER :: searchnode,nodestocopy,tcopy, k1, k2
-    CHARACTER(LEN=200) :: fprefix
     REAL, ALLOCATABLE, DIMENSION(:) :: tmpvec  
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: dbltmpvec  
     DOUBLE PRECISION, DIMENSION(3) :: salt_up,salt_around  
@@ -1529,6 +1527,7 @@ CONTAINS
         !ALLOCATE(modelUwind(ui,uj,1))  !--- CL-OGS : commented out 
         !ALLOCATE(modelVwind(vi,vj,1))  !--- CL-OGS : commented out
     END IF      !OilOn
+    iint = 0
 
     
     !if(not Zgrid)then  !--- CL-OGS : restricting to ROMS hydro files !--- CL-OGS : commented out
@@ -1581,7 +1580,7 @@ CONTAINS
                    ' and recordnum=',recordnum
         stop
     endif
-   
+
     if (tdim==1)then ! each of the three timestep are in different files
       nfmax=3
       nfn=1
@@ -1634,184 +1633,78 @@ CONTAINS
       stepf=stepf+incrstepf
       write(*,*)'reading record ',recordnum,':',recordnum+incrstepf-1
 
-      DO nvarf=1,nfilesin
-
-       call set_filename(nvarf,counter,filenm)
-
-!      *****   IMIOM      *****
-        IF(OilOn)THEN
-         IF(WindWaveModel)THEN
-          scounter = iint + swan_filenum
-
-          call set_filename(nvarf,scounter,swannm)
-
-         END IF            !if WindWaveModel
-        END IF            !if OilOn
-!      ***** END IMIOM *****
-        
-        fprefix=TRIM(prefix(nvarf) )
-        filegiven=.FALSE.
-        if(Zgrid)then
-          !isSwdown=.FALSE.
-          isZeta=.FALSE.
-          isSalt=.FALSE.
-          isTemp=.FALSE.
-          isDens=.FALSE.
-          isU=.FALSE.
-          isV=.FALSE.
-          isW=.FALSE.
-          isAks=.FALSE.
-          isUwind=.FALSE.
-          isVwind=.FALSE.
-          isIwind=.FALSE.
-          if(TRIM(fprefix(1:8)) .eq. 'EXFuwind') then
-                isUwind=.TRUE.
-                if(readUwind)filegiven=.TRUE.
-          elseif(TRIM(fprefix(1:8)) .eq. 'EXFvwind') then
-                isVwind=.TRUE.
-                if(readVwind)filegiven=.TRUE.
-          elseif(TRIM(fprefix(1:8)) .eq. 'EXFwspee') then
-                isIwind=.TRUE.
-                if(readIwind)filegiven=.TRUE.
-          !elseif(TRIM(fprefix(1:7)) .eq. 'EXFswdn') then
-          !     isSwdown=.TRUE.
-          !     !if(readNetcdfSwdown)filegiven=.TRUE.
-          else
-            SELECT CASE(TRIM(fprefix(1:1)))
-              CASE('E') ! Zeta
-                isZeta=.TRUE.
-                if(readZeta)filegiven=.TRUE.
-              CASE('R') ! Rho
-                isDens=.TRUE.
-                if(readDens)filegiven=.TRUE.
-              CASE('U') ! U
-                isU=.TRUE.
-                if(readU)filegiven=.TRUE.
-              CASE('V') ! V
-                isV=.TRUE.
-                if(readV)filegiven=.TRUE.
-              CASE('W') ! W
-                isW=.TRUE.
-                if(readW)filegiven=.TRUE.
-              CASE('S') ! S
-                isSalt=.TRUE.
-                if(readSalt)filegiven=.TRUE.
-              CASE('T') ! T
-                isTemp=.TRUE.
-                if(readTemp)filegiven=.TRUE.
-              CASE('K') ! K
-                isAks=.TRUE.
-                if(readAks)filegiven=.TRUE.
-              CASE DEFAULT
-                write(*,*)'ERROR UN-INDENTIFIED FILE'
-                write(*,*)"file should start by 'E' for Eta var, ",            &
-                           "or 'R' for rho, 'U' for U, ..."
-                stop
-            END SELECT
-          endif
-        else
-          isZeta=.TRUE.
-          isSalt=.TRUE.
-          isTemp=.TRUE.
-          isDens=.TRUE.
-          isU=.TRUE.
-          isV=.TRUE.
-          isW=.TRUE.
-          isAks=.TRUE.
-          isUwind=.FALSE.
-          isVwind=.FALSE.
-          isIwind=.FALSE.
-          !isSwdown=.FALSE.
-        endif
+      ! Read in data for first three external time steps
+      !------------------------------------
+      if(readZeta)then  
+        call read_data_from_file(VAR_ID_zeta,vi,uj,1,3,nf,nfn,nfnn,romZ,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romZ = constZeta
+      endif
+      !------------------------------------
+      if(readSalt)then
+        call read_data_from_file(VAR_ID_salt,vi,uj,us,3,nf,nfn,nfnn,romS,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romS = constSalt
+      endif
+      !------------------------------------
+      if(readTemp)then  
+        call read_data_from_file(VAR_ID_temp,vi,uj,us,3,nf,nfn,nfnn,romT,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romT = constTemp
+      endif
+      !------------------------------------
+      if(readDens)then  
+        call read_data_from_file(VAR_ID_den,vi,uj,us,3,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romD = constDens
+      endif
+      !------------------------------------
+      if(readU)then  
+        call read_data_from_file(VAR_ID_uvel,ui,uj,us,3,nf,nfn,nfnn,romU,UNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romU = constU
+      endif
+      !------------------------------------
+      if(readV)then  
+          call read_data_from_file(VAR_ID_vvel,vi,vj,us,3,nf,nfn,nfnn,romV,VNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romV = constV
+      endif
+      !------------------------------------
+      if(readW)then  
+        call read_data_from_file(VAR_ID_wvel,vi,uj,ws,3,nf,nfn,nfnn,romW,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romW = constW
+      endif
+      !------------------------------------
+      if(readAks)then  
+        call read_data_from_file(VAR_ID_kh,vi,uj,us,3,nf,nfn,nfnn,romKH,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        romKH = constAks
+      endif
+      !------------------------------------
+      if(Wind .and.readUwind)then  
+        call read_data_from_file(VAR_ID_uwind,ui,uj,1,3,nf,nfn,nfnn,modelUwind,UNODE,recordnum,incrstepf, &
+                    interpol_from_cell_center_to_CArakawa)
+      else
+        modelUwind = constUwind
+      endif       
+      !------------------------------------
+      if(Wind .and.readVwind)then  
+        call read_data_from_file(VAR_ID_vwind,vi,vj,1,3,nf,nfn,nfnn,modelVwind,VNODE,recordnum,incrstepf, &
+                    interpol_from_cell_center_to_CArakawa)
+      else
+        modelVwind = constVwind
+      endif
+      !------------------------------------
+      if(readIwind)then  
+        call read_data_from_file(VAR_ID_iwind,vi,uj,1,3,nf,nfn,nfnn,modelIwind,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        modelIwind = constIwind
+      endif
+      !------------------------------------
 
 
-        ! Read in data for first three external time steps
-
-        !------------------------------------
-        if(isZeta.and.readZeta)then  
-          call read_data_from_file('zeta',vi,uj,1,3,nf,nfn,nfnn,romZ,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isZeta)then
-          romZ = constZeta
-        endif
-        !------------------------------------
-        if(isSalt.and.readSalt)then
-          call read_data_from_file('salt',vi,uj,us,3,nf,nfn,nfnn,romS,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isSalt)then
-          romS = constSalt
-        endif
-        !------------------------------------
-        if(isTemp.and.readTemp)then  
-          call read_data_from_file('temp',vi,uj,us,3,nf,nfn,nfnn,romT,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isTemp)then
-          romT = constTemp
-        endif
-        !------------------------------------
-
-
-        if(isDens.and.readDens)then  
-          call read_data_from_file('rho',vi,uj,us,3,nf,nfn,nfnn,romD,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isDens)then
-          romD = constDens
-        endif
-
-        !------------------------------------
-
-        if(isU.and.readU)then  
-          call read_data_from_file('u',ui,uj,us,3,nf,nfn,nfnn,romU,UNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isU)then
-          romU = constU
-        endif
-
-        !------------------------------------
-
-        if(isV.and.readV)then  
-            call read_data_from_file('v',vi,vj,us,3,nf,nfn,nfnn,romV,VNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isV)then
-          romV = constV
-        endif
-
-        !------------------------------------
-
-        if(isW.and.readW)then  
-          call read_data_from_file('w',vi,uj,ws,3,nf,nfn,nfnn,romW,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isW)then
-          romW = constW
-        endif
-
-        !------------------------------------
-
-        if(isAks.and.readAks)then  
-          call read_data_from_file('AKs',vi,uj,us,3,nf,nfn,nfnn,romKH,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isAks)then
-          romKH = constAks
-        endif
-
-        !------------------------------------
-
-        if(Wind .and.(isUwind .and.readUwind))then  
-          call read_data_from_file('sustr',ui,uj,1,3,nf,nfn,nfnn,modelUwind,UNODE,recordnum,incrstepf,filenm, &
-                      interpol_from_cell_center_to_CArakawa)
-        elseif(isUwind)then
-          modelUwind = constUwind
-        endif       
-        !------------------------------------
-        if(Wind .and.(isVwind .and.readVwind))then  
-          call read_data_from_file('svstr',vi,vj,1,3,nf,nfn,nfnn,modelVwind,VNODE,recordnum,incrstepf,filenm, &
-                      interpol_from_cell_center_to_CArakawa)
-        elseif(isVwind)then
-          modelVwind = constVwind
-        endif
-        !------------------------------------
-        if(isIwind .and.readIwind)then  
-          call read_data_from_file('wind_intensity',vi,uj,1,3,nf,nfn,nfnn,modelIwind,RNODE,recordnum,incrstepf,filenm,do_not_interpolate)
-        elseif(isIwind)then
-          modelIwind = constIwind
-        endif
-
-        !------------------------------------
-
-
-      ENDDO !nvarf=1,nfilesin
     ENDDO !nf=1,nfmax
       
       ! Store the ranges of nodes that were update
@@ -1905,7 +1798,6 @@ CONTAINS
           !t_Swdown(3,count) =    romSwdown(i,j,3) 
         enddo
       enddo
-      write(*,*)'maxval(Wvel)=',maxval(t_Wvel)
 
       do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
         do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
@@ -2180,10 +2072,8 @@ CONTAINS
             nvarf=1
             scounter = iint + swan_filenum
 
-            call set_filename(nvarf,scounter,swannm)
+            call set_filename(VAR_ID_swan,scounter,swannm)
 
-            fprefix=TRIM(prefix(nvarf) )
-           
             ! Read in data for first three external time steps
             STATUS = NF90_OPEN(TRIM(swannm), NF90_NOWRITE, NCID)
             if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
@@ -2406,7 +2296,7 @@ CONTAINS
 
   SUBROUTINE updateHydro()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,tdim,rho_nodes,u_nodes,v_nodes,     &
-        prefix,filenum,numdigits,readZeta,constZeta,readSalt,constSalt, &
+        filenum,numdigits,readZeta,constZeta,readSalt,constSalt, &
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
         constW,readAks,constAks,&
         !readNetcdfSwdown,                                    &
@@ -2419,6 +2309,7 @@ CONTAINS
 !      ***** END IMIOM *****
     USE netcdf
     USE RANDOM_MOD, ONLY: genrand_real1
+#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INCLUDE 'netcdf.inc'
@@ -2432,11 +2323,8 @@ CONTAINS
                                 romUf,romVf,romWf,romKHf
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelUwindf,modelVwindf    !--- CL-OGS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelIwindf    !--- CL-OGS
-    LOGICAL :: isZeta,isSalt,isTemp,isDens,isU,isV,isW,isAks,         &
-               isIwind,isUwind,isVwind,filegiven !,isSwdown
     INTEGER :: ios,nvarf,nfilesin,ktlev,waiting,rand15
     INTEGER :: searchnode,nodestocopy, k1, k2
-    CHARACTER(LEN=200) :: fprefix
     REAL, ALLOCATABLE, DIMENSION(:) :: tmpvec
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: dbltmpvec  
     INTEGER,PARAMETER :: interpol_from_cell_center_to_CArakawa=1,do_not_interpolate=0
@@ -2508,96 +2396,14 @@ CONTAINS
     else 
        nfilesin=1 ! Roms NETcdf outputs
     endif
-    DO nvarf=1,nfilesin
-
-      call set_filename(nvarf,counter,filenm)
-
-      fprefix=TRIM(prefix(nvarf) )
-      
-      
-      filegiven=.FALSE.
-      if (Zgrid)then
-        isZeta=.FALSE.
-        isSalt=.FALSE.
-        isTemp=.FALSE.
-        isDens=.FALSE.
-        isU=.FALSE.
-        isV=.FALSE.
-        isW=.FALSE.
-        isAks=.FALSE.
-        isUwind=.FALSE.
-        isVwind=.FALSE.
-        isIwind=.FALSE.
-        !isSwdown=.FALSE.
-        if(TRIM(fprefix(1:8)) .eq. 'EXFuwind') then
-                isUwind=.TRUE.
-                if(readUwind)filegiven=.TRUE.
-        elseif(TRIM(fprefix(1:8)) .eq. 'EXFvwind') then
-                isVwind=.TRUE.
-                if(readVwind)filegiven=.TRUE.
-        elseif(TRIM(fprefix(1:8)) .eq. 'EXFwspee') then
-                isIwind=.TRUE.
-                if(readIwind)filegiven=.TRUE.
-        !elseif(TRIM(fprefix(1:7)) .eq. 'EXFswdn') then
-        !        isSwdown=.TRUE.
-        !        if(readNetcdfSwdown)filegiven=.TRUE.
-        else
-          SELECT CASE(TRIM(fprefix(1:1)))
-            CASE('E') ! Zeta
-              isZeta=.TRUE.
-              if(readZeta)filegiven=.TRUE.
-            CASE('R') ! Rho
-              isDens=.TRUE.
-              if(readDens)filegiven=.TRUE.
-            CASE('U') ! U
-              isU=.TRUE.
-              if(readU)filegiven=.TRUE.
-            CASE('V') ! V
-              isV=.TRUE.
-              if(readV)filegiven=.TRUE.
-            CASE('W') ! W
-              isW=.TRUE.
-              if(readW)filegiven=.TRUE.
-            CASE('S') ! S
-              isSalt=.TRUE.
-              if(readSalt)filegiven=.TRUE.
-            CASE('T') ! T
-              isTemp=.TRUE.
-              if(readTemp)filegiven=.TRUE.
-            CASE('K') ! K
-              isAks=.TRUE.
-              if(readAks)filegiven=.TRUE.
-            CASE DEFAULT
-              write(*,*)'ERROR UN-INDENTIFIED FILE'
-          END SELECT
-        endif
-      else
-        isZeta=.TRUE.
-        isSalt=.TRUE.
-        isTemp=.TRUE.
-        isDens=.TRUE.
-        isU=.TRUE.
-        isV=.TRUE.
-        isW=.TRUE.
-        isAks=.TRUE.
-        isUwind=.FALSE.
-        isVwind=.FALSE. 
-        isIwind=.FALSE. 
-        !isSwdown=.FALSE.
-      endif
-
-
-
-  ! Read in forward time step data
  
       !------------------------------------
 
-      if(isZeta)then
-       if(readZeta)then
-          call read_data_from_file('zeta',vi,uj,1,1,1,1,1,romZf,RNODE,stepf,1,filenm,do_not_interpolate)
-       else  !  if not readZeta
+      if(readZeta)then  
+        call read_data_from_file(VAR_ID_zeta,vi,uj,1,1,1,1,1,romZf,RNODE,stepf,1,do_not_interpolate)
+      else
         romZf = constZeta
-       endif ! readZeta
+      endif
 
        !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
@@ -2606,16 +2412,15 @@ CONTAINS
            t_zeta(t_f,count)     = romZf(i,j,1) * m_r(i,j,us_tridim)
          enddo
        enddo
-      endif ! isZeta
 
       !------------------------------------
 
-      if(isSalt)then
-       if(readSalt)then
-          call read_data_from_file('salt',vi,uj,us,1,1,1,1,romSf,RNODE,stepf,1,filenm,do_not_interpolate)
-       else
+      if(readSalt)then
+        call read_data_from_file(VAR_ID_salt,vi,uj,us,1,1,1,1,romSf,RNODE,stepf,1,do_not_interpolate)
+      else
         romSf = constSalt
-       endif
+      endif
+
        !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
@@ -2663,18 +2468,14 @@ CONTAINS
           if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
- 
-      endif
 
       !------------------------------------
 
-      if(isTemp)then
-       if(readTemp)then
-          call read_data_from_file('temp',vi,uj,us,1,1,1,1,romTf,RNODE,stepf,1,filenm,do_not_interpolate)
-       else
+      if(readTemp)then  
+        call read_data_from_file(VAR_ID_temp,vi,uj,us,1,1,1,1,romTf,RNODE,stepf,1,do_not_interpolate)
+      else
         romTf = constTemp
-       endif
-
+      endif
 
        !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
@@ -2723,16 +2524,15 @@ CONTAINS
           if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
-      endif
 
       !------------------------------------
 
-      if(isDens)then
-       if(readDens)then
-          call read_data_from_file('rho',vi,uj,us,1,1,1,1,romDf,RNODE,stepf,1,filenm,do_not_interpolate)
-       else
+      if(readDens)then  
+        call read_data_from_file(VAR_ID_den,vi,uj,us,1,1,1,1,romDf,RNODE,stepf,1,do_not_interpolate)
+      else
         romDf = constDens
-       endif
+      endif
+
        !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
@@ -2781,16 +2581,14 @@ CONTAINS
           if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
-      endif
  
       !------------------------------------
 
-      if(isU)then
-       if(readU)then
-          call read_data_from_file('u',ui,uj,us,1,1,1,1,romUf,UNODE,stepf,1,filenm,do_not_interpolate)
-       else
+      if(readU)then  
+        call read_data_from_file(VAR_ID_uvel,ui,uj,us,1,1,1,1,romUf,UNODE,stepf,1,do_not_interpolate)
+      else
         romUf = constU
-       endif
+      endif
 
        do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
          do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
@@ -2839,16 +2637,13 @@ CONTAINS
         enddo
        endif ! (Zgrid)      
 
+      !------------------------------------
+      if(readV)then  
+          call read_data_from_file(VAR_ID_vvel,vi,vj,us,1,1,1,1,romVf,VNODE,stepf,1,do_not_interpolate)
+      else
+        romVf = constV
       endif
 
-      !------------------------------------
-
-      if(isV)then
-       if(readV)then
-          call read_data_from_file('v',vi,vj,us,1,1,1,1,romVf,VNODE,stepf,1,filenm,do_not_interpolate)
-       else
-        romVf = constV
-       endif
        do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
          do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
            count = (j-1)*vi + i
@@ -2895,17 +2690,13 @@ CONTAINS
 
         endif ! (Zgrid)
 
-      endif
-
       !------------------------------------
 
-      if(isW)then
-       if(readW)then
-          call read_data_from_file('w',vi,uj,ws,1,1,1,1,romWf,RNODE,stepf,1,filenm,do_not_interpolate)
-       else
+      if(readW)then  
+        call read_data_from_file(VAR_ID_wvel,vi,uj,ws,1,1,1,1,romWf,RNODE,stepf,1,do_not_interpolate)
+      else
         romWf = constW
-       endif
-
+      endif
 
        !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
@@ -2955,17 +2746,14 @@ CONTAINS
          enddo      
        endif ! (Zgrid)
 
-      endif
-
       !------------------------------------
 
-      if(isAks)then
-       if(readAks)then
-        ! **** Vertical diffusivity for salt (Aks) ****
-          call read_data_from_file('AKs',vi,uj,us,1,1,1,1,romKHf,RNODE,stepf,1,filenm,do_not_interpolate)
-       else
+      if(readAks)then  
+        call read_data_from_file(VAR_ID_kh,vi,uj,us,1,1,1,1,romKHf,RNODE,stepf,1,do_not_interpolate)
+      else
         romKHf = constAks
-       endif
+      endif
+
        !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
@@ -3014,13 +2802,12 @@ CONTAINS
           if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
        endif ! (Zgrid)      
-      endif
 
       !------------------------------------   
 
       if(Wind)then
        if(readUwind)then  
-          call read_data_from_file('sustr',ui,uj,1,1,1,1,1,modelUwindf,UNODE,stepf,1,filenm,interpol_from_cell_center_to_CArakawa)
+          call read_data_from_file(VAR_ID_uwind,ui,uj,1,1,1,1,1,modelUwindf,UNODE,stepf,1,interpol_from_cell_center_to_CArakawa)
        else
          modelUwindf = constUwind
        endif
@@ -3038,7 +2825,7 @@ CONTAINS
 
       if(Wind)then
        if(readVwind)then  
-          call read_data_from_file('svstr',vi,vj,1,1,1,1,1,modelVwindf,VNODE,stepf,1,filenm,interpol_from_cell_center_to_CArakawa)
+          call read_data_from_file(VAR_ID_vwind,vi,vj,1,1,1,1,1,modelVwindf,VNODE,stepf,1,interpol_from_cell_center_to_CArakawa)
        else
         modelVwindf = constVwind
        endif
@@ -3053,31 +2840,27 @@ CONTAINS
 
       !------------------------------------
 
-      if(isIwind)then
-        if(readIwind)then  
-         if(Zgrid)then
-           call read_data_from_file('wind_intensity',vi,uj,1,1,1,1,1,modelIwindf,RNODE,stepf,1,filenm,do_not_interpolate)
-         else
-            write(*,*) ' ERROR Wind intensity not present in Roms files'
-            write(*,*) ' setting modelIwindf = constIwind=',constIwind
-            modelIwindf = constIwind
-         endif
-        else
-         modelIwindf = constIwind
-        endif
-        if(WindIntensity .and. Zgrid)then
-         do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-            count = (j-1)*vi + i
-            t_iwind(t_f,count) =    modelIwindf(i,j,1) *    m_r(i,j,us_tridim)
-          enddo
-         enddo
-        endif
+      if(readIwind)then  
+       if(Zgrid)then
+         call read_data_from_file(VAR_ID_iwind,vi,uj,1,1,1,1,1,modelIwindf,RNODE,stepf,1,do_not_interpolate)
+       else
+          write(*,*) ' ERROR Wind intensity not present in Roms files'
+          write(*,*) ' setting modelIwindf = constIwind=',constIwind
+          modelIwindf = constIwind
+       endif
+      else
+       modelIwindf = constIwind
+      endif
+      if(WindIntensity .and. Zgrid)then
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+          count = (j-1)*vi + i
+          t_iwind(t_f,count) =    modelIwindf(i,j,1) *    m_r(i,j,us_tridim)
+        enddo
+       enddo
       endif
 
       !------------------------------------
- 
-    ENDDO !nvarf=1,nfilesin
 
  
       ! Store the ranges of nodes that were updated
@@ -3108,9 +2891,7 @@ CONTAINS
           nvarf=1
           scounter = iint + swan_filenum
 
-          call set_filename(nvarf,scounter,swannm)
-
-          fprefix=TRIM(prefix(nvarf) )
+          call set_filename(VAR_ID_swan,scounter,swannm)
          
           ! Read in data for first three external time steps
           STATUS = NF90_OPEN(TRIM(swannm), NF90_NOWRITE, NCID)
@@ -3170,7 +2951,7 @@ CONTAINS
               ! **** u10 ****
               startr(1)=t_ijruv(IMIN,UNODE)
               startr(2)=t_ijruv(JMIN,UNODE)
-              startz(3)=stepf
+              startr(3)=stepf
 
               countr(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1
               countr(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1
@@ -7088,45 +6869,77 @@ CONTAINS
     enddo
   END SUBROUTINE printpython_bounds
 
-  SUBROUTINE set_filename(nfile,counter,filename)
-   USE PARAM_MOD, ONLY: numdigits,dirin,prefix,suffix
+  SUBROUTINE set_filename(var_id,counter,filename)
+   USE PARAM_MOD, ONLY: numdigits,dirin, &
+        prefix_Zeta,prefix_Salt,prefix_Temp,prefix_Uvel,prefix_Vvel,prefix_Wvel, & 
+        prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind,prefix_Iwind,suffix
    IMPLICIT NONE
-   integer, intent(in):: nfile,counter
+#include "VAR_IDs.h"
+   integer, intent(in):: var_id,counter
+   CHARACTER(len=200) :: prefix_var
    CHARACTER(len=200),intent(inout) :: filename
+
+        SELECT CASE(var_id)
+          CASE(VAR_ID_zeta ) 
+                             prefix_var=prefix_Zeta 
+          CASE(VAR_ID_salt ) 
+                             prefix_var=prefix_Salt 
+          CASE(VAR_ID_temp ) 
+                             prefix_var=prefix_Temp 
+          CASE(VAR_ID_den  ) 
+                             prefix_var=prefix_Dens  
+          CASE(VAR_ID_uvel ) 
+                             prefix_var=prefix_Uvel 
+          CASE(VAR_ID_vvel ) 
+                             prefix_var=prefix_Vvel 
+          CASE(VAR_ID_wvel ) 
+                             prefix_var=prefix_Wvel 
+          CASE(VAR_ID_kh   ) 
+                             prefix_var=prefix_Aks   
+          CASE(VAR_ID_uwind) 
+                             prefix_var=prefix_Uwind
+          CASE(VAR_ID_vwind) 
+                             prefix_var=prefix_Vwind
+          CASE(VAR_ID_iwind) 
+                             prefix_var=prefix_Iwind
+          CASE DEFAULT
+           WRITE(*,*)'Model presently does not support var id ',var_id
+           STOP
+        END SELECT
 
         SELECT CASE(numdigits)
           CASE(0)
-            WRITE(filename,'(A,A,A)')      TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,A)')      TRIM(dirin),TRIM(prefix_var),      &
                                          TRIM(suffix)
           CASE(1)
-            WRITE(filename,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(2)
-            WRITE(filename,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(3)
-            WRITE(filename,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(4)
-            WRITE(filename,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(5)
-            WRITE(filename,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(6)
-            WRITE(filename,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(7)
-            WRITE(filename,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(8)
-            WRITE(filename,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(9)
-            WRITE(filename,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nfile)),      &
+            WRITE(filename,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix_var),      &
                                          counter,TRIM(suffix)
           CASE(10)
-            WRITE(filename,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nfile)),    &
+            WRITE(filename,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix_var),    &
                                          counter,TRIM(suffix)
           CASE DEFAULT
            WRITE(*,*)'Model presently does not support numdigits of ',numdigits
@@ -7136,19 +6949,87 @@ CONTAINS
         END SELECT
   END SUBROUTINE
 
-  SUBROUTINE read_data_from_file(varname,ni,nj,nk,nt,tarray,tf1,tff,  &
-                                 field,RUVnod,recordnum,incrstepf,filename,interpolate)
-   USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid,hydrobytes,Zgrid
+  CHARACTER(len=200) FUNCTION roms_netcdf_var_name(var_id)
+#include "VAR_IDs.h"
+   IMPLICIT NONE
+   integer, intent(in):: var_id
+
+        SELECT CASE(var_id)
+          CASE(VAR_ID_zeta )
+                             roms_netcdf_var_name='zeta' 
+          CASE(VAR_ID_salt ) 
+                             roms_netcdf_var_name='salt' 
+          CASE(VAR_ID_temp ) 
+                             roms_netcdf_var_name='temp' 
+          CASE(VAR_ID_den  ) 
+                             roms_netcdf_var_name='rho'  
+          CASE(VAR_ID_uvel ) 
+                             roms_netcdf_var_name='u' 
+          CASE(VAR_ID_vvel ) 
+                             roms_netcdf_var_name='v' 
+          CASE(VAR_ID_wvel ) 
+                             roms_netcdf_var_name='w' 
+          CASE(VAR_ID_kh   ) 
+                             roms_netcdf_var_name='AKs'   
+          CASE(VAR_ID_uwind) 
+                             roms_netcdf_var_name='sustr'
+          CASE(VAR_ID_vwind) 
+                             roms_netcdf_var_name='svstr'
+          CASE(VAR_ID_iwind) 
+                             roms_netcdf_var_name='wind_intensity'
+          CASE DEFAULT
+           WRITE(*,*)'Model presently does not support var id ',var_id
+           STOP
+        END SELECT
+  END FUNCTION
+
+  CHARACTER(len=200) FUNCTION explicit_var_name(var_id)
+#include "VAR_IDs.h"
+   IMPLICIT NONE
+   integer, intent(in):: var_id
+
+        SELECT CASE(var_id)
+          CASE(VAR_ID_zeta ) 
+                             explicit_var_name='zeta' 
+          CASE(VAR_ID_salt ) 
+                             explicit_var_name='salt' 
+          CASE(VAR_ID_temp ) 
+                             explicit_var_name='temperature' 
+          CASE(VAR_ID_den  ) 
+                             explicit_var_name='density'  
+          CASE(VAR_ID_uvel ) 
+                             explicit_var_name='u_velocity' 
+          CASE(VAR_ID_vvel ) 
+                             explicit_var_name='v_velocity' 
+          CASE(VAR_ID_wvel ) 
+                             explicit_var_name='w_velocity' 
+          CASE(VAR_ID_kh   ) 
+                             explicit_var_name='AKs'   
+          CASE(VAR_ID_uwind) 
+                             explicit_var_name='u_wind'
+          CASE(VAR_ID_vwind) 
+                             explicit_var_name='v_wind'
+          CASE(VAR_ID_iwind) 
+                             explicit_var_name='wind_intensity'
+          CASE DEFAULT
+           WRITE(*,*)'Model presently does not support var id ',var_id
+           STOP
+        END SELECT
+  END FUNCTION
+
+  SUBROUTINE read_data_from_file(var_id,ni,nj,nk,nt,tarray,tf1,tff,  &
+                                 field,RUVnod,recordnum,incrstepf,interpolate)
+   USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid,hydrobytes,Zgrid,filenum
    USE RANDOM_MOD, ONLY: genrand_real1
    USE netcdf
    IMPLICIT NONE
    INCLUDE 'netcdf.inc'
-   character(*),intent(in):: varname
-   character(*),intent(in):: filename
+   integer,intent(in):: var_id
    integer, intent(in):: ni,nj,nk,nt,tarray,tf1,tff
    double precision, intent(inout):: field(ni,nj,nk,nt)
    integer,intent(in):: RUVnod,recordnum,incrstepf
    integer,intent(in):: interpolate
+   character(200) :: filenm
    integer, allocatable, dimension(:):: start_index,count_index
    integer:: nk_MITfile,ios,waiting
    integer:: interpol_uv,one_if_interpol_v,rand15,t,k,j,i,ktlev
@@ -7156,6 +7037,10 @@ CONTAINS
    REAL :: real_vec_read(vi)
    DOUBLE PRECISION :: dbl_vec_read(vi)
    INTEGER:: STATUS,NCID,VID
+   CHARACTER(len=200) :: varname
+  
+   call set_filename(var_id,iint+filenum,filenm)
+
    if(Zgrid .or. nk>1)then
      allocate(start_index(4))
      allocate(count_index(4))
@@ -7175,12 +7060,12 @@ CONTAINS
      count_index(4)=incrstepf
      if(interpolate>0)then
         interpol_uv=RUVnod
-        write(*,'(4a,3(a,i8))')'read in MITgcm file var ',trim(varname),'  at cell center, interpolating it on the cell borders from file',TRIM(filename), &
+        write(*,'(4a,3(a,i8))')'read in MITgcm file var ',trim(explicit_var_name(var_id)),'  at cell center, interpolating it on the cell borders from file',TRIM(filenm), &
           ' for time record num=',start_index(4),':',start_index(4)+count_index(4)-1,' nk=',nk
 
      else
         interpol_uv=0
-        write(*,'(4a,3(a,i8))')'read in MITgcm file var ',trim(varname),' from file',TRIM(filename), &
+        write(*,'(4a,3(a,i8))')'read in MITgcm file var ',trim(explicit_var_name(var_id)),' from file',TRIM(filenm), &
           ' for time record num=',start_index(4),':',start_index(4)+count_index(4)-1,' nk=',nk
      endif
    else
@@ -7194,7 +7079,8 @@ CONTAINS
        count_index(3)=nk
        count_index(4)=incrstepf
      endif
-     write(*,'(4a,3(a,i8))')'read in ROMs file var ',trim(varname),' from file',TRIM(filename),' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk
+     varname=trim(roms_netcdf_var_name(var_id))
+     write(*,'(4a,3(a,i8))')'read in ROMs file var ',trim(varname),' from file',TRIM(filenm),' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk
    endif
      if(interpol_uv==VNODE)then
        ALLOCATE(vec_prev(vi))
@@ -7211,16 +7097,16 @@ CONTAINS
             do waiting=1,10
                     rand15=int( 15.0*genrand_real1() )
                     call sleep(rand15)
-                    write(*,*)'waiting as opening of file ',trim(filename),  &
+                    write(*,*)'waiting as opening of file ',trim(filenm),  &
                               ' failed . New trial after sleep ',rand15
-                    open(unit=110,file=TRIM(filename),form='unformatted',    &
+                    open(unit=110,file=TRIM(filenm),form='unformatted',    &
                       status='old', action='read',access='direct',         &
                       recl=hydrobytes*vi, iostat=ios,convert='little_endian')
                     if ( ios == 0 ) exit
             enddo
         endif
        if ( ios /= 0 )  then
-           write(*,*) " ERROR OPENING ",TRIM(filename)
+           write(*,*) " ERROR OPENING ",TRIM(filenm)
            stop
        endif
 
@@ -7306,7 +7192,7 @@ CONTAINS
          write(*,*) NF90_STRERROR(STATUS)
          stop
        endif
-       if(varname=='sustr')then
+       if(var_id==VAR_ID_uwind)then
           do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
            do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
              DO t=tf1,tff
@@ -7318,7 +7204,7 @@ CONTAINS
              ENDDO
            enddo
           enddo
-       elseif(varname=='svstr')then
+       elseif(var_id==VAR_ID_vwind)then
           do i=t_ijruv(IMIN,RUVnod),t_ijruv(IMAX,RUVnod)
            do j=t_ijruv(JMIN,RUVnod),t_ijruv(JMAX,RUVnod)
              DO t=tf1,tff

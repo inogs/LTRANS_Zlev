@@ -58,3 +58,5 @@
 #define VAR_ID_iwindb 66
 #define VAR_ID_iwindc 67
 #define VAR_ID_iwindf 68
+
+#define VAR_ID_swan 500
