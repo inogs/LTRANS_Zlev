@@ -220,7 +220,17 @@ $end
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
   dirin='../fake_fields/'
-  prefix= 'U.','V.','W.','Eta.','RHOAnoma.','S.','T.','KPPdiffS.','EXFuwind.','EXFvwind.'   ! NetCDF Input Filename prefix                     
+  prefix_Zeta = 'Eta.'      
+  prefix_Salt = 'S.'      
+  prefix_Temp = 'T.'      
+  prefix_Uvel = 'U.'      
+  prefix_Vvel = 'V.'      
+  prefix_Wvel = 'W.'      
+  prefix_Aks  = 'KPPdiffS.'      
+  prefix_Dens = 'RHOAnoma.'      
+  prefix_Uwind= 'EXFuwind.'      
+  prefix_Vwind= 'EXFvwind.'      
+  prefix_Iwind= ''      
   numdigits = 10                  ! Number of digits in number portion of file name (with leading zeros)
   suffix='.data'                       ! NetCDF Input Filename suffix
   filenum = 1224                      ! Number in first NetCDF input filename
@@ -251,7 +261,7 @@ $output
   !NOTE: Full path must already exist.  Model can create files, but not directories.
   outpath = './'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
-  NCOutFile = 'fake_Zlevels'       ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'LTRANS_Zlevels_CurWin'       ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files

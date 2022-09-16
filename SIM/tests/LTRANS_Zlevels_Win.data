@@ -28,11 +28,11 @@ $end
 $hydroparam
   us         = 10       ! Number of Rho grid s-levels in hydro model
   ws         = 11       ! Number of W grid s-levels in hydro model
-  tdim       = 6              ! Number of time steps per hydro predictions file
+  tdim       = 1              ! Number of time steps per hydro predictions file
   recordnum    = 1               ! Record number of first time step to be read (when no previous time steps in the hydro file: recordnum=1)
   hc         = 0.2               ! Min Depth - used in ROMS S-level transformations
   z0         = 0.0005            ! ROMS bottom roughness parameter (Zob). Bottom layer is considered  to be between z0 and BottomLayerThickness
-  Vtransform = 3                 ! 0: z-coordinate ; 1: WikiRoms Eq. 1 ; 2:WikiRoms Eq. 2 ; 3: Song/Haidvogel 1994 Eq. 0-sigma coordinate system
+  Vtransform = 0                 ! 0: z-coordinate ; 1: WikiRoms Eq. 1 ; 2:WikiRoms Eq. 2 ; 3: Song/Haidvogel 1994 Eq. 0-sigma coordinate system
                                  ! 4: z*=H(z-Eta)/(H+Eta) Where H is bottom depth
                                  ! and Eta is the sea surface elevation
   VInterpUVinSurfWater = .TRUE.  ! If False keep U,V velocities of last level in surface water instead of running the vertical interpolation
@@ -45,11 +45,11 @@ $hydroparam
   constSalt  = 0.0               ! Constant value for Salt if readSalt is .FALSE.
   readTemp   = .FALSE.          ! If .TRUE. read in temperature          (temp) from NetCDF file, else use constTemp
   constTemp  = 0.0               ! Constant value for Temp if readTemp is .FALSE.
-  readU      = .TRUE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
+  readU      = .FALSE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
   constU     = 0.0               ! Constant value for U if readU is .FALSE.
-  readV      = .TRUE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
+  readV      = .FALSE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
   constV     = 0.0               ! Constant value for V if readV is .FALSE.
-  readW      = .TRUE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
+  readW      = .FALSE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
   constW     = 0.0               ! Constant value for W if readW is .FALSE.
   readAks    = .FALSE.           ! If .TRUE. read in salinity vertical diffusion coefficient (Aks ) from NetCDF file, els
                                  ! use constAks
@@ -64,7 +64,7 @@ $hydroparam
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
 
-  Wind               = .TRUE.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .True.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -207,11 +207,11 @@ $end
 !*** INPUT FILE NAME AND LOCATION PARAMETERS ***; 
 ! ** NetCDF Hydro Model Grid file **
 $hydromodelgrid
-  NCgridfile='../input/GridforLTRANS-Slevels.nc'  ! Name of the grid file created by the pre-processing tool
-  Zgrid = .FALSE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
-  Zgrid_depthinterp = .FALSE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
+  NCgridfile='../input/GridforLTRANS-Zlevels.nc'  ! Name of the grid file created by the pre-processing tool
+  Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
+  Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= '../input/Adjacentelements-Slevels.data' ! Binary file of adjacent element matrix
+  ADJele_fname= '../input/Adjacentelements-Zlevels.data' ! Binary file of adjacent element matrix
   ADJele_file= .False.                                        ! set to True if file already exists
 $end
 
@@ -220,21 +220,21 @@ $end
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
   dirin='../fake_fields/'
-  prefix_Zeta = 'fake_hydro_field_'      
-  prefix_Salt = 'fake_hydro_field_'      
-  prefix_Temp = 'fake_hydro_field_'      
-  prefix_Uvel = 'fake_hydro_field_'      
-  prefix_Vvel = 'fake_hydro_field_'      
-  prefix_Wvel = 'fake_hydro_field_'      
-  prefix_Aks  = 'fake_hydro_field_'      
-  prefix_Dens = 'fake_hydro_field_'      
-  prefix_Uwind= 'fake_hydro_field_'      
-  prefix_Vwind= 'fake_hydro_field_'      
+  prefix_Zeta = 'Eta.'      
+  prefix_Salt = 'S.'      
+  prefix_Temp = 'T.'      
+  prefix_Uvel = 'U.'      
+  prefix_Vvel = 'V.'      
+  prefix_Wvel = 'W.'      
+  prefix_Aks  = 'KPPdiffS.'      
+  prefix_Dens = 'RHOAnoma.'      
+  prefix_Uwind= 'EXFuwind.'      
+  prefix_Vwind= 'EXFvwind.'      
   prefix_Iwind= ''      
-  numdigits = 4                      ! Number of digits in number portion of file name (with leading zeros)
-  suffix='.nc'                       ! NetCDF Input Filename suffix
+  numdigits = 10                  ! Number of digits in number portion of file name (with leading zeros)
+  suffix='.data'                       ! NetCDF Input Filename suffix
   filenum = 1224                      ! Number in first NetCDF input filename
-  filestep =  216                   ! Number between NetCDF input filename
+  filestep =  36                   ! Number between NetCDF input filename
   hydrobytes = 8.0                ! Number of bytes of float variables: single =4 bytes, double = 8 bytes
   startfile = .FALSE.                     ! Is it the first file, i.e. does the file have an additional time step?
 $end
@@ -261,7 +261,7 @@ $output
   !NOTE: Full path must already exist.  Model can create files, but not directories.
   outpath = './'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
-  NCOutFile = 'LTRANS_Slevels_CurWin'       ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'LTRANS_Zlevels_Win'       ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files

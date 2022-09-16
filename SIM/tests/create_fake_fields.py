@@ -33,7 +33,7 @@ for t in range(0,nt):
  for k in range(0,nk):
   for j in range(0,nij):
    for i in range(0,nij):
-    U[t,k,j,i]=(k+1.0)/(nk*5)*( (1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/128.*math.pi)+((t+1.)/2.)*0.5*math.sin(float(i*j)/float(nij)*math.pi))/5. )
+    U[t,k,j,i]=(k+1.0)/(nk*2)*( (1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/128.*math.pi)+((t+1.)/2.)*0.5*math.sin(float(i*j)/float(nij)*math.pi))/5. )
  if(k==4):
    ax.cla()
    cax.cla()
@@ -46,7 +46,7 @@ for t in range(0,nt):
  for k in range(0,nk):
   for j in range(0,nij):
    for i in range(0,nij):
-    V[t,k,j,i]=(k+1.0)/(nk*5)*( (1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j*i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(i)/128.*math.pi))/5. )
+    V[t,k,j,i]=(k+1.0)/(nk*2)*( (1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j*i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(i)/128.*math.pi))/5. )
  if(k==4):
    ax.cla()
    cax.cla()
@@ -59,7 +59,7 @@ for t in range(0,nt):
  for k in range(0,nk):
   for j in range(0,nij):
    for i in range(0,nij):
-    W[t,k,j,i]=(k+1.0)/(nk*5)*( (1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j*i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(-i*j)/128.*math.pi))/5. )/1000.0
+    W[t,k,j,i]=(k+1.0)/(nk)*( (1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j*i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(-i*j)/128.*math.pi))/5. )/1000.0
  if(k==4):
    ax.cla()
    cax.cla()
@@ -82,7 +82,7 @@ Uwind=np.zeros((nt,nij,nij),dtype=float)
 for t in range(0,nt):
  for j in range(0,nij):
   for i in range(0,nij):
-   Uwind[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/float(nij)*math.pi)+((t+1.)/2.)*0.5*math.sin(float(i)/float(nij)*math.pi))/50.
+   Uwind[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/float(nij)*math.pi)+((t+1.)/2.)*0.5*math.sin(float(i)/float(nij)*math.pi))/10.
  ax.cla()
  cax.cla()
  im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Uwind[t])
@@ -93,13 +93,15 @@ Vwind=np.zeros((nt,nij,nij),dtype=float)
 for t in range(0,nt):
  for j in range(0,nij):
   for i in range(0,nij):
-   Vwind[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j+i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(i-j)/float(nij)*math.pi))/50.
+   Vwind[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j+i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(i-j)/float(nij)*math.pi))/10.
  ax.cla()
  cax.cla()
  im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Vwind[t])
  fig.colorbar(im, cax=cax, orientation='vertical')
  fig.savefig(outdir+'/'+'EXFvwind.000000'+str(int((Ext0+t*dt)/100))+'.png')
-
+ 
+sustr=np.where(Uwind<0,-(abs(Uwind)/20.659)**(1.0/0.4278),(Uwind/20.659)**(1.0/0.4278))
+svstr=np.where(Vwind<0,-(abs(Vwind)/20.659)**(1.0/0.4278),(Vwind/20.659)**(1.0/0.4278))
 ##################################################################################
 for t in range(0,nt):
  output_file = open(outdir+'/'+'U.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
@@ -192,20 +194,34 @@ for tfile in range(0,nt,6):
   setattr(Zeta,'axis'               , 'Z')
   setattr(Zeta,'valid_min'          , np.min(Eta))
   setattr(Zeta,'valid_max'          , np.max(Eta))
-  Uwnd=ncfile.createVariable("sustr", 'f', ('ocean_time', 'eta_u', 'xi_u',))
+  Uwnd=ncfile.createVariable("Uwind", 'f', ('ocean_time', 'eta_u', 'xi_u',))
   setattr(Uwnd,'units'              , 'm/s')
-  setattr(Uwnd,'long_name'          , 'Uwind')
+  setattr(Uwnd,'long_name'          , 'surface U-wind component')
   setattr(Uwnd,'standard_name'      , 'Uwind')
   setattr(Uwnd,'axis'               , 'X')
   setattr(Uwnd,'valid_min'          , np.min(Uwind))
   setattr(Uwnd,'valid_max'          , np.max(Uwind))
-  Vwnd=ncfile.createVariable("svstr", 'f', ('ocean_time', 'eta_v', 'xi_v',))
+  Vwnd=ncfile.createVariable("Vwind", 'f', ('ocean_time', 'eta_v', 'xi_v',))
   setattr(Vwnd,'units'              , 'm/s')
-  setattr(Vwnd,'long_name'          , 'Vwind')
+  setattr(Vwnd,'long_name'          , 'surface V-wind component')
   setattr(Vwnd,'standard_name'      , 'Vwind')
   setattr(Vwnd,'axis'               , 'Y')
   setattr(Vwnd,'valid_min'          , np.min(Vwind))
   setattr(Vwnd,'valid_max'          , np.max(Vwind))
+  SUstr=ncfile.createVariable("sustr", 'f', ('ocean_time', 'eta_u', 'xi_u',))
+  setattr(SUstr,'units'              , 'N/m2')
+  setattr(SUstr,'long_name'          , 'surface U-momentum wind-stress')
+  setattr(SUstr,'standard_name'      , 'sustr')
+  setattr(SUstr,'axis'               , 'X')
+  setattr(SUstr,'valid_min'          , np.min(sustr))
+  setattr(SUstr,'valid_max'          , np.max(sustr))
+  SVstr=ncfile.createVariable("svstr", 'f', ('ocean_time', 'eta_v', 'xi_v',))
+  setattr(SVstr,'units'              , 'N/m2')
+  setattr(SVstr,'long_name'          , 'surface V-momentum wind-stress')
+  setattr(SVstr,'standard_name'      , 'svstr')
+  setattr(SVstr,'axis'               , 'Y')
+  setattr(SVstr,'valid_min'          , np.min(svstr))
+  setattr(SVstr,'valid_max'          , np.max(svstr))
   s_rho=ncfile.createVariable("s_rho", 'f', ('s_rho',))
   setattr(s_rho,'long_name'          , 'S-coordinate at RHO-points')
   setattr(s_rho,'standard_name'      , 's_rho')
@@ -235,12 +251,21 @@ for tfile in range(0,nt,6):
   Wext[:,1:,:,:]=W[:,0:,:,:]
   for i,t in enumerate(range(t0,tF)):
     time[i]=Ext0+t*dt
-    Uvel[i,:,:,:]=U[t,:,:,:nij-1]
-    Vvel[i,:,:,:]=V[t,:,:nij-1,:]
-    Wvel[i,:,:,:]=Wext[t,:,:,:]
+    # add ::-1 to invert k-order of the 3d fields as MITgcm has an inverted k axis respect to ROMs
+    Uvel[i,:,:,:]=U[t,::-1,:,1:]
+    Vvel[i,:,:,:]=V[t,::-1,1:,:]
+    Wvel[i,:,:,:]=Wext[t,::-1,:,:]
     Zeta[i,:,:]=Eta[t,:,:]
-    Uwnd[i,:,:]=Uwind[t,:,:nij-1]
-    Vwnd[i,:,:]=Vwind[t,:nij-1,:]
+    Uwnd[i,:,:]=Uwind[t,:,1:]
+    Vwnd[i,:,:]=Vwind[t,1:,:]
+    SUstr[i,:,:]=sustr[t,:,1:]
+    SVstr[i,:,:]=svstr[t,1:,:]
 
   ncfile.close()
+
+
+Uprint=U[0,:,:,1:]
+for k in (0,nk-1):
+  for j in range(1,nij-1):
+    print(j+1,k+1,' Uvel= ',Uprint[k,j-1,j-1:j+2],Uprint[k,j,j-1:j+2],Uprint[k,j+1,j-1:j+2])
 
