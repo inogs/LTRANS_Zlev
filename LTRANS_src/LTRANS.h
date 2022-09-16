@@ -300,8 +300,19 @@
 !  Filename = dirin + prefix + filenum + suffix
   CHARACTER(LEN=200) :: dirin       !--- CL-OGS : for MITgcm files : ! NetCDF Input Directory
 !--- CL-OGS : for MITgcm prefix contains the file names of the 10 NetCDF field variables without directory neither suffix
-! CHARACTER(LEN=200) :: prefix      ! NetCDF Input Filename prefix
-  CHARACTER(LEN=200), DIMENSION (11) :: prefix   ! NetCDF Input Filename prefix !--- CL-OGS : extended to dim 10
+  CHARACTER(LEN=200) :: prefix_Zeta       ! NetCDF Input Filename prefix Zeta (Sea level height) 
+  CHARACTER(LEN=200) :: prefix_Salt       ! NetCDF Input Filename prefix Salt  
+  CHARACTER(LEN=200) :: prefix_Temp       ! NetCDF Input Filename prefix Temp  
+  CHARACTER(LEN=200) :: prefix_Uvel       ! NetCDF Input Filename prefix Uvel (Current velocity in X direction)
+  CHARACTER(LEN=200) :: prefix_Vvel       ! NetCDF Input Filename prefix Vvel (Current velocity in X direction) 
+  CHARACTER(LEN=200) :: prefix_Wvel       ! NetCDF Input Filename prefix Wvel (Current velocity in X direction)
+  CHARACTER(LEN=200) :: prefix_Aks        ! NetCDF Input Filename prefix Aks  (salinity vertical diffusion coefficient) 
+  CHARACTER(LEN=200) :: prefix_Dens       ! NetCDF Input Filename prefix Dens (Sea water density)
+  CHARACTER(LEN=200) :: prefix_Uwind      ! NetCDF Input Filename prefix Uwind (Wind in X direction)
+  CHARACTER(LEN=200) :: prefix_Vwind      ! NetCDF Input Filename prefix Vwind (Wind in y direction)
+  CHARACTER(LEN=200) :: prefix_Iwind      ! NetCDF Input Filename prefix Iwind (Wind intensity)
+  CHARACTER(LEN=200) :: prefix_Ustokes    ! NetCDF Input Filename prefix Ustokes (Stokes drift in the x-direction)
+  CHARACTER(LEN=200) :: prefix_Vstokes    ! NetCDF Input Filename prefix Vstokes (Stokes drift in the y-direction)
   CHARACTER(LEN=200) :: suffix      ! NetCDF Input Filename suffix
   INTEGER :: filenum                ! Number in First NetCDF Input Filename
   INTEGER :: filestep               !--- CL-OGS : Number between successive NetCDF input filename needed for MITgcm files 
@@ -315,10 +326,11 @@
   !      if .nc file in separate folder in Linux, then include path in prefix. For example:
   !      CHARACTER(LEN=26), PARAMETER :: prefix='/share/lzhong/1995/y95hdr_'   
 
-  namelist/hydromodeloutput/prefix,suffix,filenum,numdigits,startfile, &
-                           filestep,dirin,hydrobytes  !--- CL-OGS additional parameters
-
-
+  namelist/hydromodeloutput/prefix_Zeta,prefix_Salt,prefix_Temp,prefix_Uvel,prefix_Vvel, &
+                            prefix_Wvel,prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind, &
+                            prefix_Iwind,prefix_Ustokes,prefix_Vstokes,&
+                            suffix,filenum,numdigits,startfile, &
+                            filestep,dirin,hydrobytes  !--- CL-OGS additional parameters
 
 
 !  ** Particle Location Input File **

@@ -1,4 +1,4 @@
-
+i
 ! ******************************* LTRANS Input Data File  *******************************
 
 !----  This is the file that contains input values for LTRANS with parameters grouped ---
@@ -7,28 +7,28 @@
 
 !*** NUMBER OF PARTICLES ***
 $numparticles
-  numpar =  2601           ! Number of particles (total number for whole simulation)
-                           ! numpar should equal the number of rows in the particle 
-                           ! locations input file
+  numpar =  852              ! Number of particles (total number for whole simulation)
+                              ! numpar should equal the number of rows in the particle 
+                              ! locations input file
 $end
 
 !*** TIME PARAMETERS ***
 $timeparam
-  days   =  1.0          ! Number of days to run the model (float)
-  iprint =  3600         ! Print interval for LTRANS output (s); 3600 = every hour
-  iprinto=     0         ! Initial delay in printing after Ext0, in seconds (leave to 0 to start printing at Ext0) 
-  dt =      3600         ! External time step (duration between hydro model predictions) (s) 
-  idt    =  120          ! Internal (particle tracking) time step (s)
-  Ext0   =  0            ! Initial time t0 (in seconds)
+  days   =  0.95          ! Number of days to run the model (float)
+  iprint =  3600             ! Print interval for LTRANS output (s); 3600 = every hour
+  iprinto=     0             ! Initial delay in printing after Ext0, in seconds (leave to 0 to start printing at Ext0) 
+  dt =      3600       ! External time step (duration between hydro model predictions) (s) 
+  idt    =  120              ! Internal (particle tracking) time step (s)
+  Ext0   =  122400                ! Initial time t0 (in seconds)
 $end
 
 
 
 !*** HYDRODYNAMIC MODULE PARAMETERS ***
 $hydroparam
-  us         = 60                ! Number of Rho grid s-levels in hydro model
-  ws         = 61                ! Number of W grid s-levels in hydro model
-  tdim       = 1                 ! Number of time steps per hydro predictions file
+  us         = 10       ! Number of Rho grid s-levels in hydro model
+  ws         = 11       ! Number of W grid s-levels in hydro model
+  tdim       = 1              ! Number of time steps per hydro predictions file
   recordnum    = 1               ! Record number of first time step to be read (when no previous time steps in the hydro file: recordnum=1)
   hc         = 0.2               ! Min Depth - used in ROMS S-level transformations
   z0         = 0.0005            ! ROMS bottom roughness parameter (Zob). Bottom layer is considered  to be between z0 and BottomLayerThickness
@@ -39,17 +39,17 @@ $hydroparam
   BottomLayerThickness = 2.0     ! If > 0.0 this value will be used instead of the half height of the bottom grid cell
   PercentVelinBottomLayer = 0.0  ! If > 0.0 this value will be used instead of the logarithmic law (must be in range ]0.0,1.0[)
   PercentVel_under_z0 =0.05      ! This value will be used to perform advection between botttom and z0
-  readZeta   = .FALSE.           ! If .TRUE. read in sea-surface height   (zeta) from NetCDF file, else use constZeta
+  readZeta   = .TRUE.          ! If .TRUE. read in sea-surface height   (zeta) from NetCDF file, else use constZeta
   constZeta  = 0.0               ! Constant value for Zeta if readZeta is .FALSE.
-  readSalt   = .FALSE.           ! If .TRUE. read in salinity             (salt) from NetCDF file, else use constSalt
+  readSalt   = .FALSE.          ! If .TRUE. read in salinity             (salt) from NetCDF file, else use constSalt
   constSalt  = 0.0               ! Constant value for Salt if readSalt is .FALSE.
-  readTemp   = .FALSE.           ! If .TRUE. read in temperature          (temp) from NetCDF file, else use constTemp
+  readTemp   = .FALSE.          ! If .TRUE. read in temperature          (temp) from NetCDF file, else use constTemp
   constTemp  = 0.0               ! Constant value for Temp if readTemp is .FALSE.
-  readU      = .TRUE.            ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
+  readU      = .TRUE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
   constU     = 0.0               ! Constant value for U if readU is .FALSE.
-  readV      = .TRUE.            ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
+  readV      = .TRUE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
   constV     = 0.0               ! Constant value for V if readV is .FALSE.
-  readW      = .TRUE.            ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
+  readW      = .TRUE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
   constW     = 0.0               ! Constant value for W if readW is .FALSE.
   readAks    = .FALSE.           ! If .TRUE. read in salinity vertical diffusion coefficient (Aks ) from NetCDF file, els
                                  ! use constAks
@@ -57,15 +57,15 @@ $hydroparam
   readDens   = .FALSE.
   constDens  = 1000.0 
 
-  readUwind  = .FALSE.          ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
+  readUwind  = .TRUE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
   constUwind = 0.00             ! Constant value for Uwind if readUwind is .FALSE.
-  readVwind  = .FALSE.          ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
+  readVwind  = .TRUE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
   readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
-  Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .True.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -75,7 +75,7 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
-  Stokes             = .True.   ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
+  Stokes             = .True.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -129,7 +129,7 @@ $behavparam
                              ! in meters above bottom (this should be a positive value
                              ! Note: this formulation may need some work
 
-  GrainSize_fname = "/home/claurent/LTRANS_vZlev_PACKAGE/input/GRAINSIZEFILENAME" ! for Behavior 8
+  GrainSize_fname = "GRAINSIZEFILENAME" ! for Behavior 8
   read_GrainSize  = .False.           ! for Behavior 8
   DVMtime = 0                         ! maximum time spent doing DVM (if DVMtime>0, used for behavior 8 and 9 and 11)
   SettlementSize = 14              
@@ -165,7 +165,6 @@ $dvmparam
   swdown_rec    =  36230     ! first record to be read 
   swdown_thresh = 50.        ! swdown threshold to set the day or night upper layer as a target layer
   swdown_t0 = 1800.          ! time in seconds (same referential as Ext0) of the record corresponding to swdown_rec
-
 $end
 
 
@@ -186,7 +185,7 @@ $settleparam
  pedges     = 5              ! Number of habitat polygon edge points (# of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points (number of rows in holes file)
 
- StrandingDist= -999            ! Stranding Distance in meters from land (Disabled if StrandingDist<0)
+ StrandingDist= -999           ! Stranding Distance in meters from land (Disabled if StrandingDist<=0)
  strandingmaxdepth =300.00      ! maximal depth at which stranding can occur                  
  strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which stranding can occur                  
  storedincolor=1                ! if ==1: If particle is in a polygon, store the poly-number in color array
@@ -202,8 +201,8 @@ $convparam
   PI = 3.14159265358979         ! Pi
   Earth_Radius = 6378000        ! Equatorial radius of Earth (m)
   SphericalProjection = .TRUE.  ! Spherical Projection from ROMS if TRUE. If FALSE, mercator projection is used. 
-  latmin = 40.94140625               ! Minimum longitude value, only used if SphericalProjection is .TRUE.
-  lonmin = 16.94140625               ! Minimum  latitude value, only used if SphericalProjection is .TRUE.
+  latmin = 17.0            ! Minimum longitude value, only used if SphericalProjection is .TRUE.
+  lonmin = 41.0            ! Minimum  latitude value, only used if SphericalProjection is .TRUE.
 $end
 
 
@@ -211,19 +210,19 @@ $end
 !*** INPUT FILE NAME AND LOCATION PARAMETERS ***; 
 ! ** NetCDF Hydro Model Grid file **
 $hydromodelgrid
-  NCgridfile='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/GridforLTRANS-boxes_NiNj64-c1.nc'  ! Name of the grid file created by the pre-processing tool
+  NCgridfile='../input/GridforLTRANS-Zlevels.nc'  ! Name of the grid file created by the pre-processing tool
   Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
-  ADJele_file= .FALSE.                                        ! set to True if file already exists
+  ADJele_fname= '../input/Adjacentelements-Zlevels.data' ! Binary file of adjacent element matrix
+  ADJele_file= .False.                                        ! set to True if file already exists
 $end
 
 
 ! ** Hydro Model Predictions NetCDF Input (History) File **
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
-  dirin='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/MITgcm_outputs/'
+  dirin='../fake_fields/'
   prefix_Zeta = 'Eta.'      
   prefix_Salt = 'S.'      
   prefix_Temp = 'T.'      
@@ -234,30 +233,30 @@ $hydromodeloutput
   prefix_Dens = 'RHOAnoma.'      
   prefix_Uwind= 'EXFuwind.'      
   prefix_Vwind= 'EXFvwind.'      
-  prefix_Iwind= 'EXFiwind.'      
-  prefix_Ustokes= 'stokes_drift_x.'      
-  prefix_Vstokes= 'Stokes_drift_y.'      
-  numdigits = 10                ! Number of digits in number portion of file name (with leading zeros)
-  suffix='.data'                ! NetCDF Input Filename suffix
-  filenum = 1260                ! Number in first NetCDF input filename
-  filestep =  36                ! Number between NetCDF input filename
-  hydrobytes = 8                ! Number of bytes of float variables: single =4 bytes, double = 8 bytes
-  startfile = .TRUE.            ! Is it the first file, i.e. does the file have an additional time step?
+  prefix_Iwind= ''      
+  prefix_Ustokes= ''      
+  prefix_Vstokes= ''      
+  numdigits = 10                  ! Number of digits in number portion of file name (with leading zeros)
+  suffix='.data'                       ! NetCDF Input Filename suffix
+  filenum = 1224                      ! Number in first NetCDF input filename
+  filestep =  36                   ! Number between NetCDF input filename
+  hydrobytes = 8.0                ! Number of bytes of float variables: single =4 bytes, double = 8 bytes
+  startfile = .FALSE.                     ! Is it the first file, i.e. does the file have an additional time step?
 $end
 
 
 ! ** Particle Location Input File **
   !Note: the path to the file is necessary if the file is not in the same folder as the code
 $parloc
-  parfile  = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Iniparloc_boxes_NiNj256_every_5-i_5-j_rhowaternode.csv'    !Particle locations
+  parfile  = '../input/Iniparloc_every_2_rhowaternode.csv'    !Particle locations
 $end
 
 
 ! ** Habitat Polygon Location Input Files **
 !Note: the path to the file is necessary if the file is not in the same folder as the code
 $habpolyloc
-  habitatfile = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Polygon_boxes_NiNj256_global.csv'    !Habitat polygons
-  holefile    = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/End_holes.csv'  !Holes in habitat polygons
+  habitatfile = '../../input//Polygon_boxes_NiNj64_global.csv'    !Habitat polygons
+  holefile    = '../../input//End_holes.csv'  !Holes in habitat polygons
 $end
 
 
@@ -265,9 +264,9 @@ $end
 $output
 
   !NOTE: Full path must already exist.  Model can create files, but not directories.
-  outpath = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/output_boxes_NiNj256/'  ! Location to write output .csv and/or .nc files  
+  outpath = './'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
-  NCOutFile = 'boxes_NiNj256'    ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'LTRANS_Zlevels_CurWin'       ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files
@@ -279,7 +278,7 @@ $output
   SVN_Version  = 'https://cmgsoft.repositoryhosting.com/svn/cmgsoft_ltrans/trunk'
   RunName      = 'LTRANS vZlev with Partial Bottom Cells'
   ExeDir       = '.'
-  OutDir       = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/output_boxes_NiNj64/metadata'
+  OutDir       = 'metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
   StartedOn    = '08 august 2022'

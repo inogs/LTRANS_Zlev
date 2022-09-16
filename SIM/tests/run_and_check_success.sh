@@ -11,8 +11,9 @@ _LTRANS_exe=$1
 _LTRANS_input=$2
 _ref_output_base_name=$3
 _gen_output_base_name=$4
-_test_dir=$5
-_threshold=$6
+_Adj_file_name=$5
+_test_dir=$6
+_threshold=$7
 
 #if [ ! -f mesh.${_num_mpi_procs}.bas ]; then
 #  echo "ERROR : bas file mesh.${_num_mpi_procs}.bas does not exist"
@@ -21,16 +22,17 @@ _threshold=$6
 
 #ln -s ${_test_dir}mesh.${_num_mpi_procs}.bas mesh.${_num_mpi_procs}.bas > /dev/null 2>&1
 rm $_LTRANS_input > /dev/null 2>&1
+rm output/$_gen_output_base_name > /dev/null 2>&1
 
 echo "cp ${_test_dir}/$_LTRANS_input "
 cp ${_test_dir}/$_LTRANS_input $_LTRANS_input  
 
-if [ ! -L ../input ]; then
-   echo "link ${_test_dir}/../input "
-   ln -s ${_test_dir}/../input ../input  > /dev/null 2>&1
-fi
+#if [ ! -L ../input ]; then
+#   echo "link ${_test_dir}/../input "
+#   ln -s ${_test_dir}/../input ../input  > /dev/null 2>&1
+#fi
 
-if [ -f ${_test_dir}/Adjacentelements-boxes_NiNj64-c1.data ]; then
+if [ -f input/$_Adj_file_name ]; then
    sed -i "s/ADJele_file= .False./ADJele_file= .True./" $_LTRANS_input
 fi
 

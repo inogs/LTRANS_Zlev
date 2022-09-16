@@ -68,3 +68,5 @@
 #define VAR_ID_vstokdriftb 76
 #define VAR_ID_vstokdriftc 77
 #define VAR_ID_vstokdriftf 78
+
+#define VAR_ID_swan 500

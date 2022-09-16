@@ -754,7 +754,19 @@ $hydromodeloutput
   dirin='[...]/LTRANS_Zlev/MITgcm_outputs/'
   !Filename = prefix + filenum + suffix
   !First indicate the NetCDF Input Filename prefix (keep same order and leave names of the missing file):               
-  prefix= 'U_hr_ave','V_hr_ave','W_hr_ave','Eta.','RHOAnoma.','S.','T.', 'KPPdiffS.','EXFuwind.','EXFvwind.'   
+  prefix_Zeta = 'Eta.'      
+  prefix_Salt = 'S.'      
+  prefix_Temp = 'T.'      
+  prefix_Uvel = 'U.'      
+  prefix_Vvel = 'V.'      
+  prefix_Wvel = 'W.'      
+  prefix_Aks  = 'KPPdiffS.'      
+  prefix_Dens = 'RHOAnoma.'      
+  prefix_Uwind= 'EXFuwind.'      
+  prefix_Vwind= 'EXFvwind.'      
+  prefix_Iwind= 'EXFiwind.'      
+  prefix_Ustokes= 'stokes_drift_x.'      
+  prefix_Vstokes= 'Stokes_drift_y.'      
   numdigits = 0                 ! Number of digits in number portion of file name 
   	                            ! (with leading zeros)
   suffix='.dat'                 ! NetCDF Input Filename suffix
@@ -770,6 +782,9 @@ $end
 `dirin`, `filestep` and `hydrobytes` parameters are specific to the Zlev version, they handle the native MITgcm hydrodynamic field files.
 
 Note that `filestep` should be set to a negative value to enable backtracking.
+
+For Z-level simulations reading MITgcm binary files the prefix of the different variables contain different file names.
+Instead when ROMs netcdf are read all variables are stored in the same file so that every prefix can contain the same file name.
 
 ##### 6.11 Particle location input file
 

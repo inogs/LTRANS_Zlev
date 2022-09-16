@@ -797,14 +797,14 @@ contains
         write(100,*)'column 02: color   -integer value to indicate the ',      &
                     'status of the particle'
         write(100,*)'column 03: lon     -Longitude of particle at end of ',    &
-                    'time step (decimal �)'
+                    'time step (decimal 째)'
         write(100,*)'column 04: lat     -Latitude  of particle at end of ',    &
-                    'time step (decimal �)'
+                    'time step (decimal 째)'
         IF(SaltTempOn)then
           write(100,*)'column 05: salt    -Salinity at particle location at ', &
                     'end of time step'
           write(100,*)'column 06: temp    -Temperature at particle location ', &
-                    'at end of time step (캜)'
+                    'at end of time step (째C)'
         ENDIF
       CLOSE(100)
 
@@ -813,9 +813,9 @@ contains
           write(100,*)'column 01: numpar  -Particle identification number ',   &
                       '(dimensionless)'
           write(100,*)'column 02: lon     -Longitude of particle at end of ',  &
-                      'time step (decimal �)'
+                      'time step (decimal 째)'
           write(100,*)'column 03: lat     -Latitude  of particle at end of ',  &
-                      'time step (decimal �)'
+                      'time step (decimal 째)'
           write(100,*)'column 04: depth   -Depth of particle at end of time ', &
                       'step (meters)'
           write(100,*)'column 05: age     -Age of particle (in days since ',   &
@@ -830,9 +830,9 @@ contains
           write(101,*)'column 01: numpar    -Particle identification number ', &
                       '(dimensionless)'
           write(101,*)'column 02: lon       -Longitude of particle at end ',   &
-                      'of time step (decimal �)'
+                      'of time step (decimal 째)'
           write(101,*)'column 03: lat       -Latitude  of particle at end ',   &
-                      'of time step (decimal �)'
+                      'of time step (decimal 째)'
           write(101,*)'column 04: depth     -Depth of particle at end of ',    &
                       'time step (meters)'
           write(101,*)'column 05: age       -Age of particle (in days since ', &
@@ -1450,9 +1450,11 @@ contains
       Zpar = par(n,pZ)
       if(Zgrid)then 
         klev=getKRlevel(par(n,pZ))
+        nklev=getKRlevel(Zpar)
         if(P_oldLev(n)>=0) P_oldLev(n)=klev
       else
         klev=1
+        nklev=1
       endif     
       !Determine which Rho, U, & V elements the particle is in
       ele_err=-666
@@ -1465,10 +1467,10 @@ contains
                   'ERROR it',it,'on 1st setEle call, error number is ',ele_err, &
                  'local old, present and next depth is ',&
                     par(n,pZ),P_depth,nP_depth, &
-                 'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
-                            Pwc_wzc(getKRlevel(par(n,pZ))),  &
-                  'at read Z=',Zpar  ,' ZW(',getKRlevel(Zpar),')=', &
-                            Pwc_wzc(getKRlevel(Zpar)) 
+                 'at old Z=',par(n,pZ),' ZW(',klev,')=', &
+                            Pwc_wzc(klev),  &
+                  'at read Z=',Zpar  ,' ZW(',nklev,')=', &
+                            Pwc_wzc(nklev) 
         call handleERROR('setEle    ',1,ele_err,n,     &
                      par(n,pX),par(n,pY),par(n,pZ), &
                      par(n,pX),par(n,pY),par(n,pZ),docycle  )
@@ -2220,7 +2222,11 @@ contains
 
       IF(Zgrid)then
        CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,2,ele_err)
-       nklev=getKRlevel(newZpos)
+       if(Zgrid)then 
+        nklev=getKRlevel(newZpos)
+       else
+        nklev=1
+       endif     
        if(ele_err.ne.0)then
         IF(OilOn)then
           do posfactor=8,0,-1
@@ -2248,20 +2254,17 @@ contains
          !endif
          !If(ele_err .ne.  0)then 
          ! write(*,*) "pb setEle UNSOLVED !!! "
-              write(*,'(a,i8,a,i2,a,3f8.2,2(a,f7.2,a,i3,a,f7.2),(a,i5),10(a,f8.2),a)') &
+              write(*,'(a,i8,a,i2,a,2f8.2,2(a,f7.2),(a,i5),8(a,f8.2),a)') &
                   'ERROR it ',it,' on 2nd setEle call, error number is ',ele_err, &
-                 '. Local old, present and next depth are ',&
-                    par(n,pZ),P_depth,nP_depth, &
-                 ' at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
-                            Pwc_wzc(getKRlevel(par(n,pZ))),  &
-                  ' at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
-                            Pwc_wzc(getKRlevel(newZpos)) ,  &
+                 '. Local old, present depth are ',&
+                    par(n,pZ),P_depth, &
+                 ' at old Z=',par(n,pZ),&
+                  ' at new Z=',newZpos  ,&
                   '; PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
                   'meters : newZ=',newZpos,              & 
                   ' =min(depth[',P_depth, ' ], oldZ[',par(n,pZ),            &
                    ' ] + Adv[', AdvectZ,' ] + Tu[',TurbV,' ] + Bhv[',ZBehav,       &
-                   ' ]) + reflectsup[',reflectsup,' ] + reflectinf[',reflectinf,&
-                   ' ] + pushedup[',pushedup,']'
+                   ' ]) + reflectsup[',reflectsup,']'
            call handleERROR('setEle    ',2,ele_err,n,     &
                         par(n,pX),par(n,pY),par(n,pZ), &
                         newXpos,newYpos,par(n,pZ),docycle  )
@@ -2278,7 +2281,7 @@ contains
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
             CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,3,ele_err)
             If(ele_err .ne.  0)then 
-              write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),10(a,f6.2),a)') &
+              write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),8(a,f6.2),a)') &
                   'ERROR it',it,'on 3rd setEle call, error number is ',ele_err, &
                  'local old, present and next depth is ',&
                     par(n,pZ),P_depth,nP_depth, &
@@ -2290,8 +2293,7 @@ contains
                   'm : newZ=',newZpos,              & 
                   '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
                    ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
-                   ']) +reflectsup[',reflectsup,']+ reflectinf[',reflectinf,&
-                   ']+ pushedup[',pushedup,']'
+                   ']) +reflectsup[',reflectsup,']'
            
               call handleERROR('setEle    ',3,ele_err,n,     &
                            par(n,pX),par(n,pY),par(n,pZ), &
@@ -2410,7 +2412,11 @@ contains
    !        ']+ pushedup[',pushedup,'], m above bott=',newZpos-P_depth
 
       IF(Zgrid)then
-         nklev=getKRlevel(newZpos)
+         if(Zgrid)then 
+          nklev=getKRlevel(newZpos)
+         else
+          nklev=1
+         endif     
          P_oldLev(n)=nklev
         !if(newZpos-par(n,pZ)>3.0)then
         !   write(*,'((a,i5),10(a,f8.2),a)')       &
@@ -2428,16 +2434,20 @@ contains
       ! Check to make sure new position is within a rho, u and v element
       CALL setEle(newXpos,newYpos,newZpos,n,it,4,ele_err)
       If(ele_err .ne.  0)then 
-        write(*,'(a,i12,a,i2,a,3f7.2,6(a,f7.2),(a,i5),10(a,f6.2),a)') &
-            'ERROR it',it,'on 4th setEle call, error number is ',ele_err, &
+        write(*,'(a,i12,a,i2)') &
+            'ERROR it',it,'on 4th setEle call, error number is ',ele_err
+        write(*,'(a,3f7.2)') &
            'local old, present and next depth is ',&
-              par(n,pZ),P_depth,nP_depth, &
-           'at old Z=',par(n,pZ),' ZW(',getKRlevel(par(n,pZ)),')=', &
-                      Pwc_wzc(getKRlevel(par(n,pZ))),  &
-            'at new Z=',newZpos  ,' ZW(',getKRlevel(newZpos),')=', &
-                      Pwc_wzc(getKRlevel(newZpos)) ,  &
-            'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
-            'm : newZ=',newZpos,              & 
+              par(n,pZ),P_depth,nP_depth
+        write(*,'(2(a,f7.2))') &
+           'at old Z=',par(n,pZ), &!,' ZW(',getKRlevel(par(n,pZ)),')=', &
+                      !Pwc_wzc(getKRlevel(par(n,pZ))),  &
+            'at new Z=',newZpos  !,' ZW(',getKRlevel(newZpos),')=', &
+                     ! Pwc_wzc(getKRlevel(newZpos)) 
+        write(*,'(a,i5,a,f6.2,a)') &
+            'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)),' meters'
+        write(*,'(9(a,f6.2),a)') &
+            'newZ=',newZpos,              & 
             '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
              ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
              ']) +reflectsup[',reflectsup,']+ reflectinf[',reflectinf,&
@@ -2753,15 +2763,28 @@ contains
       !
       !  Note that Pwc_wzb(kwBotLvl) = P_depth = Depth at particle location
       if(PercentVelinBottomLayer .le.0)then
-        P_Ub=Pwc_Ub*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Uc=Pwc_Uc*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Uf=Pwc_Uf*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Vb=Pwc_Vb*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Vc=Pwc_Vc*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Vf=Pwc_Vf*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Wb=Pwc_Wb*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Wc=Pwc_Wc*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
-        P_Wf=Pwc_Wf*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+        if((Zpar-BottDepth)>1e-4 .and. (BottLayerHeight-BottDepth)>1e-4)then
+          P_Ub=Pwc_Ub*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Uc=Pwc_Uc*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Uf=Pwc_Uf*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Vb=Pwc_Vb*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Vc=Pwc_Vc*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Vf=Pwc_Vf*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Wb=Pwc_Wb*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Wc=Pwc_Wc*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+          P_Wf=Pwc_Wf*log10((Zpar-BottDepth)/z0)/log10((BottLayerHeight-BottDepth)/z0)
+        else
+          !write(*,*)'warning found abs(Zpar-BottDepth)<1e-8 .or. abs(BottLayerHeight-BottDepth)<1e-8'
+          P_Ub=0
+          P_Uc=0
+          P_Uf=0
+          P_Vb=0
+          P_Vc=0
+          P_Vf=0
+          P_Wb=0
+          P_Wc=0
+          P_Wf=0
+        endif 
       else
         P_Ub=Pwc_Ub*PercentVelinBottomLayer
         P_Uc=Pwc_Uc*PercentVelinBottomLayer
@@ -2774,15 +2797,15 @@ contains
         P_Wf=Pwc_Wf*PercentVelinBottomLayer
       endif
 
-      if(Zpar .LT. BottDepth+z0 .or. P_Ub/Pwc_Ub< PercentVel_under_z0) P_Ub=PercentVel_under_z0*Pwc_Ub
-      if(Zpar .LT. BottDepth+z0 .or. P_Uc/Pwc_Uc< PercentVel_under_z0) P_Uc=PercentVel_under_z0*Pwc_Uc
-      if(Zpar .LT. BottDepth+z0 .or. P_Uf/Pwc_Uf< PercentVel_under_z0) P_Uf=PercentVel_under_z0*Pwc_Uf
-      if(Zpar .LT. BottDepth+z0 .or. P_Vb/Pwc_Vb< PercentVel_under_z0) P_Vb=PercentVel_under_z0*Pwc_Vb
-      if(Zpar .LT. BottDepth+z0 .or. P_Vc/Pwc_Vc< PercentVel_under_z0) P_Vc=PercentVel_under_z0*Pwc_Vc
-      if(Zpar .LT. BottDepth+z0 .or. P_Vf/Pwc_Vf< PercentVel_under_z0) P_Vf=PercentVel_under_z0*Pwc_Vf
-      if(Zpar .LT. BottDepth+z0 .or. P_Wb/Pwc_Wb< PercentVel_under_z0) P_Wb=PercentVel_under_z0*Pwc_Wb
-      if(Zpar .LT. BottDepth+z0 .or. P_Wc/Pwc_Wc< PercentVel_under_z0) P_Wc=PercentVel_under_z0*Pwc_Wc
-      if(Zpar .LT. BottDepth+z0 .or. P_Wf/Pwc_Wf< PercentVel_under_z0) P_Wf=PercentVel_under_z0*Pwc_Wf
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Ub)/max(1e-6,abs(Pwc_Ub))< PercentVel_under_z0) P_Ub=PercentVel_under_z0*Pwc_Ub
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Uc)/max(1e-6,abs(Pwc_Uc))< PercentVel_under_z0) P_Uc=PercentVel_under_z0*Pwc_Uc
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Uf)/max(1e-6,abs(Pwc_Uf))< PercentVel_under_z0) P_Uf=PercentVel_under_z0*Pwc_Uf
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Vb)/max(1e-6,abs(Pwc_Vb))< PercentVel_under_z0) P_Vb=PercentVel_under_z0*Pwc_Vb
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Vc)/max(1e-6,abs(Pwc_Vc))< PercentVel_under_z0) P_Vc=PercentVel_under_z0*Pwc_Vc
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Vf)/max(1e-6,abs(Pwc_Vf))< PercentVel_under_z0) P_Vf=PercentVel_under_z0*Pwc_Vf
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Wb)/max(1e-6,abs(Pwc_Wb))< PercentVel_under_z0) P_Wb=PercentVel_under_z0*Pwc_Wb
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Wc)/max(1e-6,abs(Pwc_Wc))< PercentVel_under_z0) P_Wc=PercentVel_under_z0*Pwc_Wc
+        if(Zpar .LT. BottDepth+z0 .or. abs(P_Wf)/max(1e-6,abs(Pwc_Wf))< PercentVel_under_z0) P_Wf=PercentVel_under_z0*Pwc_Wf
     
       !     *********************************************************
       !     *        Find Internal b,c,f and Advection Values       *
@@ -2904,7 +2927,7 @@ contains
     RETURN
   END SUBROUTINE find_currents
 
-SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
+  SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     !This Subroutine calculates wind induced surface drift currents at the particle's
     !  location in space and time
     USE HYDRO_MOD,  ONLY: setInterp,getInterp
@@ -3395,42 +3418,9 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     else 
       nfilesin=1
     endif
-    DO nf=1,nfilesin
-    SELECT CASE(numdigits)
-       CASE(0)
-         WRITE(filenm,'(A,A,A)')     TRIM(dirin),TRIM(prefix(nf)),TRIM(suffix)
-      CASE(1)
-        WRITE(filenm,'(A,A,I1.1,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(2)
-        WRITE(filenm,'(A,A,I2.2,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(3)
-        WRITE(filenm,'(A,A,I3.3,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(4)
-        WRITE(filenm,'(A,A,I4.4,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(5)
-        WRITE(filenm,'(A,A,I5.5,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(6)
-        WRITE(filenm,'(A,A,I6.6,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(7)
-        WRITE(filenm,'(A,A,I7.7,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(8)
-        WRITE(filenm,'(A,A,I8.8,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(9)
-        WRITE(filenm,'(A,A,I9.9,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE(10)
-        WRITE(filenm,'(A,A,I10.10,A)') TRIM(dirin),TRIM(prefix(nf)),filenum,TRIM(suffix)
-      CASE DEFAULT
-        WRITE(*,*) 'Model presently does not support numdigits of ',numdigits
-        WRITE(*,*) 'Please use numdigit value from 1 to 10'
-        WRITE(*,*) '  OR modify code in Hydrodynamic module'
-        STOP
-    END SELECT
-    !write(*,*)'file to open is ',TRIM(filenm)
-    ENDDO
 
     write(*,*) ' '
     write(*,*) ' Grid File:             = ',NCgridfile
-    write(*,*) ' First Hydro File:      = ',TRIM(filenm)
 
     write(*,*) ' '
     write(tmp,'(I10)') seed
@@ -3453,6 +3443,7 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
     CHARACTER(LEN=10) :: annotate
     LOGICAL, INTENT(OUT) :: docycle
     INTEGER:: klev,nklev
+    DOUBLE PRECISION:: partlon,partlat
     !Error Handling Formats
     21 FORMAT ('Particle ',I10,' not in rho element after ',F15.2,' seconds')
     22 FORMAT ('Particle ',I10,' not in u element after '  ,F15.2,' seconds')
@@ -3546,30 +3537,36 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
         endif
     ELSEIF(trim(ErrorName).eq.'Fstlev' .or. trim(ErrorName).eq.'gDepth')then
            write(*,*)'getDepth conflict1 part ',n,it
+           partlon=x2lon(Xpos,Ypos)
+           partlat=y2lat(Ypos)
            write(*,'(3(a,f14.8),3a)') &
-             'mlab.points3d([',x2lon(Xpos,Ypos),'],[',y2lat(Ypos), &
+             'mlab.points3d([',partlon,'],[',partlat, &
+             !'mlab.points3d([',x2lon(Xpos,Ypos),'],[',y2lat(Ypos), &
              '],[(np.max(depth)-depthfactor*',abs(Zpos),")],",&
               "scale_mode='none',scale_factor=scalefac*3,",        &
               "color=(0.0,1.0,1.0))# old pos CONFLICTplot"
+           partlon=x2lon(nXpos,nYpos)
+           partlat=y2lat(nYpos)
              write(*,'(3(a,f14.8),3a)') &
-             'mlab.points3d([',x2lon(nXpos,nYpos),'],[',y2lat(nYpos),&
+             'mlab.points3d([',partlon,'],[',partlat, &
+             !'mlab.points3d([',x2lon(nXpos,nYpos),'],[',y2lat(nYpos),&
              '],[(np.max(depth)-depthfactor*',abs(nZpos),")],",&
               "scale_mode='none',scale_factor=scalefac*3,",        &
               "color=(1.0,0.0,0.0))# new pos CONFLICTplot"
-             write(*,'(6(a,f14.8),3a)') &
-             'mlab.plot3d([',x2lon(Xpos,Ypos),',',x2lon(nXpos,nYpos),&
-              '],[',y2lat(Ypos),',',y2lat(nYpos),                    &
-             '],[np.max(depth)-depthfactor*',                       &
-              abs(Zpos),',np.max(depth)-depthfactor*',abs(nZpos), &
-               "],","representation='wireframe',tube_radius=None,",     &
-              "color=(0.0,0.0,0.0),line_width=4.0) # CONFLICTplot"
-             write(*,'(3(a,f14.8),a,i4,a,i8,a)') &
-              'mlab.text3d(',0.5*(x2lon(Xpos,Ypos)+x2lon(nXpos,nYpos)),&
-              ',',0.5*(y2lat(Ypos)+y2lat(nYpos)),                      &
-             ',(np.max(depth)-depthfactor*',                           &
-              0.5*(abs(Zpos)+abs(nZpos)),"),'GD1-",n,'-',it,     &
-              "') # CONFLICTplot"
-        write(annotate,'(i1,a,i1,i6)')callnum,'gDp',it+p*int(dt/idt)
+            !write(*,'(6(a,f14.8),3a)') &
+            !'mlab.plot3d([',x2lon(Xpos,Ypos),',',x2lon(nXpos,nYpos),&
+            ! '],[',y2lat(Ypos),',',y2lat(nYpos),                    &
+            !'],[np.max(depth)-depthfactor*',                       &
+            ! abs(Zpos),',np.max(depth)-depthfactor*',abs(nZpos), &
+            !  "],","representation='wireframe',tube_radius=None,",     &
+            ! "color=(0.0,0.0,0.0),line_width=4.0) # CONFLICTplot"
+            !write(*,'(3(a,f14.8),a,i4,a,i8,a)') &
+            ! 'mlab.text3d(',0.5*(x2lon(Xpos,Ypos)+x2lon(nXpos,nYpos)),&
+            ! ',',0.5*(y2lat(Ypos)+y2lat(nYpos)),                      &
+            !',(np.max(depth)-depthfactor*',                           &
+            ! 0.5*(abs(Zpos)+abs(nZpos)),"),'GD1-",n,'-',it,     &
+            ! "') # CONFLICTplot"
+        write(annotate,'(i1,a,i6)')callnum,'gDp',it+p*int(dt/idt)
         call writeErrortopython(annotate,'r',Xpos,Ypos)   
            if(ErrorFlag < 1 .OR. ErrorFlag > 3)then
             write(*,*)'Particle ',n,' error on Pdepth computation',errornum
@@ -3996,11 +3993,11 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           !Store advection currents at original coordinates
           kn1_uw = Uadw
           kn1_vw = Vadw
-          
+           
           !Estimate new coordinates for next RK position
           x1 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)/DBLE(2)
           y1 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)/DBLE(2)
-          
+
           !Find advection currents at estimated next RK position
           CALL find_winds(x1,y1,ex,ix,p,2,Uadw,Vadw,n)
           
@@ -4123,6 +4120,9 @@ SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
           Xpar = par(n,pX)
           Ypar = par(n,pY)
           Zpar = par(n,pZ)
+          P_zb=Zpar
+          P_zc=Zpar
+          P_zf=Zpar
           CALL setInterp(Xpar,Ypar,n)
           conflict=1
           if(Zgrid)then 
