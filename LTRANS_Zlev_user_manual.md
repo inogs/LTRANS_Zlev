@@ -939,4 +939,26 @@ $windswaves
 $end
 ```
 
+### 7. Using the meson build system
+[meson](https://mesonbuild.com/) is an open source build system meant to be both extremely fast, and, even more importantly, as user friendly as possible.
 
+A meson build system was developped for LTRANS_Zlev, together with an automatized testing environment.
+
+To build LTRANS `meson` and `Ninja` must be installed on your system ([Install meson and Ninja](https://mesonbuild.com/Getting-meson.html).
+
+If the installation folders of netcdff, netcdf-c, hdf5 and curl libraries, are per example defined in the environment variables `NETCDF_FORTRAN_HOME`, `NETCDF_C_HOME`, `HDF5_HOME`, `CURL_HOME`, then you can build a new meson environment by command 
+``meson . BUILD_RELEASE --buildtype release -Dnetcdf_compiled_with_hdf5=true -DNETCDF_F_HOME_PATH=$NETCDF_FORTRAN_HOME -DNETCDF_C_HOME_PATH=$NETCDF_C_HOME -DHDF5_HOME_PATH=$HDF5_HOME -DCURL_HOME_PATH=$CURL_HOME``
+
+This command checks that all the library files are found and sets up a build environment for LTRANS in the folder `BUILD_RELEASE/`.
+
+Once the above command was run, go into the built folder (here `BUILD_RELEASE/`) and enter command:
+``ninja test``
+
+This command will :
+- compile the source code
+- create a set of fake input files (grids, iniparloc, fields) for both Z-levels and Sigma-levels test cases (using the scripts defined in [SIM/tests](https://github.com/inogs/LTRANS_Zlev/tree/master/SIM/tests))
+- run a set of tests cases (whose files .data are given in [SIM/tests](https://github.com/inogs/LTRANS_Zlev/tree/master/SIM/tests))
+
+The command outputs show how many of those tests were successfull.
+
+The tests implemented at this stage rely on the comparison of the `endfile` file created by LTRANS with a reference file. New tests can be added in [SIM/tests](https://github.com/inogs/LTRANS_Zlev/tree/master/SIM/tests/meson.build)
