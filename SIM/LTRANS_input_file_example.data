@@ -65,7 +65,8 @@ $hydroparam
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
   readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
-  Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .False.  ! If .TRUE. apply Wind Drift 
+                                !  set to .TRUE. to calculate Stokes Drift from wind using StokDriftFac
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -75,7 +76,9 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
-  Stokes             = .True.   ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
+  Stokes             = .True.   ! Include Stokes drift effects (T/F)
+                                ! Stokes drift is read from input file if readStokDrift=.True.
+                                ! otherwise compute Stokes drift from wind fields using StokDriftFac
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end

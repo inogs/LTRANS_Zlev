@@ -115,13 +115,16 @@
   DOUBLE PRECISION :: constIwind     ! Constant value for Iwind if readIwind is .FALSE.
   LOGICAL          :: readStokDrift      ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
   LOGICAL :: Wind            ! Include wind drift effects (T/F)
+                             !  set to .TRUE. to calculate Stokes Drift from wind using StokDriftFac
   LOGICAL :: WindIntensity   ! For Oil weathering use input Iwind intensity instead of calculating it from Uwind,Vwind
   DOUBLE PRECISION :: WindWeatherFac ! Wind Reduction Factor (between 0.0 and 1.0) applied to Oil Spill WEATHERING only 
   DOUBLE PRECISION :: WindDriftFac ! Wind Drift factor, initially 0.035 in OILTRANS 
   DOUBLE PRECISION :: WindDriftDev ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS
   LOGICAL          :: LinearVInterp  ! if True uses linear interpolation scheme on the vertical direction instead of the tension spline fitting.
   DOUBLE PRECISION :: StokDriftFac ! Stokes Drift factor, initially 0.016 in OILTRANS, used to compute StokDrift if readStokDrift is False
-  LOGICAL :: Stokes                          ! Include Stokes drift effects (T/F)
+  LOGICAL :: Stokes             ! Include Stokes drift effects (T/F)
+                                ! Stokes drift is read from input file if readStokDrift=.True.
+                                ! otherwise compute Stokes drift from wind fields using StokDriftFac
 !
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice

@@ -1584,16 +1584,10 @@ contains
       P_Vwind=0.0
       AdvecUwind=0.0
       AdvecVwind=0.0
- 
-      !IMIOM
-      !If(OilOn)then
-              if(Wind)then
-                      UWindDrift = 0.0
-                      VWindDrift = 0.0
-                      UStokesDrift = 0.0
-                      VStokesDrift = 0.0
-              end if
-      !end if     
+      UWindDrift = 0.0
+      VWindDrift = 0.0
+      UStokesDrift = 0.0
+      VStokesDrift = 0.0
  
       ! *********************************************************
       ! *                                                       *
@@ -1893,35 +1887,6 @@ contains
                   VWindDrift = idt * WindDriftFac * PWind * &
                         sin(alpha - (WindDriftDev *(pi/180.0)))
 
-              if(Stokes)then
-                if(readStokDrift)then
-                  if(p.eq.1)then                       
-                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
-                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
-                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
-                  else                                
-                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
-                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
-                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftf,klev) 
-                  endif                              
-                  UStokesDrift = polintd(ex,ey,3,ix(2))
-                  if(p.eq.1)then                       
-                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
-                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
-                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
-                  else                                
-                    ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
-                    ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
-                    ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftf,klev) 
-                  endif                              
-                  VStokesDrift = polintd(ex,ey,3,ix(2))
-                else
-                  CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_surfdist,  &
-                                   UStokesDrift,VStokesDrift,StokDriftFac,alpha)
-                  UStokesDrift = idt *UStokesDrift
-                  VStokesDrift = idt *VStokesDrift
-                endif
-              end if
 
 
              
@@ -1946,6 +1911,35 @@ contains
               CALL setInterp(Xpar,Ypar,n)
           end if    !if wind
 
+          if(Stokes)then
+            if(readStokDrift)then
+              if(p.eq.1)then                       
+                ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
+                ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
+                ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
+              else                                
+                ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
+                ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
+                ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftf,klev) 
+              endif                              
+              UStokesDrift = polintd(ex,ey,3,ix(2))
+              if(p.eq.1)then                       
+                ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
+                ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
+                ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
+              else                                
+                ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
+                ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
+                ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftf,klev) 
+              endif                              
+              VStokesDrift = polintd(ex,ey,3,ix(2))
+            elseif(wind)
+              CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_surfdist,  &
+                               UStokesDrift,VStokesDrift,StokDriftFac,alpha)
+              UStokesDrift = idt *UStokesDrift
+              VStokesDrift = idt *VStokesDrift
+            endif ! readStokDrift
+          end if ! Stokes
 
           !----------------------------------------------------------
       IF (Behavior.ne.999 .and. Behavior.ne.998 ) THEN
@@ -2128,11 +2122,11 @@ contains
          if(Wind)then
           newXpos = newXpos + UWindDrift
           newYpos = newYpos + VWindDrift
-          if(Stokes)then
-            newXpos = newXpos + UStokesDrift
-            newYpos = newYpos + VStokesDrift
-          end if
          end if !if(Wind)
+         if(Stokes)then
+           newXpos = newXpos + UStokesDrift
+           newYpos = newYpos + VStokesDrift
+         end if
 
 
       !Horizontal boundary tests. Ensure particle still within domain
@@ -3852,8 +3846,7 @@ contains
     DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
-                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
-                                UStokesDrift,VStokesDrift
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
         DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
@@ -3937,8 +3930,7 @@ contains
     DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
-                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
-                                UStokesDrift,VStokesDrift
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
         DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
@@ -4085,8 +4077,7 @@ contains
     DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
-                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
-                                UStokesDrift,VStokesDrift
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
         DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
