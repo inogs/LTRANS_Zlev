@@ -78,7 +78,11 @@ $hydroparam
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   Stokes             = .True.   ! Include Stokes drift effects (T/F)
                                 ! Stokes drift is read from input file if readStokDrift=.True.
+                                ! with a drift intensity decaying with the particles depth using Stokes_hc and Stokes_ke 
                                 ! otherwise compute Stokes drift from wind fields using StokDriftFac
+  Stokes_hc=0.3                 ! Stokes drift applied at 100% intensity in depth range [hc,0] meters,
+  Stokes_ke=5.0                 ! bellow Stokes_hc, apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|))) 
+                                ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
