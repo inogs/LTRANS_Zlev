@@ -1285,7 +1285,8 @@ contains
                               Write_Poly_Presence, &                            !--- CL-OGS
 !        ***** IMIOM *****
                               OilOn,Wind,SigWaveHeight,MeanWavePeriod,UWind_10,&
-                              VWind_10,PeakDirection,PeakWaveLength,pi,Stokes, &
+                              VWind_10,PeakDirection,PeakWaveLength,pi,        &
+                              Stokes,Stokes_hc,Stokes_ke,         &
                               constDens,Write_coastdist
 
 !        ***** END IMIOM *****
@@ -1360,7 +1361,7 @@ contains
         INTEGER:: ElapsedTime
     !END IMIOM
     INTEGER:: posfactor
-    DOUBLE PRECISION :: PTemptmp
+    DOUBLE PRECISION :: PTemptmp,Stokes_exponential_decay 
     !P_swdown = 0.0
 
     dbg=.FALSE.
@@ -1931,6 +1932,13 @@ contains
                 ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftf,klev) 
               endif                              
               VStokesDrift = polintd(ex,ey,3,ix(2))
+
+              Stokes_exponential_decay =  exp( abs(Stokes_ke) * min( 0.0 , abs(Stokes_hc)+P_surfdist) )
+              UStokesDrift = idt * UStokesDrift * Stokes_exponential_decay
+              VStokesDrift = idt * VStokesDrift * Stokes_exponential_decay
+              !write(*,'(4(a,f10.6))')'Stokes drift exponential decay = exp(', &
+              !           abs(Stokes_ke),' * min(0,',abs(Stokes_hc),' +',P_surfdist,   &
+              !           ')) = ',Stokes_exponential_decay
             elseif(wind)then
               CALL StokesDrift_Estimate_from_Wind(P_Uw,P_Vw,P_angle,P_surfdist,  &
                                UStokesDrift,VStokesDrift,StokDriftFac,alpha)

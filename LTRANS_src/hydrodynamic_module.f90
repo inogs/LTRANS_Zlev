@@ -179,7 +179,7 @@ CONTAINS
         filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
         OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum,         &                !--- CL-OGS
         readZeta,readSalt,readTemp,readDens,readU,readV,readW, &
-        readAks,readIwind,readUwind,readVwind                      !--- CL-OGS
+        readAks,readIwind,readUwind,readVwind,readStokDrift                      !--- CL-OGS
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
     USE netcdf
@@ -421,6 +421,8 @@ CONTAINS
         call set_filename(VAR_ID_uwind,filenum,filenm)
      elseif(readVwind)then
         call set_filename(VAR_ID_vwind,filenum,filenm)
+     elseif(readStokDrift)then        
+        call set_filename(VAR_ID_ustokdrift,filenum,filenm)
      else
         write(*,*) 'ERROR, At least one input netcdf file must be provided'
         stop 'Aborting'

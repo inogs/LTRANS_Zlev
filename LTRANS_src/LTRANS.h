@@ -123,8 +123,10 @@
   LOGICAL          :: LinearVInterp  ! if True uses linear interpolation scheme on the vertical direction instead of the tension spline fitting.
   DOUBLE PRECISION :: StokDriftFac ! Stokes Drift factor, initially 0.016 in OILTRANS, used to compute StokDrift if readStokDrift is False
   LOGICAL :: Stokes             ! Include Stokes drift effects (T/F)
-                                ! Stokes drift is read from input file if readStokDrift=.True.
+                                ! Stokes drift is read from input file if readStokDrift=.True., and uses Stokes_hc and Stokes_ke,
                                 ! otherwise compute Stokes drift from wind fields using StokDriftFac
+  DOUBLE PRECISION :: Stokes_hc
+  DOUBLE PRECISION :: Stokes_ke
 !
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice
@@ -135,7 +137,8 @@
                     & VInterpUVinSurfWater,LinearVInterp,                        &  !--- CL-OGS
                     & BottomLayerThickness,PercentVelinBottomLayer,              &   !--- CL-OGS
                     & PercentVel_under_z0,                                       &  !--- CL-OGS
-                    & readIwind,constIwind,WindIntensity,WindWeatherFac,Stokes       !--- CL-OGS
+                    & readIwind,constIwind,WindIntensity,WindWeatherFac,         &  !--- CL-OGS
+                    & Stokes,Stokes_hc,Stokes_ke                                    !--- CL-OGS
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
   LOGICAL          :: VTurbOn       ! Vertical   Turbulence on (.TRUE.) or off (.FALSE.)

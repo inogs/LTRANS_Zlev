@@ -58,6 +58,9 @@ CONTAINS
     SeabedRelease_meters=0.0
     vertical_vel_file='NONE'
     Stokes=.False.
+    Stokes_hc=0.3 ! hc=0.3 creates vertical profile with 100% stokes drift in depth range [0,-0.3] m,
+    Stokes_ke=5.0 ! bellow hc, with ke=0.5 the exponential decay goes from 100% stokes drift at 
+                  ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
     OPEN(1,file=trim(inputdatafile))                  !--- read control variables:
       IF(err == 0) THEN
         READ(1,nml=numparticles ,IOSTAT=istat)  !--- number of particles
