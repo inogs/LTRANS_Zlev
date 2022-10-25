@@ -51,7 +51,6 @@ _SubCases=['Cur','Win','CurWin',
            'Cur_StkRead','Win_StkRead','CurWin_StkRead',
            'CurWin_StkRead_B998',]
 foreach _leveltype : _SorZlevels
-            'StkRead_B998',
   foreach _subcase : _SubCases
     test('--------------- running LTRANS_'+_leveltype+'_'+_subcase+' case -----------------------------------------',
           _run_and_check_success,
