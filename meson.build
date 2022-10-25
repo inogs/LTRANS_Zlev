@@ -172,6 +172,7 @@ _LTRANS_source_files += [
                          'LTRANS_src/boundary_module.f90',
                          'LTRANS_src/parameter_module.f90',
                          'LTRANS_src/oil_module_Zlev.f90',
+                         'LTRANS_src/stokes_drift_module.f90',
                          'LTRANS_src/LTRANS.f90',
                          'LTRANS_src/hydrodynamic_module.f90',
                          'LTRANS_src/behavior_module.f90',

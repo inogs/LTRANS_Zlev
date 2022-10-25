@@ -42,7 +42,11 @@ _threshold='1E-05'
 #_threshold='none'
 
 _SorZlevels=['Slevels','Zlevels']
-_SubCases=['Cur','Win','CurWin','Cur_B998','CurWin_B998','CurWin_StkfromWind_B998','CurWin_StkfromWind']
+_SubCases=['Cur','Win','CurWin',
+           'Cur_B998','CurWin_B998',
+           'CurWin_StkfromWind_B998',
+           'Win_StkfromWind',
+           'CurWin_StkfromWind']
 foreach _leveltype : _SorZlevels
   foreach _subcase : _SubCases
     test('--------------- running LTRANS_'+_leveltype+'_'+_subcase+' case -----------------------------------------',
