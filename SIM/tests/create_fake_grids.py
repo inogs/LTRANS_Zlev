@@ -336,13 +336,13 @@ ncgridOUT.close()
 
 def fstr(value):
     return "%.8f" % value
-
-Parfilename=outdir+'/'+'Iniparloc_every_2_rhowaternode.csv'
-#print('writing file '+Parfilename)
+cellskip=6
+Parfilename=outdir+'/'+'Iniparloc_every_'+str(cellskip)+'_rhowaternode.csv'
+print('writing file '+Parfilename)
 fpartloc = open(Parfilename,"w")
 count=0
-for j in range(1,nij-1,2):
-  for i in range(1,nij-1,2):
+for j in range(1,nij-1,cellskip):
+  for i in range(1,nij-1,cellskip):
      if(mask_rho[-1,j,i]==1):
           fpartloc.write(fstr(lon_rho[j,i])+ ', '+fstr(lat_rho[j,i])+', -0.1,  100, 101000 '+'\n')
           count +=1

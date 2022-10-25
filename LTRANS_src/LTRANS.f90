@@ -1301,7 +1301,7 @@ contains
                               getKRlevel,getDepth,                             &!--- CL:OGS
                               !outputdetails_closernode, &
                               getP_r_element          !--- CL:OGS
-    use oil_mod,  only: STOKESDRIFT
+    USE STOKES_DRIFT_MOD, ONLY: StokesDrift_Estimate_from_Wind
 
     !$ use OMP_LIB
 
@@ -1888,7 +1888,6 @@ contains
                         sin(alpha - (WindDriftDev *(pi/180.0)))
 
 
-
              
              if ((isnan(UWindDrift) .or. isnan(UStokesDrift) ))then 
                write(*,*)'n=',n,'it=',it
@@ -1905,13 +1904,14 @@ contains
                         ' kn3_uw=',kn3_uw,' kn4_uw=',kn4_uw
                stop 'found NaN after NewPos'
              endif
-
+i
 
           else      !if wind
               CALL setInterp(Xpar,Ypar,n)
           end if    !if wind
 
           if(Stokes)then
+<<<<<<< HEAD
             if(readStokDrift)then
               if(p.eq.1)then                       
                 ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
@@ -1934,12 +1934,14 @@ contains
               endif                              
               VStokesDrift = polintd(ex,ey,3,ix(2))
             elseif(wind)
-              CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_surfdist,  &
+              CALL StokesDrift_Estimate_from_Wind(P_Uw,P_Vw,P_angle,P_surfdist,  &
                                UStokesDrift,VStokesDrift,StokDriftFac,alpha)
-              UStokesDrift = idt *UStokesDrift
-              VStokesDrift = idt *VStokesDrift
+              ! apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|)))
+              UStokesDrift = idt * UStokesDrift
+              VStokesDrift = idt * VStokesDrift
             endif ! readStokDrift
           end if ! Stokes
+
 
           !----------------------------------------------------------
       IF (Behavior.ne.999 .and. Behavior.ne.998 ) THEN
@@ -4243,7 +4245,5 @@ contains
       Angle_wrtEast=alpha
 
   END FUNCTION Angle_wrtEast
-
-  !-----------------------------------------------------------------------------
 
 end program

@@ -11,15 +11,14 @@ try:
 except:
   import scipy.io.netcdf as NC
   netcdf_module='scipy.io.netcdf'
-
 print('using',netcdf_module)
 
-
-nt=24
+nt=8
+rec_per_netcdf_file=4
 nk=10
 nij=64
-dt=3600
-Ext0=122400
+dt=86400
+Ext0=0
 outdir='fake_fields/'
 
 #############################################################
@@ -27,45 +26,55 @@ os.system('mkdir '+outdir+' > /dev/null 2>&1')
 
 fig, ax = plt.subplots()
 cax = fig.add_axes([0.78, 0.2, 0.03, 0.6])
-
 U=np.zeros((nt,nk,nij,nij),dtype=float)
 for t in range(0,nt):
  for k in range(0,nk):
   for j in range(0,nij):
    for i in range(0,nij):
-    U[t,k,j,i]=(k+1.0)/(nk*2)*( (1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/128.*math.pi)+((t+1.)/2.)*0.5*math.sin(float(i*j)/float(nij)*math.pi))/5. )
- if(k==4):
-   ax.cla()
-   cax.cla()
-   im=ax.contourf(np.arange(0,nij),np.arange(0,nij),U[t,k])
-   fig.colorbar(im, cax=cax, orientation='vertical')
-   fig.savefig(outdir+'/'+'U.000000'+str(int((Ext0+t*dt)/100))+'.png')
+    U[t,nk-1-k,j,i]=(k+1.0)/(9.0*nk) * math.sin( (i+t*2)/nij *2.0*math.pi)* math.sin( (j+t)/nij *2.0*math.pi)
 
 V=np.zeros((nt,nk,nij,nij),dtype=float)
 for t in range(0,nt):
  for k in range(0,nk):
   for j in range(0,nij):
    for i in range(0,nij):
-    V[t,k,j,i]=(k+1.0)/(nk*2)*( (1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j*i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(i)/128.*math.pi))/5. )
- if(k==4):
-   ax.cla()
-   cax.cla()
-   im=ax.contourf(np.arange(0,nij),np.arange(0,nij),V[t,k])
-   fig.colorbar(im, cax=cax, orientation='vertical')
-   fig.savefig(outdir+'/'+'V.000000'+str(int((Ext0+t*dt)/100))+'.png')
+    V[t,nk-1-k,j,i]=(k+1.0)/(9.0*nk) * math.cos( (j)/nij *2.0*math.pi) * math.cos( (i+t*2)/nij *2.0*math.pi)
+
+for t in range(0,nt):
+ figs, axs = plt.subplots(5,2)
+ figs.set_size_inches(15.0, 22.0)
+ for k in range(0,nk):
+   (ax_i,ax_j)=(k%5,int((k-k%5)/5))
+   axs[ax_i,ax_j].cla()
+   axs[ax_i,ax_j].set_title('k='+str(k))
+   im=axs[ax_i,ax_j].contourf(np.arange(0,nij),np.arange(0,nij),np.sqrt(U[t,k]**2+V[t,k]**2))
+   arrow_scale=np.max((np.abs(U[t,k])+np.abs(V[t,k]))/2)/0.03
+   print(k,'->>>',(ax_i,ax_j),arrow_scale*0.03)
+   axs[ax_i,ax_j].quiver(np.arange(0,nij,2),np.arange(0,nij,2),U[t,k,::2,::2],V[t,k,::2,::2],pivot='middle',angles='xy',scale=arrow_scale,color='w')
+   figs.colorbar(im, ax=axs[ax_i,ax_j], orientation='vertical')
+ figs.savefig(outdir+'/'+'UV.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.png')
+ print(outdir+'/'+'UV.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.png',arrow_scale)
 
 W=np.zeros((nt,nk,nij,nij),dtype=float)
 for t in range(0,nt):
  for k in range(0,nk):
   for j in range(0,nij):
    for i in range(0,nij):
-    W[t,k,j,i]=(k+1.0)/(nk)*( (1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j*i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(-i*j)/128.*math.pi))/5. )/1000.0
- if(k==4):
-   ax.cla()
-   cax.cla()
-   im=ax.contourf(np.arange(0,nij),np.arange(0,nij),W[t,k])
-   fig.colorbar(im, cax=cax, orientation='vertical')
-   fig.savefig(outdir+'/'+'W.000000'+str(int((Ext0+t*dt)/100))+'.png')
+    W[t,nk-1-k,j,i]=(k+10.0)/(3.0*nk)*(1-2*(t%2))*((float(t+nij)/nij)*0.5*math.sin(float(nij/2+j)/float(nij)*2*math.pi)+((t+nij)/nij)*0.5*math.cos(float(nij/2+i)/float(nij)*2*math.pi))/20000.
+
+for t in range(0,nt):
+ figs, axs = plt.subplots(5,2)
+ figs.set_size_inches(15.0, 22.0)
+ for k in range(0,nk):
+   (ax_i,ax_j)=(k%5,int((k-k%5)/5))
+   axs[ax_i,ax_j].cla()
+   axs[ax_i,ax_j].set_title('k='+str(k))
+   im=axs[ax_i,ax_j].contourf(np.arange(0,nij),np.arange(0,nij),W[t,k])
+   arrow_scale=np.max((np.abs(U[t,k])+np.abs(V[t,k]))/2)/0.03
+   axs[ax_i,ax_j].quiver(np.arange(0,nij,2),np.arange(0,nij,2),U[t,k,::2,::2],V[t,k,::2,::2],pivot='middle',angles='xy',scale=arrow_scale,color='w')
+   figs.colorbar(im, ax=axs[ax_i,ax_j], orientation='vertical')
+ figs.savefig(outdir+'/'+'W.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.png')
+ print(outdir+'/'+'W.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.png',arrow_scale)
 
 Eta=np.zeros((nt,nij,nij),dtype=float)
 for t in range(0,nt):
@@ -76,94 +85,61 @@ for t in range(0,nt):
  cax.cla()
  im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Eta[t])
  fig.colorbar(im, cax=cax, orientation='vertical')
- fig.savefig(outdir+'/'+'Eta.000000'+str(int((Ext0+t*dt)/100))+'.png')
+ fig.savefig(outdir+'/'+'Eta.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.png')
 
 Uwind=np.zeros((nt,nij,nij),dtype=float)
 for t in range(0,nt):
  for j in range(0,nij):
   for i in range(0,nij):
-   Uwind[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/float(nij)*math.pi)+((t+1.)/2.)*0.5*math.sin(float(i)/float(nij)*math.pi))/10.
- ax.cla()
- cax.cla()
- im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Uwind[t])
- fig.colorbar(im, cax=cax, orientation='vertical')
- fig.savefig(outdir+'/'+'EXFuwind.000000'+str(int((Ext0+t*dt)/100))+'.png')
+   Uwind[t,j,i]=(1+t%2)*math.sin(float(i)/float(nij)*math.pi)/5.*3.
 
 Vwind=np.zeros((nt,nij,nij),dtype=float)
 for t in range(0,nt):
  for j in range(0,nij):
   for i in range(0,nij):
-   Vwind[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j+i)/float(nij)*math.pi)+((t+1.)/2.)*0.8*math.sin(float(i-j)/float(nij)*math.pi))/10.
+   Vwind[t,j,i]=math.cos(float(j)/float(nij)*2.0*math.pi)*3.
+
+for t in range(0,nt):
  ax.cla()
  cax.cla()
- im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Vwind[t])
+ im=ax.contourf(np.arange(0,nij),np.arange(0,nij),np.sqrt(Uwind[t]**2+Vwind[t]**2))
+ arrow_scale=np.max((np.abs(Uwind[t])+np.abs(Vwind[t]))/2)/0.03
+ ax.quiver(np.arange(0,nij,2),np.arange(0,nij,2),Uwind[t,::2,::2],Vwind[t,::2,::2],pivot='middle',angles='xy',scale=arrow_scale,color='w')
  fig.colorbar(im, cax=cax, orientation='vertical')
- fig.savefig(outdir+'/'+'EXFvwind.000000'+str(int((Ext0+t*dt)/100))+'.png')
+ fig.savefig(outdir+'/'+'EXFwind.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.png')
  
 sustr=np.where(Uwind<0,-(abs(Uwind)/20.659)**(1.0/0.4278),(Uwind/20.659)**(1.0/0.4278))
 svstr=np.where(Vwind<0,-(abs(Vwind)/20.659)**(1.0/0.4278),(Vwind/20.659)**(1.0/0.4278))
 
-Ustokes=np.zeros((nt,nij,nij),dtype=float)
-for t in range(0,nt):
- for j in range(0,nij):
-  for i in range(0,nij):
-   Ustokes[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.8*math.cos(float(j)/float(nij)*math.pi)+((t+1.)/2.)*0.3*math.sin(float(i)/float(nij)*math.pi))/50.
- ax.cla()
- cax.cla()
- im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Ustokes[t])
- fig.colorbar(im, cax=cax, orientation='vertical')
- fig.savefig(outdir+'/'+'Ustokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.png')
-
-Vstokes=np.zeros((nt,nij,nij),dtype=float)
-for t in range(0,nt):
- for j in range(0,nij):
-  for i in range(0,nij):
-   Vstokes[t,j,i]=(1-2*(t%2))*((float(t+2.)/2.)*0.5*math.cos(float(j+i)/float(nij)*math.pi)+((t+1.)/2.)*0.6*math.sin(float(i-j)/float(nij)*math.pi))/50.
- ax.cla()
- cax.cla()
- im=ax.contourf(np.arange(0,nij),np.arange(0,nij),Vstokes[t])
- fig.colorbar(im, cax=cax, orientation='vertical')
- fig.savefig(outdir+'/'+'Vstokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.png')
- 
 ##################################################################################
 for t in range(0,nt):
- output_file = open(outdir+'/'+'U.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ output_file = open(outdir+'/'+'U.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
  float_array = array('d',U[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 for t in range(0,nt):
- output_file = open(outdir+'/'+'V.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ output_file = open(outdir+'/'+'V.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
  float_array = array('d',V[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 for t in range(0,nt):
- output_file = open(outdir+'/'+'W.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ output_file = open(outdir+'/'+'W.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
  float_array = array('d',W[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 for t in range(0,nt):
- output_file = open(outdir+'/'+'Eta.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ output_file = open(outdir+'/'+'Eta.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
  float_array = array('d',Eta[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 for t in range(0,nt):
- output_file = open(outdir+'/'+'EXFuwind.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ output_file = open(outdir+'/'+'EXFuwind.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
  float_array = array('d',Uwind[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 for t in range(0,nt):
- output_file = open(outdir+'/'+'EXFvwind.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
+ output_file = open(outdir+'/'+'EXFvwind.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
  float_array = array('d',Vwind[t].flatten())
- float_array.tofile(output_file)
- output_file.close()
-for t in range(0,nt):
- output_file = open(outdir+'/'+'Ustokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
- float_array = array('d',Ustokes[t].flatten())
- float_array.tofile(output_file)
- output_file.close()
-for t in range(0,nt):
- output_file = open(outdir+'/'+'Vstokesdrift.000000'+str(int((Ext0+t*dt)/100))+'.data', 'wb')
- float_array = array('d',Vstokes[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
 
@@ -174,11 +150,14 @@ my_Cs_w =np.sin(0.5*math.pi*np.arange(len(my_s_w))/float(len(my_s_w)-1))**2/1.0 
 my_Cs_r =np.sin(0.5*math.pi*np.arange(len(my_s_rho))/float(len(my_s_rho)-1))**2/1.0 -1.0
 my_Cs_r=0.5*(my_Cs_w[1:]+my_Cs_w[0:-1])
 
+Wext=np.zeros((nt,nk+1,nij,nij),dtype=float)
+Wext[:,0,:,:]=W[:,0,:,:]
+Wext[:,1:,:,:]=W[:,0:,:,:]
 
-for tfile in range(0,nt,6):
-  outfile='fake_hydro_field_'+str(int((Ext0+tfile*dt)/100))+'.nc'
+for tfile in range(0,nt,rec_per_netcdf_file):
+  outfile='fake_hydro_field_'+str(int((Ext0+tfile*dt)/100)).zfill(10)+'.nc'
   t0=tfile
-  tF=min(nt,tfile+6)
+  tF=min(nt,tfile+rec_per_netcdf_file)
   print('-------- WRITING FILE '+str(outfile)+'-----------')
   if(netcdf_module=='netCDF4'):
     ncfile= nc4.Dataset(outdir+'/'+outfile,"w")
@@ -255,18 +234,6 @@ for tfile in range(0,nt,6):
   setattr(SVstr,'axis'               , 'Y')
   setattr(SVstr,'valid_min'          , np.min(svstr))
   setattr(SVstr,'valid_max'          , np.max(svstr))
-  Ustk=ncfile.createVariable("ustokes", 'f', ('ocean_time', 'eta_u', 'xi_u',))
-  setattr(Ustk,'long_name'          , 'surface stokes-drift component in x-direction')
-  setattr(Ustk,'standard_name'      , 'ustokes')
-  setattr(Ustk,'axis'               , 'X')
-  setattr(Ustk,'valid_min'          , np.min(Ustokes))
-  setattr(Ustk,'valid_max'          , np.max(Ustokes))
-  Vstk=ncfile.createVariable("vstokes", 'f', ('ocean_time', 'eta_v', 'xi_v',))
-  setattr(Vstk,'long_name'          , 'surface stokes-drift component in y-direction')
-  setattr(Vstk,'standard_name'      , 'vstokes')
-  setattr(Vstk,'axis'               , 'Y')
-  setattr(Vstk,'valid_min'          , np.min(Vstokes))
-  setattr(Vstk,'valid_max'          , np.max(Vstokes))
   s_rho=ncfile.createVariable("s_rho", 'f', ('s_rho',))
   setattr(s_rho,'long_name'          , 'S-coordinate at RHO-points')
   setattr(s_rho,'standard_name'      , 's_rho')
@@ -291,9 +258,6 @@ for tfile in range(0,nt,6):
   setattr(Cs_w,'valid_min'          , np.min(my_Cs_w))
   setattr(Cs_w,'valid_max'          , np.max(my_Cs_w))
   Cs_w[:]=my_Cs_w[:]
-  Wext=np.zeros((nt,nk+1,nij,nij),dtype=float)
-  Wext[:,0,:,:]=W[:,0,:,:]
-  Wext[:,1:,:,:]=W[:,0:,:,:]
   for i,t in enumerate(range(t0,tF)):
     time[i]=Ext0+t*dt
     # add ::-1 to invert k-order of the 3d fields as MITgcm has an inverted k axis respect to ROMs
@@ -305,14 +269,7 @@ for tfile in range(0,nt,6):
     Vwnd[i,:,:]=Vwind[t,1:,:]
     SUstr[i,:,:]=sustr[t,:,1:]
     SVstr[i,:,:]=svstr[t,1:,:]
-    Ustk[i,:,:]=Ustokes[t,:,1:]
-    Vstk[i,:,:]=Vstokes[t,1:,:]
 
   ncfile.close()
 
-
-Uprint=U[0,:,:,1:]
-for k in (0,nk-1):
-  for j in range(1,nij-1):
-    print(j+1,k+1,' Uvel= ',Uprint[k,j-1,j-1:j+2],Uprint[k,j,j-1:j+2],Uprint[k,j+1,j-1:j+2])
 

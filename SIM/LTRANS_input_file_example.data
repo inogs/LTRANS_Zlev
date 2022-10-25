@@ -132,7 +132,7 @@ $behavparam
                              ! in meters above bottom (this should be a positive value
                              ! Note: this formulation may need some work
 
-  GrainSize_fname = "/home/claurent/LTRANS_vZlev_PACKAGE/input/GRAINSIZEFILENAME" ! for Behavior 8
+  GrainSize_fname = "PATH_TO_LTRANS_vZlev_PACKAGE/input/GRAINSIZEFILENAME" ! for Behavior 8
   read_GrainSize  = .False.           ! for Behavior 8
   DVMtime = 0                         ! maximum time spent doing DVM (if DVMtime>0, used for behavior 8 and 9 and 11)
   SettlementSize = 14              
@@ -168,7 +168,6 @@ $dvmparam
   swdown_rec    =  36230     ! first record to be read 
   swdown_thresh = 50.        ! swdown threshold to set the day or night upper layer as a target layer
   swdown_t0 = 1800.          ! time in seconds (same referential as Ext0) of the record corresponding to swdown_rec
-
 $end
 
 
@@ -214,11 +213,11 @@ $end
 !*** INPUT FILE NAME AND LOCATION PARAMETERS ***; 
 ! ** NetCDF Hydro Model Grid file **
 $hydromodelgrid
-  NCgridfile='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/GridforLTRANS-boxes_NiNj64-c1.nc'  ! Name of the grid file created by the pre-processing tool
+  NCgridfile='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/GridforLTRANS.nc'  ! Name of the grid file created by the pre-processing tool
   Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
+  ADJele_fname= 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Adjacentelements.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.                                        ! set to True if file already exists
 $end
 

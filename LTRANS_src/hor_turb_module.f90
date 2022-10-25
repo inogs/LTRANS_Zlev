@@ -49,7 +49,7 @@ CONTAINS
     USE PARAM_MOD, ONLY: ConstantHTurb,idt, &
 !	*****   IMIOM   *****
                          Langmuir,Cd,OilOn,pi
-    USE OIL_MOD, ONLY: F_WindAngle
+    USE STOKES_DRIFT_MOD, ONLY: F_WindAngle
 !	***** END IMIOM *****
     USE NORM_MOD,  ONLY: norm
     IMPLICIT NONE

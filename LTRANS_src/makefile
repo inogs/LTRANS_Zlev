@@ -182,7 +182,7 @@ endif
 
 OBJS          = gridcell_module.o interpolation_module.o parameter_module.o \
 				point_in_polygon_module.o random_module.o tension_module.o  \
-				conversion_module.o oil_module_Zlev.o                       \
+				conversion_module.o oil_module_Zlev.o stokes_drift_module.o  \
 				hydrodynamic_module.o norm_module.o                         \
 				boundary_module.o hor_turb_module.o settlement_module.o     \
 				ver_turb_module.o behavior_module.o                  

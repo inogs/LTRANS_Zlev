@@ -177,7 +177,9 @@ CONTAINS
         max_v_elements,NCgridfile,  &
         Zgrid,ADJele_file,ADJele_fname,BoundaryBLNs,                           & !--- CL-OGS
         filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
-        OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum                         !--- CL-OGS
+        OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum,         &                !--- CL-OGS
+        readZeta,readSalt,readTemp,readDens,readU,readV,readW, &
+        readAks,readIwind,readUwind,readVwind                      !--- CL-OGS
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
     USE netcdf
@@ -321,89 +323,37 @@ CONTAINS
 
     ! *************************** READ IN GRID INFO **************************
 
-    STATUS = NF90_OPEN(TRIM(NCgridfile),NF90_NOWRITE, NCID)
-    if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
-    if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+    call netcdf_open(NCgridfile,NCID)
 
       ! Depth (m)
-      STATUS = NF90_INQ_VARID(NCID,'h',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find depth'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,euleriandepth)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read depth'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,vi,uj,1,1,euleriandepth,'h')
 
       ! longitude at rho (°)
-      STATUS = NF90_INQ_VARID(NCID,'lon_rho',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find lon_rho'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,lon_rho)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read lon_rho'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,vi,uj,1,1,lon_rho,'lon_rho')
 
       ! latitude at rho (°)
-      STATUS = NF90_INQ_VARID(NCID,'lat_rho',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find lat_rho'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,lat_rho)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read lat_rho'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,vi,uj,1,1,lat_rho,'lat_rho')
 
       ! longitude at u (°)
-      STATUS = NF90_INQ_VARID(NCID,'lon_u',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find lon_u'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,lon_u)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read lon_u'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,ui,uj,1,1,lon_u,'lon_u')
 
       ! latitude at u (°)
-      STATUS = NF90_INQ_VARID(NCID,'lat_u',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find lat_u'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,lat_u)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read lat_u'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,ui,uj,1,1,lat_u,'lat_u')
 
       ! longitude at v (°)
-      STATUS = NF90_INQ_VARID(NCID,'lon_v',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find lon_v'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,lon_v)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read lon_v'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,vi,vj,1,1,lon_v,'lon_v')
 
       ! latitude at v (°)
-      STATUS = NF90_INQ_VARID(NCID,'lat_v',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find lat_v'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,lat_v)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read lat_v'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,vi,vj,1,1,lat_v,'lat_v')
 
       ! mask on rho grid
-      STATUS = NF90_INQ_VARID(NCID,'mask_rho',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find mask_rho'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,mask_rho)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read mask_rho'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_integer(NCID,vi,uj,us_tridim,1,mask_rho,'mask_rho')
 
       ! mask on u grid
-      STATUS = NF90_INQ_VARID(NCID,'mask_u',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find mask_u'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,mask_u)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read mask_u'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_integer(NCID,ui,uj,us_tridim,1,mask_u,'mask_u')
 
       ! mask on v grid
-      STATUS = NF90_INQ_VARID(NCID,'mask_v',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find mask_v'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,mask_v)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read mask_v'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_integer(NCID,vi,vj,us_tridim,1,mask_v,'mask_v')
 
       if(Zgrid) then !--- CL-OGS: read MITgcm specific grid files
         if(Vtransform.ne.0)then
@@ -411,29 +361,14 @@ CONTAINS
           write(*,*)'while hydroMITgcm uses fixed Z vertical levels'
           stop
         endif
+
         ! Z-coordinate on rho grid (Z) : cell-centered coordinates
-        STATUS = NF90_INQ_VARID(NCID,'Z',VID)
-        IF(STATUS /= NF90_NOERR) write(*,*) 'Problem finding Z'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-        STATUS = NF90_GET_VAR(NCID,VID,ZC)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read Z'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+        call netcdf_get_double(NCID,us,1,1,1,ZC(1:us),'Z')
 
         ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-        STATUS = NF90_INQ_VARID(NCID,'Zp1',VID)
-        IF(STATUS /= NF90_NOERR)write(*,*) 'Problem finding Zp1'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-        STATUS = NF90_GET_VAR(NCID,VID,ZW)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read Zp1'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+        call netcdf_get_double(NCID,ws,1,1,1,ZW(1:ws),'Zp1')
 
-
-        STATUS = NF90_INQ_VARID(NCID,'KBottomRUV',VID)
-        IF(STATUS /= NF90_NOERR)write(*,*) 'Problem finding KBottomRUV'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-        STATUS = NF90_GET_VAR(NCID,VID,BottomK)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read KBottomRUV'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+        call netcdf_get_integer(NCID,vi,uj,3,1,BottomK,'KBottomRUV')
 
       else          !--- CL-OGS: angle read only for ROMS files  
         if(Vtransform.eq.0)then
@@ -442,29 +377,16 @@ CONTAINS
           stop
         endif
         ! angle between x-coordinate and true east direction (radian)
-        STATUS = NF90_INQ_VARID(NCID,'angle',VID)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find angle'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-        STATUS = NF90_GET_VAR(NCID,VID,angle)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read angle'
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+        call netcdf_get_double(NCID,vi,uj,1,1,angle,'angle')
       endif
 
-    STATUS = NF90_CLOSE(NCID)
+    call netcdf_close(NCID)
 
     ! *************************** READ IN GRAIN SIZE FILE ********************
     if(read_GrainSize)then
-      WRITE(*,*) 'read-in GrainSize file ',GrainSize_fname
-      STATUS = NF90_OPEN(TRIM(GrainSize_fname),NF90_NOWRITE, NCID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_INQ_VARID(NCID,'GrainSize',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find GrainSize'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,GrainSize_tmp)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read GrainSize'
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_CLOSE(NCID)
+      call netcdf_open(GrainSize_fname,NCID)
+      call netcdf_get_double(NCID,vi,uj,1,1,GrainSize_tmp,'GrainSize')
+      call netcdf_close(NCID)
     endif
 
 
@@ -477,54 +399,50 @@ CONTAINS
      else 
        nfilesin=1 ! Roms NETcdf outputs
      endif
-
-     call set_filename(VAR_ID_salt,filenum,filenm)
+     if(readZeta)then
+        call set_filename(VAR_ID_zeta,filenum,filenm)
+     elseif(readSalt)then
+        call set_filename(VAR_ID_salt,filenum,filenm)
+     elseif(readTemp)then
+        call set_filename(VAR_ID_temp,filenum,filenm)
+     elseif(readDens)then
+        call set_filename(VAR_ID_den,filenum,filenm)
+     elseif(readU)then
+        call set_filename(VAR_ID_uvel,filenum,filenm)
+     elseif(readV)then
+        call set_filename(VAR_ID_vvel,filenum,filenm)
+     elseif(readW)then
+        call set_filename(VAR_ID_wvel,filenum,filenm)
+     elseif(readAks)then
+        call set_filename(VAR_ID_kh,filenum,filenm)
+     elseif(readIwind)then
+        call set_filename(VAR_ID_iwind,filenum,filenm)
+     elseif(readUwind)then
+        call set_filename(VAR_ID_uwind,filenum,filenm)
+     elseif(readVwind)then
+        call set_filename(VAR_ID_vwind,filenum,filenm)
+     else
+        write(*,*) 'ERROR, At least one input netcdf file must be provided'
+        stop 'Aborting'
+     endif
 
     if(.not.Zgrid) then
-      STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN:',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_open(filenm,NCID)
 
       ! s-coordinate on rho grid (sc_r)
-      STATUS = NF90_INQ_VARID(NCID,'s_rho',VID)
-      IF(STATUS /= NF90_NOERR)THEN
-        STATUS = NF90_INQ_VARID(NCID,'sc_r',VID)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem finding SC in',TRIM(filenm)
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      ENDIF
-      STATUS = NF90_GET_VAR(NCID,VID,SC)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read SC in',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,us,1,1,1,SC,'s_rho','sc_r')
 
       ! Cs value on rho grid (Cs_r)
-      STATUS = NF90_INQ_VARID(NCID,'Cs_r',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find CS in',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,CS)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read CS in',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,us,1,1,1,CS,'Cs_r')
 
       ! s-coordinate on w grid (sc_w)
-      STATUS = NF90_INQ_VARID(NCID,'s_w',VID)
-      IF(STATUS /= NF90_NOERR)THEN
-        STATUS = NF90_INQ_VARID(NCID,'sc_w',VID)
-        if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem finding SCW in',TRIM(filenm)
-        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      ENDIF
-      STATUS = NF90_GET_VAR(NCID,VID,SCW)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read SCW in',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,ws,1,1,1,SCW,'s_w','sc_w')
 
       ! Cs value on w grid (Cs_w)
-      STATUS = NF90_INQ_VARID(NCID,'Cs_w',VID)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem find CSW in',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-      STATUS = NF90_GET_VAR(NCID,VID,CSW)
-      if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem read CSW in',TRIM(filenm)
-      if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
+      call netcdf_get_double(NCID,ws,1,1,1,CSW,'Cs_w')
 
       !close the dataset and reassign the NCID
-      STATUS = NF90_CLOSE(NCID)
+      call netcdf_close(NCID)
     endif
 
     ! *************************** CREATE ELEMENTS *****************************
@@ -2117,9 +2035,11 @@ CONTAINS
 
             ! Read in data for first three external time steps
             STATUS = NF90_OPEN(TRIM(swannm), NF90_NOWRITE, NCID)
-            if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
-            if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
-
+            if (STATUS .NE. NF90_NOERR) then
+              write(*,*) 'Problem NF90_OPEN'
+              write(*,*) NF90_STRERROR(STATUS)
+              stop
+            endif
                 ! **** Hsig ****
                 startz(1)=t_ijruv(IMIN,RNODE)
                 startz(2)=t_ijruv(JMIN,RNODE)
@@ -7344,4 +7264,111 @@ CONTAINS
      deallocate(start_index,count_index)
 
   END SUBROUTINE
+
+  SUBROUTINE netcdf_open(NCfile,NCID)
+    USE netcdf
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+    character(*),intent(in) :: NCfile
+    integer, intent(inout) :: NCID 
+    integer :: STATUS
+
+    STATUS = NF90_OPEN(TRIM(NCfile),NF90_NOWRITE, NCID)
+    if (STATUS .NE. NF90_NOERR) then
+       write(*,*) 'Problem NF90_OPEN ',NCfile
+       write(*,*) NF90_STRERROR(STATUS)
+       stop
+    endif
+  END SUBROUTINE
+
+  SUBROUTINE netcdf_get_double(NCID,n1,n2,n3,n4,field,varname,alternative_varname)
+    USE netcdf
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+    integer, intent(in) :: NCID 
+    integer, intent(in):: n1,n2,n3,n4
+    double precision, intent(inout):: field(n1,n2,n3,n4)
+    character(*),intent(in) :: varname
+    character(*),intent(in),optional :: alternative_varname
+    integer :: STATUS,VID
+     ! check that the field shape was correctly announced 
+      if( ( n1==1 .and. n2>1 ) .or. &
+          ( n2==1 .and. n3>1 ) .or. &
+          ( n3==1 .and. n4>1 ) )then
+             write(*,*)'programming issue in call to netcdf_get_double(',trim(varname),')'
+             write(*,*)'size of the various dimensions must be given with the zeroes at the end'
+             stop
+      endif
+
+      STATUS = NF90_INQ_VARID(NCID,varname,VID)
+      if (STATUS .NE. NF90_NOERR) then
+          if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
+          if (STATUS .NE. NF90_NOERR) then
+            write(*,*) 'Problem find ',varname
+            write(*,*) NF90_STRERROR(STATUS)
+            stop
+          endif
+      endif
+      STATUS = NF90_GET_VAR(NCID,VID,field)
+      if (STATUS .NE. NF90_NOERR) then 
+          write(*,*) 'Problem read ',varname
+          write(*,*) NF90_STRERROR(STATUS)
+          stop
+      endif
+  END SUBROUTINE
+
+  SUBROUTINE netcdf_get_integer(NCID,n1,n2,n3,n4,field,varname,alternative_varname)
+    USE netcdf
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+    integer, intent(in) :: NCID 
+    integer, intent(in):: n1,n2,n3,n4
+    integer, intent(inout):: field(n1,n2,n3,n4)
+    character(*),intent(in) :: varname
+    character(*),intent(in),optional :: alternative_varname
+    integer :: STATUS,VID
+     ! check that the field shape was correctly announced 
+      if( ( n1==1 .and. n2>1 ) .or. &
+          ( n2==1 .and. n3>1 ) .or. &
+          ( n3==1 .and. n4>1 ) )then
+             write(*,*)'programming issue in call to netcdf_get_integer(',trim(varname),')'
+             write(*,*)'size of the various dimensions must be given with the zeroes at the end'
+             stop
+      endif
+
+      STATUS = NF90_INQ_VARID(NCID,varname,VID)
+      if (STATUS .NE. NF90_NOERR) then
+          if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
+          if (STATUS .NE. NF90_NOERR) then
+            write(*,*) 'Problem find ',varname
+            write(*,*) NF90_STRERROR(STATUS)
+            stop
+          endif
+      endif
+      STATUS = NF90_GET_VAR(NCID,VID,field)
+      if (STATUS .NE. NF90_NOERR) then 
+          write(*,*) 'Problem read ',varname
+          write(*,*) NF90_STRERROR(STATUS)
+          stop
+      endif
+  END SUBROUTINE
+
+  SUBROUTINE netcdf_close(NCID)
+    USE netcdf
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+    integer, intent(in) :: NCID 
+    integer :: STATUS
+      STATUS = NF90_CLOSE(NCID)
+      if (STATUS .NE. NF90_NOERR) then 
+          write(*,*) 'Problem closing file'
+          write(*,*) NF90_STRERROR(STATUS)
+          stop
+      endif
+  END SUBROUTINE
+
 END MODULE HYDRO_MOD

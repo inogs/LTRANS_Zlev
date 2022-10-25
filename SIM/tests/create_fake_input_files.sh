@@ -9,7 +9,7 @@ else
   echo 'creating folder fake_fields'
   mkdir fake_fields
 fi
-if [ -f fake_fields/EXFvwind.0000001224.data ]; then
+if [ -f fake_fields/EXFvwind.0000000000.data ]; then
   echo 'found already existing fake fields'
 else
   echo 'creating fake fields'
