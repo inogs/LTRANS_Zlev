@@ -1285,6 +1285,7 @@ contains
                               getKRlevel,getDepth,                             &!--- CL:OGS
                               !outputdetails_closernode, &
                               getP_r_element          !--- CL:OGS
+    USE STOKES_DRIFT_MOD, ONLY: StokesDrift_Estimate_from_Wind
 
     !$ use OMP_LIB
 
@@ -4210,46 +4211,5 @@ contains
       Angle_wrtEast=alpha
 
   END FUNCTION Angle_wrtEast
-
-  !-----------------------------------------------------------------------------
-  !***************************************************
-  !*     Subroutine StokesDrift_Estimate_from_Wind   *
-  !***************************************************
-  SUBROUTINE StokesDrift_Estimate_from_Wind(uwind,vwind,pdir,depth,ustoke,vstoke,WVecAngle)
-  ! Give the Stokes drift at depth of a particle assuming a Pierson Moskowitz spectrum and Langmuir circulation
-  ! Author Marcel Cure (www.numericswarehouse.com) Apr. 2010
-  ! subroutine taken from the Irish Marine Institute Oil Model Module developed by Alan Berry for LTRANS in July 2011
-    IMPLICIT NONE
-    DOUBLE PRECISION, INTENT(IN) :: uwind,vwind,pdir,depth
-    DOUBLE PRECISION, INTENT(OUT) :: ustoke,vstoke                       ! velocity components of particle at depth
-    DOUBLE PRECISION, INTENT(IN), OPTIONAL :: WVecAngle
-    !
-    DOUBLE PRECISION :: V10,knum,phi,VS0,VS
-    DOUBLE PRECISION, PARAMETER :: grav=9.81
-    !
-    !porint *,'Calculating Stokes Drift'
-    !
-    V10 = SQRT(uwind**2.0 + vwind**2.0)
-    !
-    ! We use the modified Stokes profile according to eqn 9 Carniel, S. Sclavo, M., Kantha, L.H. and C.A. Clayson 2005
-    ! ' Langmuir cells and mixing in the upper ocean', Il Nuevo Cimento 28 33-54
-    ! KLC: mag of Stokes drift vel |VS| = VS0*EXP(2kz) (top of p.35)
-    ! KLC: eqns for VS0 and knum are shown in eqn(9) p.42
-    !
-    ! *** Direct use of WVecAngle added to Zlev version by OGS ***    
-    if(present(WVecAngle))then
-      phi = WVecAngle       
-    else
-    ! *** End of OGS modifications for direct use of WVecAngle ***    
-      phi = F_WindAngle(pdir)   ! *** WARNING formulations used by F_WindAngle must be verified *** 
-    endif
-    !
-    knum = 1.25*(grav/(V10**2.0))
-    VS0 = 0.016*V10
-    VS = VS0*EXP(2.0*knum*depth)
-    ustoke = VS*COS(phi)
-    vstoke = VS*SIN(phi)
-    !
-  END SUBROUTINE StokesDrift_Estimate_from_Wind
 
 end program

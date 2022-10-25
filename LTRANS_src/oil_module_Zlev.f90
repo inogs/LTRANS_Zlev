@@ -876,32 +876,6 @@ MODULE OIL_MOD
 
     END FUNCTION F_APIThickness
 
-    !*********************************
-    !*     Function WindAngle      *
-    !*********************************
-    DOUBLE PRECISION FUNCTION F_WindAngle(wangle) RESULT(WindAngle)
-    ! Function to give the Cartesian direction in radians of a wind or wave direction specified as 'direction coming from in degrees'
-        USE PARAM_MOD, ONLY: PI
-
-        IMPLICIT NONE
-        DOUBLE PRECISION, INTENT(IN) :: wangle
-        DOUBLE PRECISION :: Ang,Theta
-
-        Ang = wangle*PI/180.0
-
-        write(*,*)"WARNING until formulations used by F_WindAngle "
-        write(*,*)"won't be verified, this subroutine must not be used."
-        write(*,*)"program stops"
-        stop
-        IF (Ang.LT.PI/2.0) THEN          ! Check formulation  
-           Theta = -1.0*PI/2.0 - Ang     ! Check formulation 
-        ELSE                             ! Check formulation 
-           Theta = 3.0*PI/2.0 - Ang      ! Check formulation 
-        END IF                           ! Check formulation 
-
-        WindAngle = Theta
-
-    END FUNCTION F_WindAngle
 
     !****************************
     !*     Function F_UpCase    *
