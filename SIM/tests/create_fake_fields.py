@@ -142,6 +142,34 @@ for t in range(0,nt):
  float_array = array('d',Vwind[t].flatten())
  float_array.tofile(output_file)
  output_file.close()
+for t in range(0,nt):
+ output_file = open(outdir+'/'+'Ustokesdrift.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
+ float_array = array('d',Ustokes[t].flatten())
+ float_array.tofile(output_file)
+ output_file.close()
+for t in range(0,nt):
+ output_file = open(outdir+'/'+'Vstokesdrift.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
+ float_array = array('d',Vstokes[t].flatten())
+ float_array.tofile(output_file)
+ output_file.close()
+
+Stokes_in_U=np.zeros((nt,nk,nij,nij),dtype=float)
+for k in range(0,nk):
+  Stokes_in_U[:,k,:,:]=Ustokes[:,:,:]
+for t in range(0,nt):
+ output_file = open(outdir+'/'+'Stokes_in_U.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
+ float_array = array('d',Stokes_in_U[t].flatten())
+ float_array.tofile(output_file)
+ output_file.close()
+
+Stokes_in_V=np.zeros((nt,nk,nij,nij),dtype=float)
+for k in range(0,nk):
+  Stokes_in_V[:,k,:,:]=Vstokes[:,:,:]
+for t in range(0,nt):
+ output_file = open(outdir+'/'+'Stokes_in_V.'+str(int((Ext0+t*dt)/100)).zfill(10)+'.data', 'wb')
+ float_array = array('d',Stokes_in_V[t].flatten())
+ float_array.tofile(output_file)
+ output_file.close()
 
 ###################################################################################
 my_s_w=np.linspace(-1.0,0.0,nk+1)
@@ -234,6 +262,18 @@ for tfile in range(0,nt,rec_per_netcdf_file):
   setattr(SVstr,'axis'               , 'Y')
   setattr(SVstr,'valid_min'          , np.min(svstr))
   setattr(SVstr,'valid_max'          , np.max(svstr))
+  Ustk=ncfile.createVariable("ustokes", 'f', ('ocean_time', 'eta_u', 'xi_u',))
+  setattr(Ustk,'long_name'          , 'surface stokes-drift component in x-direction')
+  setattr(Ustk,'standard_name'      , 'ustokes')
+  setattr(Ustk,'axis'               , 'X')
+  setattr(Ustk,'valid_min'          , np.min(Ustokes))
+  setattr(Ustk,'valid_max'          , np.max(Ustokes))
+  Vstk=ncfile.createVariable("vstokes", 'f', ('ocean_time', 'eta_v', 'xi_v',))
+  setattr(Vstk,'long_name'          , 'surface stokes-drift component in y-direction')
+  setattr(Vstk,'standard_name'      , 'vstokes')
+  setattr(Vstk,'axis'               , 'Y')
+  setattr(Vstk,'valid_min'          , np.min(Vstokes))
+  setattr(Vstk,'valid_max'          , np.max(Vstokes))
   s_rho=ncfile.createVariable("s_rho", 'f', ('s_rho',))
   setattr(s_rho,'long_name'          , 'S-coordinate at RHO-points')
   setattr(s_rho,'standard_name'      , 's_rho')
@@ -269,6 +309,8 @@ for tfile in range(0,nt,rec_per_netcdf_file):
     Vwnd[i,:,:]=Vwind[t,1:,:]
     SUstr[i,:,:]=sustr[t,:,1:]
     SVstr[i,:,:]=svstr[t,1:,:]
+    Ustk[i,:,:]=Ustokes[t,:,1:]
+    Vstk[i,:,:]=Vstokes[t,1:,:]
 
   ncfile.close()
 
