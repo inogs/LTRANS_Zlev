@@ -45,11 +45,11 @@ $hydroparam
   constSalt  = 0.0               ! Constant value for Salt if readSalt is .FALSE.
   readTemp   = .FALSE.          ! If .TRUE. read in temperature          (temp) from NetCDF file, else use constTemp
   constTemp  = 0.0               ! Constant value for Temp if readTemp is .FALSE.
-  readU      = .TRUE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
+  readU      = .FALSE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
   constU     = 0.0               ! Constant value for U if readU is .FALSE.
-  readV      = .TRUE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
+  readV      = .FALSE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
   constV     = 0.0               ! Constant value for V if readV is .FALSE.
-  readW      = .TRUE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
+  readW      = .FALSE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
   constW     = 0.0               ! Constant value for W if readW is .FALSE.
   readAks    = .FALSE.           ! If .TRUE. read in salinity vertical diffusion coefficient (Aks ) from NetCDF file, els
                                  ! use constAks
@@ -63,7 +63,6 @@ $hydroparam
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
-  readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
   Wind               = .TRUE.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
@@ -75,7 +74,7 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
-  Stokes             = .False.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
+  Stokes             = .True.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -144,7 +143,6 @@ $behavparam
   Write_Temp_min_max_ins = 'ins'      ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_Salt_min_max_ins = 'ins'      ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_coastdist =.False.            ! if True write closest coast distance in netcdf output file
-  vertical_vel_file='NONE'            ! For Behavior 6 only
 $end
 
 !*** DVM. The following are parameters for the Diurnal Vertical Migration (DVM) behavior type ***
@@ -234,8 +232,6 @@ $hydromodeloutput
   prefix_Uwind= 'fake_hydro_field_'      
   prefix_Vwind= 'fake_hydro_field_'      
   prefix_Iwind= ''      
-  prefix_Ustokes= ''      
-  prefix_Vstokes= ''      
   numdigits = 10                     ! Number of digits in number portion of file name (with leading zeros)
   suffix='.nc'                       ! NetCDF Input Filename suffix
   filenum =    0                      ! Number in first NetCDF input filename
@@ -266,7 +262,7 @@ $output
   !NOTE: Full path must already exist.  Model can create files, but not directories.
   outpath = './'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
-  NCOutFile = 'LTRANS_Slevels_CurWin'       ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'LTRANS_Slevels_Win_StkfromWind'       ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files
@@ -281,7 +277,7 @@ $output
   OutDir       = 'metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
-  StartedOn    = '14 June 2022'
+  StartedOn    = '16 sept 2022'
 $end
 
 
