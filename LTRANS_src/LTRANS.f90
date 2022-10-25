@@ -1904,14 +1904,12 @@ contains
                         ' kn3_uw=',kn3_uw,' kn4_uw=',kn4_uw
                stop 'found NaN after NewPos'
              endif
-i
 
           else      !if wind
               CALL setInterp(Xpar,Ypar,n)
           end if    !if wind
 
           if(Stokes)then
-<<<<<<< HEAD
             if(readStokDrift)then
               if(p.eq.1)then                       
                 ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
@@ -1933,7 +1931,7 @@ i
                 ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftf,klev) 
               endif                              
               VStokesDrift = polintd(ex,ey,3,ix(2))
-            elseif(wind)
+            elseif(wind)then
               CALL StokesDrift_Estimate_from_Wind(P_Uw,P_Vw,P_angle,P_surfdist,  &
                                UStokesDrift,VStokesDrift,StokDriftFac,alpha)
               ! apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|)))
