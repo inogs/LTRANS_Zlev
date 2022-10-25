@@ -54,6 +54,7 @@ CONTAINS
     swdown_ASCIIfname='NONE'
     SeabedRelease=.FALSE.
     SeabedRelease_meters=0.0
+    Stokes=.False.
     OPEN(1,file=trim(inputdatafile))                  !--- read control variables:
       IF(err == 0) THEN
         READ(1,nml=numparticles ,IOSTAT=istat)  !--- number of particles

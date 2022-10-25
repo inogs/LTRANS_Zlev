@@ -40,14 +40,19 @@ _priority=98
 _run_and_check_success = find_program('run_and_check_success.sh')
 _threshold='1E-05'
 #_threshold='none'
-test('--------------- running LTRANS_Zlevels_CurWin case -----------------------------------------',
+
+_SorZlevels=['Slevels','Zlevels']
+_SubCases=['Cur','Win','CurWin','Cur_B998','CurWin_B998','CurWin_StkfromWind_B998','CurWin_StkfromWind']
+foreach _leveltype : _SorZlevels
+  foreach _subcase : _SubCases
+    test('--------------- running LTRANS_'+_leveltype+'_'+_subcase+' case -----------------------------------------',
           _run_and_check_success,
           args:[
                 _LTRANS_exe.full_path(),
-                'LTRANS_Zlevels_CurWin.data',
-                'LTRANS_Zlevels_CurWin-endfile.ref',
-                'LTRANS_Zlevels_CurWin-endfile.csv',
-                'Adjacentelements-Zlevels.data',
+                'LTRANS_'+_leveltype+'_'+_subcase+'.data',
+                'solutions/LTRANS_'+_leveltype+'_'+_subcase+'-endfile.csv',
+                'LTRANS_'+_leveltype+'_'+_subcase+'-endfile.csv',
+                'Adjacentelements-'+_leveltype+'.data',
                 _prefix+'/',
                 _threshold,
                ],
@@ -55,78 +60,5 @@ test('--------------- running LTRANS_Zlevels_CurWin case -----------------------
           priority:_priority,
           timeout:300,
           is_parallel : true)
-test('--------------- running LTRANS_Slevels_CurWin case -----------------------------------------',
-          _run_and_check_success,
-          args:[
-                _LTRANS_exe.full_path(),
-                'LTRANS_Slevels_CurWin.data',
-                'LTRANS_Slevels_CurWin-endfile.ref',
-                'LTRANS_Slevels_CurWin-endfile.csv',
-                'Adjacentelements-Slevels.data',
-                _prefix+'/',
-                _threshold,
-               ],
-          workdir:meson.current_build_dir(),
-          priority:_priority,
-          timeout:300,
-          is_parallel : true)
-test('--------------- running LTRANS_Zlevels_Cur case -----------------------------------------',
-          _run_and_check_success,
-          args:[
-                _LTRANS_exe.full_path(),
-                'LTRANS_Zlevels_Cur.data',
-                'LTRANS_Zlevels_Cur-endfile.ref',
-                'LTRANS_Zlevels_Cur-endfile.csv',
-                'Adjacentelements-Zlevels.data',
-                _prefix+'/',
-                _threshold,
-               ],
-          workdir:meson.current_build_dir(),
-          priority:_priority,
-          timeout:300,
-          is_parallel : true)
-test('--------------- running LTRANS_Slevels_Cur case -----------------------------------------',
-          _run_and_check_success,
-          args:[
-                _LTRANS_exe.full_path(),
-                'LTRANS_Slevels_Cur.data',
-                'LTRANS_Slevels_Cur-endfile.ref',
-                'LTRANS_Slevels_Cur-endfile.csv',
-                'Adjacentelements-Slevels.data',
-                _prefix+'/',
-                _threshold,
-               ],
-          workdir:meson.current_build_dir(),
-          priority:_priority,
-          timeout:300,
-          is_parallel : true)
-test('--------------- running LTRANS_Zlevels_Win case -----------------------------------------',
-          _run_and_check_success,
-          args:[
-                _LTRANS_exe.full_path(),
-                'LTRANS_Zlevels_Win.data',
-                'LTRANS_Zlevels_Win-endfile.ref',
-                'LTRANS_Zlevels_Win-endfile.csv',
-                'Adjacentelements-Zlevels.data',
-                _prefix+'/',
-                _threshold,
-               ],
-          workdir:meson.current_build_dir(),
-          priority:_priority,
-          timeout:300,
-          is_parallel : true)
-test('--------------- running LTRANS_Slevels_Win case -----------------------------------------',
-          _run_and_check_success,
-          args:[
-                _LTRANS_exe.full_path(),
-                'LTRANS_Slevels_Win.data',
-                'LTRANS_Slevels_Win-endfile.ref',
-                'LTRANS_Slevels_Win-endfile.csv',
-                'Adjacentelements-Slevels.data',
-                _prefix+'/',
-                _threshold,
-               ],
-          workdir:meson.current_build_dir(),
-          priority:_priority,
-          timeout:300,
-          is_parallel : true)
+  endforeach
+endforeach

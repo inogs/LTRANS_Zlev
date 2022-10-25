@@ -57,14 +57,14 @@ $hydroparam
   readDens   = .FALSE.
   constDens  = 1000.0 
 
-  readUwind  = .FALSE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
+  readUwind  = .TRUE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
   constUwind = 0.00             ! Constant value for Uwind if readUwind is .FALSE.
-  readVwind  = .FALSE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
+  readVwind  = .TRUE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
 
-  Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .TRUE.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -74,7 +74,7 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
-  Stokes             = .FALSE.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
+  Stokes             = .True.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -91,7 +91,7 @@ $turbparam
 $end
 !*** BEHAVIOR MODULE PARAMETERS ***
 $behavparam
-  Behavior =  0              ! Behavior type (specify a number)
+  Behavior =  998            ! Behavior type (specify a number)
                              !   Note: The behavior types numbers are: 
                              !     0 Passive, 1 near-surface, 2 near-bottom, 3 DVM, 
                              !     4 C.virginica oyster larvae, 5 C.ariakensis oyster larvae, 
@@ -262,7 +262,7 @@ $output
   !NOTE: Full path must already exist.  Model can create files, but not directories.
   outpath = './'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
-  NCOutFile = 'LTRANS_Slevels_Cur'       ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'LTRANS_Slevels_CurWin_StkfromWind_B998'       ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files
@@ -277,7 +277,7 @@ $output
   OutDir       = 'metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
-  StartedOn    = '14 June 2022'
+  StartedOn    = '16 sept 2022'
 $end
 
 

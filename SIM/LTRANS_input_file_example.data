@@ -64,7 +64,8 @@ $hydroparam
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
 
-  Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .False.  ! If .TRUE. apply Wind Drift 
+                                !  set to .TRUE. to calculate Stokes Drift from wind using StokDriftFac
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -74,6 +75,7 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
+  Stokes             = .False.  ! Include Stokes drift effects (T/F)
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -127,7 +129,7 @@ $behavparam
                              ! in meters above bottom (this should be a positive value
                              ! Note: this formulation may need some work
 
-  GrainSize_fname = "/home/claurent/LTRANS_vZlev_PACKAGE/input/GRAINSIZEFILENAME" ! for Behavior 8
+  GrainSize_fname = "PATH_TO_LTRANS_vZlev_PACKAGE/input/GRAINSIZEFILENAME" ! for Behavior 8
   read_GrainSize  = .False.           ! for Behavior 8
   DVMtime = 0                         ! maximum time spent doing DVM (if DVMtime>0, used for behavior 8 and 9 and 11)
   SettlementSize = 14              
@@ -162,7 +164,6 @@ $dvmparam
   swdown_rec    =  36230     ! first record to be read 
   swdown_thresh = 50.        ! swdown threshold to set the day or night upper layer as a target layer
   swdown_t0 = 1800.          ! time in seconds (same referential as Ext0) of the record corresponding to swdown_rec
-
 $end
 
 
@@ -208,11 +209,11 @@ $end
 !*** INPUT FILE NAME AND LOCATION PARAMETERS ***; 
 ! ** NetCDF Hydro Model Grid file **
 $hydromodelgrid
-  NCgridfile='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/GridforLTRANS-boxes_NiNj64-c1.nc'  ! Name of the grid file created by the pre-processing tool
+  NCgridfile='PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/GridforLTRANS.nc'  ! Name of the grid file created by the pre-processing tool
   Zgrid = .TRUE.                                              ! If .TRUE. read in MITgcm z-coordinate grid and hydrodynamic variables
   Zgrid_depthinterp = .TRUE.                                  ! If .TRUE. interpolates depth to make the Z grid bathymetry
                                                               !       smoother (for Zgrid bathymetry only) 
-  ADJele_fname= 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj64-c1.data' ! Binary file of adjacent element matrix
+  ADJele_fname= 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/input/Adjacentelements.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.                                        ! set to True if file already exists
 $end
 
@@ -277,7 +278,7 @@ $output
   OutDir       = 'PATH_TO_LTRANS_FOLDER/LTRANS_Zlev/SIM/output_boxes_NiNj64/metadata'
   RunBy        = 'Celia Laurent'
   Institution  = 'OGS'
-  StartedOn    = '01 December 2019'
+  StartedOn    = '08 august 2022'
 $end
 
 
@@ -347,7 +348,6 @@ $oilprocs
   Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
-  Stokes             = .True.
 $end
 
 $windswaves

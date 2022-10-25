@@ -14,21 +14,20 @@ $end
 
 !*** TIME PARAMETERS ***
 $timeparam
-  days   =   3.95          ! Number of days to run the model (float)
+  days   =   7.95          ! Number of days to run the model (float)
   iprint =  3600             ! Print interval for LTRANS output (s); 3600 = every hour
   iprinto=     0             ! Initial delay in printing after Ext0, in seconds (leave to 0 to start printing at Ext0) 
-  dt =      21600       ! External time step (duration between hydro model predictions) (s) 
+  dt =      86400       ! External time step (duration between hydro model predictions) (s) 
   idt    =  120              ! Internal (particle tracking) time step (s)
-  Ext0   =  122400                ! Initial time t0 (in seconds)
+  Ext0   =      00                ! Initial time t0 (in seconds)
 $end
-
 
 
 !*** HYDRODYNAMIC MODULE PARAMETERS ***
 $hydroparam
   us         = 10       ! Number of Rho grid s-levels in hydro model
   ws         = 11       ! Number of W grid s-levels in hydro model
-  tdim       = 6              ! Number of time steps per hydro predictions file
+  tdim       = 4              ! Number of time steps per hydro predictions file
   recordnum    = 1               ! Record number of first time step to be read (when no previous time steps in the hydro file: recordnum=1)
   hc         = 0.2               ! Min Depth - used in ROMS S-level transformations
   z0         = 0.0005            ! ROMS bottom roughness parameter (Zob). Bottom layer is considered  to be between z0 and BottomLayerThickness
@@ -74,6 +73,7 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
+  Stokes             = .True.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -231,10 +231,10 @@ $hydromodeloutput
   prefix_Uwind= 'fake_hydro_field_'      
   prefix_Vwind= 'fake_hydro_field_'      
   prefix_Iwind= ''      
-  numdigits = 4                      ! Number of digits in number portion of file name (with leading zeros)
+  numdigits = 10                     ! Number of digits in number portion of file name (with leading zeros)
   suffix='.nc'                       ! NetCDF Input Filename suffix
-  filenum = 1224                      ! Number in first NetCDF input filename
-  filestep =  216                   ! Number between NetCDF input filename
+  filenum =    0                      ! Number in first NetCDF input filename
+  filestep = 3456                   ! Number between NetCDF input filename
   hydrobytes = 8.0                ! Number of bytes of float variables: single =4 bytes, double = 8 bytes
   startfile = .FALSE.                     ! Is it the first file, i.e. does the file have an additional time step?
 $end
@@ -346,7 +346,6 @@ $oilprocs
   Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
-  Stokes             = .False.
 $end
 
 $windswaves

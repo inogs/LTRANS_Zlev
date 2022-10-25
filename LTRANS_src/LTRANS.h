@@ -120,6 +120,7 @@
   DOUBLE PRECISION :: WindDriftDev ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS
   LOGICAL          :: LinearVInterp  ! if True uses linear interpolation scheme on the vertical direction instead of the tension spline fitting.
   DOUBLE PRECISION :: StokDriftFac ! Stokes Drift factor, initially 0.016 in OILTRANS 
+  LOGICAL :: Stokes             ! Include Stokes drift effects (T/F)
 !
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice
@@ -129,7 +130,8 @@
                     & VInterpUVinSurfWater,LinearVInterp,             &  !--- CL-OGS
                     & BottomLayerThickness,PercentVelinBottomLayer,              &   !--- CL-OGS
                     & PercentVel_under_z0,  &  !--- CL-OGS
-                    & readIwind,constIwind,WindIntensity,WindWeatherFac                !--- CL-OGS
+                    & readIwind,constIwind,WindIntensity,WindWeatherFac,         &  !--- CL-OGS
+                    & Stokes                                                        !--- CL-OGS
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
   LOGICAL          :: VTurbOn       ! Vertical   Turbulence on (.TRUE.) or off (.FALSE.)
@@ -433,10 +435,9 @@ LOGICAL :: Emulsification              ! Include emulsification (T/F)
 LOGICAL :: Dispersion                    ! Include dispersion due to wave breaking (T/F)
 LOGICAL :: Remove_Stranded_Oil            ! Stranded oil is removed from weathering oil               
 LOGICAL :: Langmuir                            ! Include Langmuir circulation effects (T/F)
-LOGICAL :: Stokes                          ! Include Stokes drift effects (T/F)
 
 namelist/oilprocs/Spreading,AreaOption,SprdOption,Evaporation,EvapOption, &
-                  Emulsification,Dispersion,Remove_Stranded_Oil,Langmuir,Stokes
+                  Emulsification,Dispersion,Remove_Stranded_Oil,Langmuir
 
 
 !*** WAVE MODEL DATA

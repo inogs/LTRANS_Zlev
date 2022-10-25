@@ -1285,7 +1285,6 @@ contains
                               getKRlevel,getDepth,                             &!--- CL:OGS
                               !outputdetails_closernode, &
                               getP_r_element          !--- CL:OGS
-    use oil_mod,  only: STOKESDRIFT
 
     !$ use OMP_LIB
 
@@ -1877,13 +1876,6 @@ contains
                   VWindDrift = idt * WindDriftFac * PWind * &
                         sin(alpha - (WindDriftDev *(pi/180.0)))
 
-              if(Stokes)then
-                  CALL STOKESDRIFT(P_Uw,P_Vw,P_angle,P_surfdist,  &
-                                   UStokesDrift,VStokesDrift,alpha )
-                  UStokesDrift = idt * (StokDriftFac/0.016)*UStokesDrift
-                  VStokesDrift = idt * (StokDriftFac/0.016)*VStokesDrift
-              end if
-
 
              
              if ((isnan(UWindDrift) .or. isnan(UStokesDrift) ))then 
@@ -1906,6 +1898,14 @@ contains
           else      !if wind
               CALL setInterp(Xpar,Ypar,n)
           end if    !if wind
+
+          if(Stokes)then
+              CALL StokesDrift_Estimate_from_Wind(P_Uw,P_Vw,P_angle,P_surfdist,  &
+                               UStokesDrift,VStokesDrift,StokDriftFac,alpha)
+              ! apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|)))
+              UStokesDrift = idt * UStokesDrift
+              VStokesDrift = idt * VStokesDrift
+          end if
 
 
           !----------------------------------------------------------
@@ -2089,11 +2089,11 @@ contains
          if(Wind)then
           newXpos = newXpos + UWindDrift
           newYpos = newYpos + VWindDrift
-          if(Stokes)then
-            newXpos = newXpos + UStokesDrift
-            newYpos = newYpos + VStokesDrift
-          end if
          end if !if(Wind)
+         if(Stokes)then
+           newXpos = newXpos + UStokesDrift
+           newYpos = newYpos + VStokesDrift
+         end if
 
 
       !Horizontal boundary tests. Ensure particle still within domain
@@ -3813,8 +3813,7 @@ contains
     DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
-                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
-                                UStokesDrift,VStokesDrift
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
         DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
@@ -3898,8 +3897,7 @@ contains
     DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
-                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
-                                UStokesDrift,VStokesDrift
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
         DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
@@ -4046,8 +4044,7 @@ contains
     DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
-                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw,            &
-                                UStokesDrift,VStokesDrift
+                                VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
         DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
@@ -4215,5 +4212,44 @@ contains
   END FUNCTION Angle_wrtEast
 
   !-----------------------------------------------------------------------------
+  !***************************************************
+  !*     Subroutine StokesDrift_Estimate_from_Wind   *
+  !***************************************************
+  SUBROUTINE StokesDrift_Estimate_from_Wind(uwind,vwind,pdir,depth,ustoke,vstoke,WVecAngle)
+  ! Give the Stokes drift at depth of a particle assuming a Pierson Moskowitz spectrum and Langmuir circulation
+  ! Author Marcel Cure (www.numericswarehouse.com) Apr. 2010
+  ! subroutine taken from the Irish Marine Institute Oil Model Module developed by Alan Berry for LTRANS in July 2011
+    IMPLICIT NONE
+    DOUBLE PRECISION, INTENT(IN) :: uwind,vwind,pdir,depth
+    DOUBLE PRECISION, INTENT(OUT) :: ustoke,vstoke                       ! velocity components of particle at depth
+    DOUBLE PRECISION, INTENT(IN), OPTIONAL :: WVecAngle
+    !
+    DOUBLE PRECISION :: V10,knum,phi,VS0,VS
+    DOUBLE PRECISION, PARAMETER :: grav=9.81
+    !
+    !porint *,'Calculating Stokes Drift'
+    !
+    V10 = SQRT(uwind**2.0 + vwind**2.0)
+    !
+    ! We use the modified Stokes profile according to eqn 9 Carniel, S. Sclavo, M., Kantha, L.H. and C.A. Clayson 2005
+    ! ' Langmuir cells and mixing in the upper ocean', Il Nuevo Cimento 28 33-54
+    ! KLC: mag of Stokes drift vel |VS| = VS0*EXP(2kz) (top of p.35)
+    ! KLC: eqns for VS0 and knum are shown in eqn(9) p.42
+    !
+    ! *** Direct use of WVecAngle added to Zlev version by OGS ***    
+    if(present(WVecAngle))then
+      phi = WVecAngle       
+    else
+    ! *** End of OGS modifications for direct use of WVecAngle ***    
+      phi = F_WindAngle(pdir)   ! *** WARNING formulations used by F_WindAngle must be verified *** 
+    endif
+    !
+    knum = 1.25*(grav/(V10**2.0))
+    VS0 = 0.016*V10
+    VS = VS0*EXP(2.0*knum*depth)
+    ustoke = VS*COS(phi)
+    vstoke = VS*SIN(phi)
+    !
+  END SUBROUTINE StokesDrift_Estimate_from_Wind
 
 end program
