@@ -1775,49 +1775,7 @@ contains
       ! *                                                       *
       ! *********************************************************
           if(Wind)then
-            CALL find_winds(Xpar,Ypar,ex,ix,p,1,Uadw,Vadw,n)
-         
-            !Store advection currents at original coordinates
-            kn1_uw = Uadw
-            kn1_vw = Vadw
-         
-            !Estimate new coordinates for next RK position
-            x1 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)/DBLE(2)
-            y1 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)/DBLE(2)
-         
-            !Find advection currents at estimated next RK position
-            CALL find_winds(x1,y1,ex,ix,p,2,Uadw,Vadw,n)
-         
-            !Store advection currents at 2nd RK position
-            kn2_uw = Uadw
-            kn2_vw = Vadw
-         
-            !Estimate new coordinates for next RK position
-            x2 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)/DBLE(2)
-            y2 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)/DBLE(2)
-         
-            !Find advection currents at estimated next RK position
-            CALL find_winds(x2,y2,ex,ix,p,2,Uadw,Vadw,n)
-         
-            !Store advection currents at 3rd RK position
-            kn3_uw = Uadw
-            kn3_vw = Vadw
-         
-            !Calculate the coordinates at the final position
-            x3 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)
-            y3 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)
-         
-         
-            !Find advection currents at the final position
-            CALL find_winds(x3,y3,ex,ix,p,3,Uadw,Vadw,n)
-         
-            !Store advection currents at final position
-            kn4_uw = Uadw
-            kn4_vw = Vadw
-         
-            !Use the RK formula to get the final Advection values
-            P_Uw = (kn1_uw + DBLE(2.0)*kn2_uw + DBLE(2.0)*kn3_uw + kn4_uw)/DBLE(6.0)
-            P_Vw = (kn1_vw + DBLE(2.0)*kn2_vw + DBLE(2.0)*kn3_vw + kn4_vw)/DBLE(6.0)
+           call runge_kutta_2d(n,p,Xpar,Ypar,P_angle,VAR_ID_uwind,VAR_ID_vwind,P_Uw,P_Vw)
          
 !          if(P_Uw .eq. 0.0)P_Uw = 0.0001
 !          if(P_Vw .eq. 0.0)P_Vw = 0.0001
@@ -2889,30 +2847,31 @@ contains
     RETURN
   END SUBROUTINE find_currents
 
-  SUBROUTINE find_winds(Xpar,Ypar,ex,ix,p,version,Uadw,Vadw,n)
+  SUBROUTINE find_2d_advection(Xpar,Ypar,p,version,Uadvec,Vadvec,n,  &
+                            id_u_advec,id_v_advec     )
     !This Subroutine calculates wind induced surface drift currents at the particle's
     !  location in space and time
     USE HYDRO_MOD,  ONLY: setInterp,getInterp
     USE INT_MOD,    ONLY: linint,polintd
-#include "VAR_IDs.h"
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: p,version,n
-    DOUBLE PRECISION, INTENT(IN) :: Xpar,Ypar,ex(3),ix(3)
-    DOUBLE PRECISION, INTENT(OUT) :: Uadw,Vadw
+    INTEGER, INTENT(IN) :: id_u_advec,id_v_advec
+    DOUBLE PRECISION, INTENT(IN) :: Xpar,Ypar
+    DOUBLE PRECISION, INTENT(OUT) :: Uadvec,Vadvec
 
-    DOUBLE PRECISION :: P_Uwindb,P_Uwindc,P_Uwindf,P_Vwindb,P_Vwindc,P_Vwindf, &
+    DOUBLE PRECISION :: P_U_advec_b,P_U_advec_c,P_U_advec_f,P_V_advec_b,P_V_advec_c,P_V_advec_f, &
                         ey(3),slope
 
     !Set Interpolation Values for the current particle
     CALL setInterp(Xpar,Ypar,n)
 
-        P_Uwindb = getInterp(Xpar,Ypar,VAR_ID_uwindb,1)
-        P_Uwindc = getInterp(Xpar,Ypar,VAR_ID_uwindc,1)
-        P_Uwindf = getInterp(Xpar,Ypar,VAR_ID_uwindf,1)
-        P_Vwindb = getInterp(Xpar,Ypar,VAR_ID_vwindb,1)
-        P_Vwindc = getInterp(Xpar,Ypar,VAR_ID_vwindc,1)
-        P_Vwindf = getInterp(Xpar,Ypar,VAR_ID_vwindf,1)
+        P_U_advec_b = getInterp(Xpar,Ypar,id_u_advec+1,1) ! VAR_ID_uadvec_b
+        P_U_advec_c = getInterp(Xpar,Ypar,id_u_advec+2,1) ! VAR_ID_uadvec_c
+        P_U_advec_f = getInterp(Xpar,Ypar,id_u_advec+3,1) ! VAR_ID_uadvec_f
+        P_V_advec_b = getInterp(Xpar,Ypar,id_v_advec+1,1) ! VAR_ID_vadvec_b
+        P_V_advec_c = getInterp(Xpar,Ypar,id_v_advec+2,1) ! VAR_ID_vadvec_c
+        P_V_advec_f = getInterp(Xpar,Ypar,id_v_advec+3,1) ! VAR_ID_vadvec_f
 
       !     *********************************************************
       !     *        Find Internal b,c,f and Advection Values       *
@@ -2921,45 +2880,42 @@ contains
       ! ii. fit polynomial to hydrodynamic model output and find internal
       !     b,c,f values
 
-      !a. Uwind velocity
+      !a. U_advec_ velocity
       ! 1. Prepare external time step values
       if (p .EQ. 1) then
         ey=0.0
-        ey(1) = P_Uwindb
-        ey(2) = P_Uwindb
-        ey(3) = P_Uwindc
+        ey(1) = P_U_advec_b
+        ey(2) = P_U_advec_b
+        ey(3) = P_U_advec_c
       else
         ey=0.0
-        ey(1) = P_Uwindb
-        ey(2) = P_Uwindc
-        ey(3) = P_Uwindf
+        ey(1) = P_U_advec_b
+        ey(2) = P_U_advec_c
+        ey(3) = P_U_advec_f
       endif
 
       ! 2. Get Advection value
-      Uadw = polintd(ex,ey,3,ix(version))
+      Uadvec = polintd(ex,ey,3,ix(version))
 
-      !b. Vwind velocity
+      !b. V_advec_ velocity
       ! 1. Prepare external time step values
       if (p .EQ. 1) then
         ey=0.0
-        ey(1) = P_Vwindb
-        ey(2) = P_Vwindb
-        ey(3) = P_Vwindc
+        ey(1) = P_V_advec_b
+        ey(2) = P_V_advec_b
+        ey(3) = P_V_advec_c
       else
         ey=0.0
-        ey(1) = P_Vwindb
-        ey(2) = P_Vwindc
-        ey(3) = P_Vwindf
+        ey(1) = P_V_advec_b
+        ey(2) = P_V_advec_c
+        ey(3) = P_V_advec_f
       endif
 
       ! 2. Get Advection value
-      Vadw = polintd(ex,ey,3,ix(version))
-      !if(Uadw==0.0 .or.Vadw ==0.0) then
-      !     write(*,*)'U or V current null!',p,Uadw,Vadw
-      !endif
+      Vadvec = polintd(ex,ey,3,ix(version))
 
     RETURN
-  END SUBROUTINE find_winds
+  END SUBROUTINE find_2d_advection
 
 
 
@@ -3889,17 +3845,11 @@ contains
     INTEGER :: klev,Fstlev,NumInterpLvl,ixnum,nklev,k,conflict                     !--- CL:OGS
 
     ! Particle tracking
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_zb,Pwc_zc,Pwc_zf
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( : ) :: Pwc_wzb,Pwc_wzc,Pwc_wzf
     DOUBLE PRECISION :: Xpar,Ypar,Zpar,newXpos,newYpos,newZpos,P_zb,P_zc,P_zf, &
-      P_depth,nP_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf,ey(3),  &
-      AdvecUwind,AdvecVwind
-
-    DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,slope,length,Ttemp
+      P_depth,nP_depth,P_angle,P_zeta,P_zetab,P_zetac,P_zetaf
 
         DOUBLE PRECISION::      P_hsig,P_tm01,P_Uwind,P_Vwind,P_pdir,P_wlen,UWindDrift,&
                                 VWindDrift,alpha,PWind,P_Uw,P_Vw,Uadw,Vadw
-        DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
     LOGICAL :: docycle
     
     IF(Average_Numpart(ID_U_WIND).eq.0 .and. Wind)THEN
@@ -3948,50 +3898,8 @@ contains
             Fstlev=1
         endif     
 
-          CALL find_winds(Xpar,Ypar,ex,ix,p,1,Uadw,Vadw,n)
-          
-          !Store advection currents at original coordinates
-          kn1_uw = Uadw
-          kn1_vw = Vadw
-           
-          !Estimate new coordinates for next RK position
-          x1 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)/DBLE(2)
-          y1 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)/DBLE(2)
-
-          !Find advection currents at estimated next RK position
-          CALL find_winds(x1,y1,ex,ix,p,2,Uadw,Vadw,n)
-          
-          !Store advection currents at 2nd RK position
-          kn2_uw = Uadw
-          kn2_vw = Vadw
-          
-          !Estimate new coordinates for next RK position
-          x2 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)/DBLE(2)
-          y2 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)/DBLE(2)
-          
-          !Find advection currents at estimated next RK position
-          CALL find_winds(x2,y2,ex,ix,p,2,Uadw,Vadw,n)
-          
-          !Store advection currents at 3rd RK position
-          kn3_uw = Uadw
-          kn3_vw = Vadw
-          
-          !Calculate the coordinates at the final position
-          x3 = Xpar + (Uadw*cos(P_angle) - Vadw*sin(P_angle)) * DBLE(idt)
-          y3 = Ypar + (Uadw*sin(P_angle) + Vadw*cos(P_angle)) * DBLE(idt)
-          
-          
-          !Find advection currents at the final position
-          CALL find_winds(x3,y3,ex,ix,p,3,Uadw,Vadw,n)
-          
-          !Store advection currents at final position
-          kn4_uw = Uadw
-          kn4_vw = Vadw
-          
-          !Use the RK formula to get the final Advection values
-          P_Uw = (kn1_uw + DBLE(2.0)*kn2_uw + DBLE(2.0)*kn3_uw + kn4_uw)/DBLE(6.0)
-          P_Vw = (kn1_vw + DBLE(2.0)*kn2_vw + DBLE(2.0)*kn3_vw + kn4_vw)/DBLE(6.0)
-         
+          call runge_kutta_2d(n,p,Xpar,Ypar,P_angle,VAR_ID_uwind,VAR_ID_vwind,P_Uw,P_Vw)
+ 
           !calculate wind vector magnitude
           PWind = sqrt((P_Uw*cos(P_angle) - P_Vw*sin(P_angle))**2.0    & !u rectified to E-W orientation
                       + (P_Uw*sin(P_angle) + P_Vw*cos(P_angle))**2.0)    !v rectified to N-S orientation
@@ -4018,6 +3926,63 @@ contains
     ENDIF !Average_Numpart(ID_U_WIND)==0 .and. Wind)
 
   END SUBROUTINE  set_Average_Wind
+
+  SUBROUTINE runge_kutta_2d(n,p,Xpar,Ypar,P_angle,VAR_ID_u_advec,VAR_ID_v_advec,P_U,P_V)
+    use param_mod,    only: idt
+#include "VAR_IDs.h"
+    IMPLICIT NONE
+
+    INTEGER,INTENT(IN) :: n,p,VAR_ID_u_advec,VAR_ID_v_advec
+    DOUBLE PRECISION,INTENT(IN) :: Xpar,Ypar,P_angle
+    DOUBLE PRECISION,INTENT(OUT)::  P_U,P_V
+
+    DOUBLE PRECISION :: x1,x2,x3,y1,y2,y3,z1,z2,z3,Uadvec,Vadvec
+    DOUBLE PRECISION::  kn1_uw,kn1_vw,kn2_uw,kn2_vw,kn3_uw,kn3_vw,kn4_uw,kn4_vw
+
+          CALL find_2d_advection(Xpar,Ypar,p,1,Uadvec,Vadvec,n,VAR_ID_u_advec,VAR_ID_v_advec)
+          
+          !Store advection currents at original coordinates
+          kn1_uw = Uadvec
+          kn1_vw = Vadvec
+           
+          !Estimate new coordinates for next RK position
+          x1 = Xpar + (Uadvec*cos(P_angle) - Vadvec*sin(P_angle)) * DBLE(idt)/DBLE(2)
+          y1 = Ypar + (Uadvec*sin(P_angle) + Vadvec*cos(P_angle)) * DBLE(idt)/DBLE(2)
+
+          !Find advection currents at estimated next RK position
+          CALL find_2d_advection(x1,y1,p,2,Uadvec,Vadvec,n,VAR_ID_u_advec,VAR_ID_v_advec)
+          
+          !Store advection currents at 2nd RK position
+          kn2_uw = Uadvec
+          kn2_vw = Vadvec
+          
+          !Estimate new coordinates for next RK position
+          x2 = Xpar + (Uadvec*cos(P_angle) - Vadvec*sin(P_angle)) * DBLE(idt)/DBLE(2)
+          y2 = Ypar + (Uadvec*sin(P_angle) + Vadvec*cos(P_angle)) * DBLE(idt)/DBLE(2)
+          
+          !Find advection currents at estimated next RK position
+          CALL find_2d_advection(x2,y2,p,2,Uadvec,Vadvec,n,VAR_ID_u_advec,VAR_ID_v_advec)
+          
+          !Store advection currents at 3rd RK position
+          kn3_uw = Uadvec
+          kn3_vw = Vadvec
+          
+          !Calculate the coordinates at the final position
+          x3 = Xpar + (Uadvec*cos(P_angle) - Vadvec*sin(P_angle)) * DBLE(idt)
+          y3 = Ypar + (Uadvec*sin(P_angle) + Vadvec*cos(P_angle)) * DBLE(idt)
+          
+          
+          !Find advection currents at the final position
+          CALL find_2d_advection(x3,y3,p,3,Uadvec,Vadvec,n,VAR_ID_u_advec,VAR_ID_v_advec)
+          
+          !Store advection currents at final position
+          kn4_uw = Uadvec
+          kn4_vw = Vadvec
+          
+          !Use the RK formula to get the final Advection values
+          P_U = (kn1_uw + DBLE(2.0)*kn2_uw + DBLE(2.0)*kn3_uw + kn4_uw)/DBLE(6.0)
+          P_V = (kn1_vw + DBLE(2.0)*kn2_vw + DBLE(2.0)*kn3_vw + kn4_vw)/DBLE(6.0)
+  END SUBROUTINE runge_kutta_2d
 
   SUBROUTINE   set_Average_Temperature()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
