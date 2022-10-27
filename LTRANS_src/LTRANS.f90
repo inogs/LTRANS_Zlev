@@ -1870,26 +1870,7 @@ contains
 
           if(Stokes)then
             if(readStokDrift)then
-              if(p.eq.1)then                       
-                ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
-                ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
-                ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
-              else                                
-                ey(1) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftb,klev) 
-                ey(2) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftc,klev) 
-                ey(3) = getInterp(Xpar,Ypar,VAR_ID_ustokdriftf,klev) 
-              endif                              
-              UStokesDrift = polintd(ex,ey,3,ix(2))
-              if(p.eq.1)then                       
-                ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
-                ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
-                ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
-              else                                
-                ey(1) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftb,klev) 
-                ey(2) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftc,klev) 
-                ey(3) = getInterp(Xpar,Ypar,VAR_ID_vstokdriftf,klev) 
-              endif                              
-              VStokesDrift = polintd(ex,ey,3,ix(2))
+              call runge_kutta_2d(n,p,Xpar,Ypar,P_angle,VAR_ID_ustokdrift,VAR_ID_vstokdrift,UStokesDrift,VStokesDrift)
 
               Stokes_exponential_decay =  exp( abs(Stokes_ke) * min( 0.0 , abs(Stokes_hc)+P_surfdist) )
               UStokesDrift = idt * UStokesDrift * Stokes_exponential_decay
