@@ -293,7 +293,7 @@ $other
                              ! Note: This is only for particles that travel out of bounds illegally
   BndOut  =  .FALSE.         ! Write on stdout  and in python files detail of the boundary computations
   BoundaryBLNs = .TRUE.      ! Create Surfer Blanking Files of boundaries? .TRUE.=yes, .FALSE.=no
-  SaltTempOn   = .TRUE.      ! Calculate salinity and temperature at particle 
+  SaltTempOn   = .FALSE.      ! Calculate salinity and temperature at particle 
         	                  ! location: yes (.TRUE.) or no (.FALSE.)
   TrackCollisions  = .TRUE.  ! Write Bottom and Land Hit Files? .TRUE.=yes, .FALSE.=no
   WriteHeaders     = .FALSE. ! Write .txt files with column headers? .TRUE.=yes, .FALSE.=no
