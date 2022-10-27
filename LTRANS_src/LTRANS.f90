@@ -1886,6 +1886,7 @@ contains
       ! *********************************************************
 
 
+      CALL setInterp(Xpar,Ypar,n)
       IF (SaltTempOn) THEN
 
         !Calculate salinity and temperature at the particle location       
