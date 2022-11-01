@@ -65,9 +65,10 @@ $hydroparam
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
   readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
-  Wind               = .False.  ! If .TRUE. apply Wind Drift 
+  Wind               = .False.  ! If .TRUE. then WindDrift is enabled. 
                                 !  set to .TRUE. to calculate Stokes Drift from wind using StokDriftFac
-                                !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
+                                !  set to .TRUE. to enable the oil module to compute  
+                                ! the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
   WindWeatherFac = 0.6          ! Set to 1 to use the full wind intensity for oil weathering
@@ -75,14 +76,14 @@ $hydroparam
 
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
-  StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
-  Stokes             = .True.   ! Include Stokes drift effects (T/F)
-                                ! Stokes drift is read from input file if readStokDrift=.True.
-                                ! with a drift intensity decaying with the particles depth using Stokes_hc and Stokes_ke 
-                                ! otherwise compute Stokes drift from wind fields using StokDriftFac
+  Stokes             = .True.   ! if .TRUE. then apply Stokes Drift 
+                                ! Stokes drift is read from input file if `readStokDrift=.True.`
+                                ! with a drift intensity decaying with the particles depth using `Stokes_hc` and `Stokes_ke` .
+                                ! Otherwise if `readStokDrift=.False.` and `Wind=.True.` 
+                                ! then Stokes drift is estimated from wind fields using `StokDriftFac`.
   Stokes_hc=0.3                 ! Stokes drift applied at 100% intensity in depth range [hc,0] meters,
   Stokes_ke=5.0                 ! bellow Stokes_hc, apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|))) 
-                                ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
+  StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end

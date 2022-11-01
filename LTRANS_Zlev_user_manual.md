@@ -498,14 +498,14 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of  
                                 ! wind vector), initially 5.0 in OILTRANS 
-  StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   Stokes             = .True.   ! if .TRUE. then apply Stokes Drift 
-                                ! Stokes drift is read from input file if readStokDrift=.True.
-                                ! with a drift intensity decaying with the particles depth using Stokes_hc and Stokes_ke 
-                                ! otherwise compute Stokes drift from wind fields using StokDriftFac
+                                ! Stokes drift is read from input file if `readStokDrift=.True.`
+                                ! with a drift intensity decaying with the particles depth using `Stokes_hc` and `Stokes_ke` .
+                                ! Otherwise if `readStokDrift=.False.` and `Wind=.True.` 
+                                ! then Stokes drift is estimated from wind fields using `StokDriftFac`.
   Stokes_hc=0.3                 ! Stokes drift applied at 100% intensity in depth range [hc,0] meters,
   Stokes_ke=5.0                 ! bellow Stokes_hc, apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|))) 
-                                ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
+  StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a  
                                 ! linear interpolation is performed 
                                 ! along the vertical direction instead of the  
@@ -525,9 +525,8 @@ New parameters specific to the Zlev version of LTRANS are
 - `WindDriftFac`, `WindDriftDev` and `StokDriftFac` allow to customize the wind drift factor and deviation (in degrees) to the right hand side of the wind vector, as well as the Stokes Drift Factor. 
 - `LinearVInterp` flag, when set to `.True.`, enables the linear interpolation of the hydrodynamic fields in the vertical direction, instead of using the TSPACK tension spine fitting.
 - `readStokDrift` flag: when `Stokes` is `.True.`, if `readStokDrif=.True.` then read in StokDrift from input binary file, otherwise if `readStokDrif=.False.` then use StokDriftFac and wind fields (`Wind` must be set to `.True.`) to compute Stokes Drift. 
-- `Stokes_hc=0.3` :  height above which Stokes drift is maximal and constant. Stokes drift applied at 100% intensity in depth range [hc,0] meters,
-- `Stokes_ke=5.0` : ! bellow Stokes_hc, apply exponential decay Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|))) 
-                    ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
+- `Stokes_hc=0.3` : depth above which Stokes drift is maximal and constant. Stokes drift applied at 100% intensity in depth range [-hc,0] meters,
+- `Stokes_ke=5.0` : bellow `Stokes_hc`, apply exponential decay `Stk(Z)=Stk0*min(1.0,exp(-ke*(|hc-Z|)))` 
 
 ##### 6.4 Turbulence parameters
 
