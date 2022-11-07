@@ -189,14 +189,21 @@ $settleparam
  pedges     = 5              ! Number of habitat polygon edge points (# of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points (number of rows in holes file)
 
- StrandingDist= -999           ! Stranding Distance in meters from land (Disabled if StrandingDist<=0)
- strandingmaxdepth =300.00      ! maximal depth at which stranding can occur                  
- strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which stranding can occur                  
  storedincolor=1                ! if ==1: If particle is in a polygon, store the poly-number in color array
 				! if ==2: store the element number in which is the particle in color array
 				! if ==0: store Status in color array
 $end
 
+$strandingparam
+ stranding_on = .FALSE.             ! stranding module on (.TRUE.) or off (.FALSE.)
+ StrandingDist= 50.0                ! Stranding Distance in meters from land 
+ strandingMaxDistFromSurf = 99999.0 ! maximal distance from surface at which stranding can occur 
+                                    ! (if strandingMaxDistFromSurf > maximal depth of the domain, 
+                                    ! then stranding becomes independent of the distance from the surface)
+ strandingMaxDistFromBott = 99999.0 ! maximal distance from bottom depth at which stranding can occur
+                                    ! (if strandingMaxDistFromBott > maximal depth of the domain, 
+                                    ! then stranding becomes independent of the distance from the bottom)
+$end
 
 
 !*** CONVERSION MODULE PARAMETERS ***

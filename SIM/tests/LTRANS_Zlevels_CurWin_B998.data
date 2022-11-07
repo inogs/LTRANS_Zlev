@@ -63,6 +63,7 @@ $hydroparam
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
+  readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
   Wind               = .True.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
@@ -75,6 +76,10 @@ $hydroparam
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   Stokes             = .FALSE.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
+  Stokes_hc=0.3                 ! Stokes drift read as a separate variable will be
+                                ! applied at 100% intensity in depth range [hc,0] meters,
+  Stokes_ke=5.0                 ! bellow Stokes_hc, apply exponential decay Stk(Z)=Stk0*exp(-|ke|*(Z-|hc|)) 
+                                ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -143,6 +148,7 @@ $behavparam
   Write_Temp_min_max_ins = 'ins'      ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_Salt_min_max_ins = 'ins'      ! values 'min', 'max', or 'ins' per "instantaneous"
   Write_coastdist =.False.            ! if True write closest coast distance in netcdf output file
+  vertical_vel_file='NONE'            ! For Behavior 6 only
 $end
 
 !*** DVM. The following are parameters for the Diurnal Vertical Migration (DVM) behavior type ***
@@ -239,6 +245,8 @@ $hydromodeloutput
   prefix_Uwind= 'EXFuwind.'      
   prefix_Vwind= 'EXFvwind.'      
   prefix_Iwind= ''      
+  prefix_Ustokes= 'fake_hydro_field_'      
+  prefix_Vstokes= 'fake_hydro_field_'      
   numdigits = 10                  ! Number of digits in number portion of file name (with leading zeros)
   suffix='.data'                       ! NetCDF Input Filename suffix
   filenum =    0                      ! Number in first NetCDF input filename
