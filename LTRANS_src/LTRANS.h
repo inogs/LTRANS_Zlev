@@ -239,18 +239,20 @@
   INTEGER :: maxholeid              ! Highest hole id number
   INTEGER :: pedges                 ! Number of habitat polygon edge points (# of rows in habitat polygon file)
   INTEGER :: hedges                 ! Number of hole edge points (number of rows in holes file)
-!--- CL-OGS : allow stranding along coast when particle enters the water squared elements bordering the coast
-  DOUBLE PRECISION :: StrandingDist          !--- CL-OGS : Stranding Distance in meters from land (Disabled if StrandingDist<0, Enabled for StrandingDist>=0)
-  DOUBLE PRECISION :: strandingmaxdepth          !--- CL-OGS : maximal depth at which stranding can occur                  
-  DOUBLE PRECISION :: strandingmaxdistfromdepth  !--- CL-OGS : maximal distance from bottom depth at which stranding can occur                 
   LOGICAL :: Write_Poly_Presence  
   INTEGER :: storedincolor  !--- CL-OGS : if ==1: If particle is in a polygon, store the poly-number in color array
                             !--- CL-OGS : if ==2: store the element number in which is the particle in color array
                             !--- CL-OGS : if ==0: store Status in color array
   namelist/settleparam/settlementon,holesExist,minpolyid,maxpolyid,minholeid,maxholeid,pedges,hedges, &
-          StrandingDist,strandingmaxdepth,strandingmaxdistfromdepth,storedincolor,Write_Poly_Presence   !--- CL-OGS : additional parameters
+          storedincolor,Write_Poly_Presence   !--- CL-OGS : additional parameters
 
-
+!*** STRANDING MODULE PARAMETERS ***
+  LOGICAL :: stranding_on           ! stranding module on (.TRUE.) or off (.FALSE.)
+!--- CL-OGS : allow stranding along coast when particle enters the water squared elements bordering the coast
+  DOUBLE PRECISION :: StrandingDist          !--- CL-OGS : maximal distance from land at which stranding can occur (in meters)
+  DOUBLE PRECISION :: strandingMaxDistFromSurf          !--- CL-OGS : maximal depth (distance from surface) at which stranding can occur                  
+  DOUBLE PRECISION :: StrandingMaxDistFromBott  !--- CL-OGS : maximal distance from bottom depth at which stranding can occur                 
+  namelist/strandingparam/stranding_on,StrandingDist,strandingMaxDistFromSurf,StrandingMaxDistFromBott  !--- CL-OGS : additional parameters
 
 !*** CONVERSION MODULE PARAMETERS ***
   DOUBLE PRECISION :: PI            ! Pi

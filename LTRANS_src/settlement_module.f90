@@ -33,13 +33,12 @@ MODULE SETTLEMENT_MOD
   LOGICAL, ALLOCATABLE, DIMENSION(:)            :: settle
   TYPE (polyPerEle), ALLOCATABLE, DIMENSION(:,:):: elepolys
   TYPE (polyPerEle), ALLOCATABLE, DIMENSION(:):: polyholes 
-  LOGICAL, ALLOCATABLE, DIMENSION(:) :: stranded
   ! vertical level numbers for MITgcm hydro using varying water cell at each level
   INTEGER :: us_tridim,npoly
 
   !The following procedures have been made public:
-  PUBLIC :: initSettlement,testSettlement,isSettled,finSettlement,isStranded, &
-             get_NumPoly,get_IDPoly,p_Stranding
+  PUBLIC :: initSettlement,testSettlement,isSettled,finSettlement, &
+             get_NumPoly,get_IDPoly
 
 
 CONTAINS
@@ -77,7 +76,6 @@ CONTAINS
 
       !FALSE=not settled, TRUE=successful settlement
     ALLOCATE(settle(numpar))
-    ALLOCATE(stranded(numpar))
 
       !age particles are competent to settle
     ALLOCATE(settletime(numpar))
@@ -103,7 +101,6 @@ CONTAINS
 
 
     settle = .FALSE.  !initialize to FALSE=not settled
-    stranded = .FALSE.
 
     do n=1,numpar
       settletime(n) = P_pediage(n)
@@ -128,7 +125,6 @@ CONTAINS
     DEALLOCATE(maxbdis)
     DEALLOCATE(maxhdis)
     DEALLOCATE(settle)
-    DEALLOCATE(stranded)
     DEALLOCATE(polys)
     DEALLOCATE(holes)
 
@@ -549,26 +545,11 @@ CONTAINS
 
   END SUBROUTINE createPolySpecs
 
-  LOGICAL FUNCTION isStranded(n)
-  !This function returns .TRUE. if the particle is "stranded", and FALSE if not
-    USE PARAM_MOD, ONLY:settlementon
-    IMPLICIT NONE
-    INTEGER, INTENT(IN) :: n
-
-    if(settlementon)then
-     isStranded = stranded(n)
-    else
-     isStranded = .FALSE.
-    endif
-
-  END FUNCTION isStranded
-
   !Subroutine to determine if the particle is on any oyster polys
   !  (including holes)
   SUBROUTINE testSettlement(P_age,n,Px,Py,Pz,inpoly, &
                             P_depth,k,intersectf,coastdist)
-    USE PARAM_MOD, ONLY: holesExist,StrandingDist,strandingmaxdepth,    &
-                         strandingmaxdistfromdepth,OilOn
+    USE PARAM_MOD, ONLY: holesExist,OilOn
     USE HYDRO_MOD, ONLY: getP_r_element,getP_klev
     IMPLICIT NONE
 
@@ -598,26 +579,14 @@ CONTAINS
       endif
 
     if( (inpoly .GT. 0) .and.                                   &
-        ( (abs(P_age) >= settletime(n))                       & 
-           .and.(P_depth+abs(strandingmaxdistfromdepth)>=Pz &
-                 .and. Pz>=-abs(strandingmaxdepth)           ) ) )then 
-      if (.not.OilOn .and. StrandingDist< -1e-5) then
-            settle(n) = .TRUE.       ! If (StrandingDist<0) n can settle unless Oil is On  
-      elseif(StrandingDist>0)then! If (StrandingDist>0) n can strand
-            if(coastdist<=StrandingDist)   stranded(n)=.TRUE.
-      elseif(abs(StrandingDist)<1e-5 .and. intersectf>0)then! If (StrandingDist=0 and bound intersected) n can strand
-            stranded(n)=.TRUE.
+        ( abs(P_age) >= settletime(n) ) )then 
+      if (.not.OilOn ) then
+            settle(n) = .TRUE.     
       endif
 
     endif
 
   END SUBROUTINE testSettlement
-
-  SUBROUTINE p_Stranding(n)
-    IMPLICIT NONE
-    INTEGER :: n
-    stranded(n)=.TRUE.
-  END SUBROUTINE p_Stranding
 
 
   SUBROUTINE psettle(Px,Py,R_ele,klev,polyin)

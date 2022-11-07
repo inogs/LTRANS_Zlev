@@ -55,6 +55,10 @@ CONTAINS
     SeabedRelease=.FALSE.
     SeabedRelease_meters=0.0
     Stokes=.False.
+    stranding_on=.False.
+    StrandingDist=1e-5
+    strandingMaxDistFromBott=99999999
+    strandingMaxDistFromSurf=99999999
     OPEN(1,file=trim(inputdatafile))                  !--- read control variables:
       IF(err == 0) THEN
         READ(1,nml=numparticles ,IOSTAT=istat)  !--- number of particles
@@ -89,6 +93,11 @@ CONTAINS
         READ(1,nml=settleparam  ,IOSTAT=istat)  !--- settlement info
         !write(*,settleparam)
         IF(istat/=0)err = 70
+      ENDIF
+      IF(err == 0) THEN
+        READ(1,nml=strandingparam  ,IOSTAT=istat)  !--- settlement info
+        !write(*,strandingparam)
+        IF(istat/=0)err = 75
       ENDIF
       IF(err == 0) THEN
         READ(1,nml=convparam    ,IOSTAT=istat)  !--- unit conversion
@@ -171,6 +180,8 @@ CONTAINS
         header='Error when reading behavdvm, pls check LTRANS.data'
       CASE(70)
         header='Error when reading settleparam, pls check LTRANS.data'
+      CASE(75)
+        header='Error when reading strandingparam, pls check LTRANS.data'
       CASE(80)
         header='Error when reading convparam, pls check LTRANS.data'
       CASE(90)
@@ -257,7 +268,7 @@ CONTAINS
 
     !Iteration Variables
     INTEGER :: err
-
+    GF_ID=0
     err = 0
 
     ! *********************** GET GRID INFO ***********************

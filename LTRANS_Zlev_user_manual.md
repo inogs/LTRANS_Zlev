@@ -678,25 +678,33 @@ $settleparam
                              ! (pedges = number of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points 
                              ! (hedges= number of rows in holes file)
- StrandingDist= -999         ! Stranding Distance in meters from land 
-                             ! (Disabled if StrandingDist<=0)
- strandingmaxdepth =300.00      ! maximal depth at which stranding can occur               
- strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which 
-                                ! stranding can occur                  
  storedincolor=1                ! defines what is stored in the color array: 
 				! if ==0: store Status in color array
-                ! if ==1: If particle is in a polygon, store the poly-number 
+                                ! if ==1: If particle is in a polygon, store the poly-number 
 				! if ==2: store the element number in which is the particle in color array
 $end
 ```
+The `storedincolor` flag was created to the settlement module to allow the output of quantities useful for debugging issues.
 
-Among the settlement parameters specific to the Zlev version of LTRANS, those relative to stranding allow to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `strandingmaxdepth` and the height of the particle above the bottom is not bigger than `strandingmaxdistfromdepth`. All those conditions must be fullfilled so that particles an strand, as illustrated in the next two graphics. Finally, the `storedincolor` flag was created to allow the output of quantities useful for debugging issues.
+```
+$strandingparam
+ stranding_on = .FALSE.             ! stranding module on (.TRUE.) or off (.FALSE.)
+ StrandingDist= 50.0                ! Stranding Distance in meters from land 
+ strandingMaxDistFromSurf = 3.50    ! maximal distance from surface at which stranding can occur 
+                                    ! (if strandingMaxDistFromSurf > maximal depth of the domain, 
+                                    ! then stranding becomes independent of the distance from the surface)
+ strandingMaxDistFromBott = 9999999 ! maximal distance from bottom depth at which stranding can occur
+                                    ! (if strandingMaxDistFromBott > maximal depth of the domain, 
+                                    ! then stranding becomes independent of the distance from the bottom)
+$end
+```
+
+In the Zlev version of LTRANS the stranding module allows to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `StrandingMaxDistFromSurf` and the height of the particle above the bottom is not bigger than `StrandingMaxDistFromBott`. All those conditions must be fullfilled so that particles an strand, as illustrated in the next two graphics.
 
 Flat sea bottom             |  Sloppy sea bottom
 :--------------------------:|:--------------------------:
 ![Stranding_Where_Flatter_Bottom](doc/Stranding_Where_Flatter_Bottom.png) | ![Stranding_Where_Sloppy_Bottom](doc/Stranding_Where_Sloppy_Bottom.png)
 
-In any way, Stranding (or settlement, if stranding is disabled) will happen only for `settlementon=.True.` when the particles are found to be in a settlement polygon at a time greater than `pediage` (defined in the Behavior section).
 
 ##### 6.8 Conversion parameters
 

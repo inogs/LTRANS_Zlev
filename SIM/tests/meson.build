@@ -24,7 +24,7 @@ test('--------------- create fake input files (grid and fields)-----------------
              _prefix+'/'
             ],
        workdir:meson.current_build_dir(),
-       timeout:300,
+       timeout:400,
        priority:100)
 
 _synch = find_program('synch.sh')
@@ -46,7 +46,8 @@ _SubCases=['Cur','Win','CurWin',
            'Cur_B998','CurWin_B998',
            'CurWin_StkfromWind_B998',
            'Win_StkfromWind',
-           'CurWin_StkfromWind']
+           'CurWin_StkfromWind',
+           'Cur_Str1','Cur_Str2','Cur_Str3','Cur_Str4']
 foreach _leveltype : _SorZlevels
   foreach _subcase : _SubCases
     test('--------------- running LTRANS_'+_leveltype+'_'+_subcase+' case -----------------------------------------',
@@ -62,7 +63,7 @@ foreach _leveltype : _SorZlevels
                ],
           workdir:meson.current_build_dir(),
           priority:_priority,
-          timeout:300,
+          timeout:800,
           is_parallel : true)
   endforeach
 endforeach

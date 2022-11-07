@@ -107,8 +107,9 @@ CONTAINS
     USE PARAM_MOD, ONLY: numpar,Behavior,swimfast,swimslow,swimstart,     &
                       pediage,deadage,Sgradient,settlementon, &
                       swdown_ASCIIfname,swdown_dt,swdown_rec,swdown_ASCII,days,&
-                      DVMtime,SettlementSize!,readNetCdfSwdown
+                      DVMtime,SettlementSize,stranding_on!,readNetCdfSwdown
     USE SETTLEMENT_MOD, ONLY: initSettlement
+    USE STRANDING_MOD, ONLY: initStranding
     USE NORM_MOD,   ONLY: norm
     IMPLICIT NONE
     INTEGER :: n,count
@@ -234,6 +235,9 @@ CONTAINS
     !  which particle can settle (i.e., become pediveligers)
     if(settlementon)then
       CALL initSettlement(P_pediage)
+    endif
+    if(stranding_on)then
+      CALL initStranding()
     endif
 
   END SUBROUTINE initBehave
@@ -785,8 +789,9 @@ CONTAINS
     !This function returns an identification number that describes a particle's  
     !behavior type or status for use in visualization routines. It was
     !initially developed to contain the color code for plotting in Surfer.)                
-    USE PARAM_MOD, ONLY: SETTLEMENTON,OPENOCEANBOUNDARY,OilOn
-    USE SETTLEMENT_MOD, ONLY: isSettled,isStranded
+    USE PARAM_MOD, ONLY: SETTLEMENTON,OPENOCEANBOUNDARY,OilOn,stranding_on
+    USE SETTLEMENT_MOD, ONLY: isSettled
+    USE STRANDING_MOD, ONLY: isStranded
     IMPLICIT NONE
     INTEGER, INTENT(IN) :: n
     DOUBLE PRECISION, INTENT(IN) :: default_status
@@ -801,7 +806,9 @@ CONTAINS
     if(dead(n)) getStatus = -1         ! -1 = Dead
     if(settlementon)then
       if(isSettled(n)) getStatus = -2  ! -2 = Settled
-      if(isStranded(n)) getStatus = -2  ! -2 = Stranded
+    endif
+    if(stranding_on)then
+      if(isStranded(n)) getStatus = -4  ! -2 = Stranded
     endif
     if(OpenOceanBoundary)then
       if(oob(n)) getStatus = -3        ! -3 = Out of Bounds

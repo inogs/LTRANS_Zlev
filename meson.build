@@ -162,6 +162,7 @@ _LTRANS_source_files += [
                          'LTRANS_src/ver_turb_module.f90',
                          'LTRANS_src/tension_module.f90',
                          'LTRANS_src/settlement_module.f90',
+                         'LTRANS_src/stranding_module.f90',
                          'LTRANS_src/random_module.f90',
                          'LTRANS_src/point_in_polygon_module.f90',
                          'LTRANS_src/norm_module.f90',

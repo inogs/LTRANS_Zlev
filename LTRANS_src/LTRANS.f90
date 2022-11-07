@@ -251,7 +251,7 @@ contains
                       read_GrainSize,                                 & !--- CL-OGS: for behavior type 8
                       constTemp,constUwind,constVwind,                &
                       SeabedRelease,SeabedRelease_meters,             &
-                      Write_coastdist,StrandingDist,us,Write_Poly_Presence, &
+                      Write_coastdist,stranding_on,us,Write_Poly_Presence, &
 !        *****   IMIOM        *****
                       OilOn,WindWeatherFac
     use oil_mod, only: InitOilModel,OilModel
@@ -337,11 +337,7 @@ contains
       ENDIF
     ENDIF
     
-    IF( StrandingDist>=0 .and. (.not.settlementon ))then
-      write(*,*)'error StrandingDist>=0 .and. (.not.settlementon )'
-      stop 'set settlementon to True or StrandingDist<0'
-    ENDIF
-    IF( StrandingDist>=0 .or. Write_coastdist )  then
+    IF( stranding_on .or. Write_coastdist )  then
       ALLOCATE(P_coastdist(numpar))
       P_coastdist= 0.0
     ENDIF
@@ -449,7 +445,7 @@ contains
 !        ***** END IMIOM *****
 
             do n=1,numpar
-              if(settlementon .and.  StrandingDist<0)then
+              if(settlementon)then
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n) 
               else
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB)
@@ -466,7 +462,7 @@ contains
               par(n,ppZ) = 0.0    !initialize to 0.0 to indicate no previous location
               par(n,pStatus)   = Behavior
               par(n,pAge)      = 0.0
-              par(n,pLifespan) = 0.0
+              par(n,pLifespan) = -1.0
             enddo
         endif
 
@@ -662,7 +658,7 @@ contains
           cycle
         endif
       endif
-      IF( StrandingDist>=0 .or. Write_coastdist ) then
+      IF( stranding_on .or. Write_coastdist ) then
       call Get_coastdist(par(n,pY),par(n,pX),us,P_coastdist(n))
       ENDIF
 
@@ -900,12 +896,13 @@ contains
     use param_mod, only: dt,idt,WriteModelTiming,                     & 
                         numdigits,suffix,numpar,                     & !--- CL-OGS 
                         OpenOceanBoundary, mortality,                & !--- CL-OGS 
-                        settlementon,Ext0,WriteParfile,VTurbOn,StrandingDist          !--- CL-OGS 
+                        settlementon,Ext0,WriteParfile,VTurbOn,stranding_on          !--- CL-OGS 
     use convert_mod, only: x2lon,y2lat                                  !--- CL-OGS   
     use hydro_mod, only: updateHydro,                                 &
                         filenm                                          !--- CL-OGS 
     USE BEHAVIOR_MOD,   ONLY: isOut,isDead                              !--- CL-OGS  
-    USE SETTLEMENT_MOD, ONLY: isSettled,isStranded
+    USE SETTLEMENT_MOD, ONLY: isSettled
+    USE STRANDING_MOD, ONLY: isStranded
     integer :: stepIT,ios  
     CHARACTER(len=200) :: namefile                                      !--- CL-OGS 
     real :: before,after
@@ -951,7 +948,7 @@ contains
       
         do n=1,numpar
           if( (.not.isOut(n)) .and. (.not.isDead(n)))then
-            if(settlementon .and.  StrandingDist<0)then
+            if(settlementon )then
               write(1,"(3(F18.7,','),2(i13,','),i20)") x2lon(par(n,pX),par(n,pY)),y2lat(par(n,pY)),par(n,pZ), &
                          int(max(par(n,pDOB)-ix(2),0.0)),startpoly(n),n
             else
@@ -1064,7 +1061,7 @@ contains
 
   subroutine fin_LTRANS()
     use param_mod, only: numpar,writeCSV,outpathGiven,outpath,settlementon, & 
-                         NCOutFile,Behavior,OutDir,StrandingDist                           !--- CL-OGS
+                         NCOutFile,Behavior,OutDir,stranding_on                           !--- CL-OGS
     use behavior_mod, only: finBehave,getStatus
     use convert_mod, only: x2lon,y2lat
     use hydro_mod, only: finHydro
@@ -1102,7 +1099,7 @@ contains
           pLat = y2lat(par(n,pY))
           default_stat=par(n,pStatus)
           par(n,pStatus) = getStatus(n,default_stat)
-          if(settlementon .and.  StrandingDist<0)then
+          if(settlementon )then
             write(333,3) startpoly(n),endpoly(n),int(par(n,pStatus)),pLat,pLon,  &
                        par(n,pZ),int(par(n,pLifespan))
           else
@@ -1260,7 +1257,7 @@ contains
                               TrackCollisions,WriteModelTiming,mortality,      &
                               ErrorFlag,                                       &
                               WriteCurrents,NCOutFile,Outdir,                  &!--- CL-OGS: output Currents if requested
-                              StrandingDist,storedincolor,                     &!--- CL-OGS: Stranding/settlement optionals
+                              stranding_on,storedincolor,                     &!--- CL-OGS: Stranding/settlement optionals
                               Zgrid,Zgrid_depthinterp,                         &!--- CL-OGS: coupling with MITgcm'Z-grid bathymetry and fields
                               iprint,WindDriftFac,WindDriftDev,StokDriftFac,   &!--- CL-OGS 
                               BndOut,dt,read_GrainSize,WindIntensity,z0,  &
@@ -1273,7 +1270,8 @@ contains
                               constDens,Write_coastdist
 
 !        ***** END IMIOM *****
-    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded,p_Stranding
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement
+    USE STRANDING_MOD, ONLY: isStranded,p_Stranding,testStranding
     USE BEHAVIOR_MOD,   ONLY: updateStatus,behave,setOut,isOut,isDead,die
     USE BOUNDARY_MOD,   ONLY: mbounds,ibounds,intersect_reflect,Get_coastdist
     USE CONVERT_MOD,    ONLY: x2lon,y2lat
@@ -1395,7 +1393,7 @@ contains
       endif
  
 !--- CL-OGS:   !If particle stranded, skip tracking
-      if(settlementon)then
+      if(stranding_on)then
         if(isStranded(n)) return
       endif
 
@@ -1411,8 +1409,8 @@ contains
 
       !IMIOM
       if(OilOn)then
-          if(par(n,pStatus) == -2) then
-              return                               !if stranded
+          if(par(n,pStatus) == -4) then
+              return                      !if stranded
          else
             par(n,pStatus)   = 1          !floating oil
         end if
@@ -1986,7 +1984,7 @@ contains
       if(SaltTempOn)PTemptmp=P_Temp(n)
      
       IF (Behavior.NE.0 .AND. Behavior.LE.1000) CALL behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,      &
-           P_zb,P_zc,P_zf,P_zetac,par(n,pAge),P_depth,P_U,P_V,P_angle,P_Temp(n),   &
+           P_zb,P_zc,P_zf,P_zetac,par(n,pAge),P_depth,P_U,P_V,P_angle,PTemptmp,   &
            n,it,ex,ix,ix(3)/DBLE(86400),p,bott,XBehav,YBehav,ZBehav,LarvSize)!,P_swdown)
            IF(Behavior.ge.8.and.Behavior.le.11) P_Size(n)=LarvSize
 
@@ -2078,12 +2076,12 @@ contains
        
        coastdist=0
 
-       IF(OilOn .and. StrandingDist>=0)then
+       IF(OilOn .and. stranding_on)then
         P_coastdist(n)=0
         nXpos = Xpos+(fintersectX-Xpos)*0.9 
         nYpos = Ypos+(fintersectY-Ypos)*0.9 
         par(n,pnZ) = newZpos
-        par(n,pStatus) = 2
+        par(n,pStatus) = 4
         call p_Stranding(n) ! Apply stranding in "is_Stranded"
         private_Average_Numpart(ID_STRANDED) =private_Average_Numpart(ID_STRANDED) + 1
         exit
@@ -2093,6 +2091,7 @@ contains
           par(n,pnY) = Ypos+(fintersectY-Ypos)*0.9  !fintersectY
           par(n,pnZ) = newZpos
           call setOut(n)
+          par(n,pLifespan) = par(n,pAge)
           waterFlag = .TRUE.
           exit
         endif
@@ -2504,38 +2503,51 @@ contains
 
      ! If stranding is active or Write_coastdist requested, compute coast dist
      ! at upper level 
-      if( (StrandingDist>0) .or. Write_coastdist )  then
+      IF( stranding_on .or. Write_coastdist ) then
           call Get_coastdist(newYpos,newXpos,us,P_coastdist(n))
           coastdist=P_coastdist(n)
       endif
 
 
-      if(settlementon) then
-        CALL testSettlement(par(n,pAge),n,par(n,pX),par(n,pY),par(n,pZ),inpoly, &
-                            P_depth,klev,saveintersectf,coastdist)
-        if(Write_Poly_Presence .and. inpoly.gt.0)then
-          Time_in_Poly(inpoly-poly0+1,n)=Time_in_Poly(inpoly-poly0+1,n)+int(idt)
-        endif
-      endif
-
-      if(settlementon) then
-        !if(inpoly>0.and.isStranded(n))write(*,*)'it=',it,' n=',n,' is in poly',inpoly
-        if (inpoly .GT. 0 .and. (isSettled(n) .or. isStranded(n)) ) then
-          if(isStranded(n)) then
-            par(n,pnZ) = par(n,pZ) 
-          else
-            par(n,pnZ) = P_depth
+      if(OpenOceanBoundary)then
+        if(.not. isOut(n))then 
+          if(settlementon) then
+            CALL testSettlement(par(n,pAge),n,par(n,pX),par(n,pY),par(n,pZ),inpoly, &
+                                P_depth,klev,saveintersectf,coastdist)
+            if(Write_Poly_Presence .and. inpoly.gt.0)then
+              Time_in_Poly(inpoly-poly0+1,n)=Time_in_Poly(inpoly-poly0+1,n)+int(idt)
+            endif
+            if (inpoly .GT. 0 .and. isSettled(n) ) then
+              par(n,pnZ) = P_depth
+              endpoly(n) = inpoly
+              par(n,pLifespan) = par(n,pAge)
+              ! When n is settled or stranded, color(n)= -99999:
+              ! W hen n is settled or stranded, color(n)= -1*polynumber:
+              if(.not.OilOn ) then 
+                par(n,pStatus) = - inpoly
+              else
+                par(n,pStatus) = 2
+              endif
+              return
+            endif
           endif
-          endpoly(n) = inpoly
-          par(n,pLifespan) = par(n,pAge)
-          ! When n is settled or stranded, color(n)= -99999:
-          ! W hen n is settled or stranded, color(n)= -1*polynumber:
-          if(.not.OilOn ) then 
-            par(n,pStatus) = - inpoly
-          else
-            par(n,pStatus) = 2
+          if(stranding_on) then
+            CALL testStranding(n,par(n,pX),par(n,pY),par(n,pZ), &
+                                P_depth,klev,saveintersectf,coastdist)
+            !if(inpoly>0.and.isStranded(n))write(*,*)'it=',it,' n=',n,' is in poly',inpoly
+            if (isStranded(n)) then
+              par(n,pnZ) = par(n,pZ) 
+              par(n,pLifespan) = par(n,pAge)
+              ! When n is settled or stranded, color(n)= -99999:
+              ! W hen n is settled or stranded, color(n)= -1*polynumber:
+              if(.not.OilOn ) then 
+                par(n,pStatus) = - 4
+              else
+                par(n,pStatus) = 4
+              endif
+              return
+            endif
           endif
-          return
         endif
       endif
 !--- CL-OGS: END OF SETTLEMENT SECTION !-----------------------------------------------
@@ -3748,12 +3760,13 @@ contains
   SUBROUTINE   set_Average_Water_Depth()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
                          numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
-                         OilOn,settlementon,mortality,OpenOceanBoundary
+                         OilOn,settlementon,mortality,OpenOceanBoundary,stranding_on
     USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
                          getSlevel,getWlevel,setInterp,getInterp
     USE INT_MOD,    ONLY: polintd
     use behavior_mod, only: die,isOut,isDead
-    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement
+    USE STRANDING_MOD, ONLY: isStranded
 
 #include "VAR_IDs.h"
     IMPLICIT NONE
@@ -3783,7 +3796,7 @@ contains
         if(settlementon)then
           if ( isSettled(n) ) cycle
         endif
-        if(settlementon)then
+        if(stranding_on)then
           if(isStranded(n)) cycle
         endif
         if(mortality)then
@@ -3793,7 +3806,7 @@ contains
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == -2) cycle !stranded
+            if(par(n,pStatus) == -4) cycle !stranded
         end if
  
         Xpar = par(n,pX)
@@ -3832,12 +3845,13 @@ contains
   SUBROUTINE   set_Average_Wind()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
                          numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
-                         OilOn,settlementon,mortality,OpenOceanBoundary
+                         OilOn,settlementon,mortality,OpenOceanBoundary,stranding_on
     USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
                          getSlevel,getWlevel,setInterp,getInterp
     USE INT_MOD,    ONLY: polintd
     use behavior_mod, only: die,isOut,isDead
-    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement
+    USE STRANDING_MOD, ONLY: isStranded
 
 #include "VAR_IDs.h"
     IMPLICIT NONE
@@ -3861,7 +3875,7 @@ contains
         if(settlementon)then
           if ( isSettled(n) ) cycle
         endif
-        if(settlementon)then
+        if(stranding_on)then
           if(isStranded(n)) cycle
         endif
         if(mortality)then
@@ -3871,7 +3885,7 @@ contains
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == -2) cycle !stranded
+            if(par(n,pStatus) == -4) cycle !stranded
         end if
  
         Xpar = par(n,pX)
@@ -3988,12 +4002,13 @@ contains
   SUBROUTINE   set_Average_Temperature()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,constTemp,constUwind,constVwind, &
                          numpar,idt,Zgrid,Wind,SaltTempOn,WindIntensity,pi, &
-                         OilOn,settlementon,mortality,OpenOceanBoundary
+                         OilOn,settlementon,mortality,OpenOceanBoundary,stranding_on
     USE HYDRO_MOD, ONLY: WCTS_ITPI,getKRlevel,getDepth, &
                          getSlevel,getWlevel,setInterp,getInterp
     USE INT_MOD,    ONLY: polintd
     use behavior_mod, only: die,isOut,isDead
-    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement,isStranded
+    USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement
+    USE STRANDING_MOD, ONLY: isStranded
 
 #include "VAR_IDs.h"
     IMPLICIT NONE
@@ -4029,7 +4044,7 @@ contains
         if(settlementon)then
           if ( isSettled(n) ) cycle
         endif
-        if(settlementon)then
+        if(stranding_on)then
           if(isStranded(n)) cycle
         endif
         if(mortality)then
@@ -4039,7 +4054,7 @@ contains
           if(isOut(n)) cycle
         endif
         if(OilOn)then
-            if(par(n,pStatus) == -2) cycle !stranded
+            if(par(n,pStatus) == -4) cycle !stranded
         end if
  
           Xpar = par(n,pX)
