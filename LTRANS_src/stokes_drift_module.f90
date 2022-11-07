@@ -41,7 +41,7 @@ MODULE STOKES_DRIFT_MOD
       phi = F_WindAngle(pdir)   ! *** WARNING formulations used by F_WindAngle must be verified *** 
     endif
     !
-    knum = 1.25*(grav/(V10**2.0))
+    knum = 1.25*(grav/(max(V10,1e-5)**2.0))
     VS0 =StokesDriftFac*V10
     VS = VS0*EXP(2.0*knum*depth)
     ustoke = VS*COS(phi)

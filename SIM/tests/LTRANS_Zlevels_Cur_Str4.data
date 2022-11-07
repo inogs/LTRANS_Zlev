@@ -45,11 +45,11 @@ $hydroparam
   constSalt  = 0.0               ! Constant value for Salt if readSalt is .FALSE.
   readTemp   = .FALSE.          ! If .TRUE. read in temperature          (temp) from NetCDF file, else use constTemp
   constTemp  = 0.0               ! Constant value for Temp if readTemp is .FALSE.
-  readU      = .FALSE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
+  readU      = .TRUE.             ! If .TRUE. read in u-momentum component (U   ) from NetCDF file, else use constU
   constU     = 0.0               ! Constant value for U if readU is .FALSE.
-  readV      = .FALSE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
+  readV      = .TRUE.             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
   constV     = 0.0               ! Constant value for V if readV is .FALSE.
-  readW      = .FALSE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
+  readW      = .TRUE.             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
   constW     = 0.0               ! Constant value for W if readW is .FALSE.
   readAks    = .FALSE.           ! If .TRUE. read in salinity vertical diffusion coefficient (Aks ) from NetCDF file, els
                                  ! use constAks
@@ -57,15 +57,15 @@ $hydroparam
   readDens   = .FALSE.
   constDens  = 1000.0 
 
-  readUwind  = .TRUE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
+  readUwind  = .FALSE.        ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
   constUwind = 0.00             ! Constant value for Uwind if readUwind is .FALSE.
-  readVwind  = .TRUE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
+  readVwind  = .FALSE.        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
   readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
   readStokDrift = .FALSE.     ! If .TRUE. read in StokDrift from NetCDF file, else use StokDriftFac and wind fields to compute Stokes Drift
 
-  Wind               = .True.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
+  Wind               = .FALSE.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
                                 !  set to .TRUE. to enable the oil module to compute the weathering using the wind fields  
   WindIntensity      = .False.  ! If .TRUE. Then the wind intensity field will be used for oil weathering
                                 ! in place of the calculation of the intensity as a function of UWind and VWind.
@@ -76,6 +76,10 @@ $hydroparam
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   Stokes             = .FALSE.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
+  Stokes_hc=0.3                 ! Stokes drift read as a separate variable will be
+                                ! applied at 100% intensity in depth range [hc,0] meters,
+  Stokes_ke=5.0                 ! bellow Stokes_hc, apply exponential decay Stk(Z)=Stk0*exp(-|ke|*(Z-|hc|)) 
+                                ! depth hc and then decays up to only 5% of the Stokes drift at -1m depth
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -191,9 +195,9 @@ $settleparam
 $end
 
 $strandingparam
- stranding_on = .FALSE.             ! stranding module on (.TRUE.) or off (.FALSE.)
- StrandingDist= 50.0                ! Stranding Distance in meters from land 
- strandingMaxDistFromSurf = 99999.0 ! maximal distance from surface at which stranding can occur 
+ stranding_on = .TRUE.             ! stranding module on (.TRUE.) or off (.FALSE.)
+ StrandingDist= 500.0                ! Stranding Distance in meters from land 
+ strandingMaxDistFromSurf = 0.3     ! maximal distance from surface at which stranding can occur 
                                     ! (if strandingMaxDistFromSurf > maximal depth of the domain, 
                                     ! then stranding becomes independent of the distance from the surface)
  strandingMaxDistFromBott = 99999.0 ! maximal distance from bottom depth at which stranding can occur
@@ -273,7 +277,7 @@ $output
   !NOTE: Full path must already exist.  Model can create files, but not directories.
   outpath = './'  ! Location to write output .csv and/or .nc files  
                                  ! Use outpath = './' to write in same folder as the executable
-  NCOutFile = 'LTRANS_Zlevels_Win'       ! Name of the NetCDF output files (do not include .nc)
+  NCOutFile = 'LTRANS_Zlevels_Cur_Str4'       ! Name of the NetCDF output files (do not include .nc)
   outpathGiven = .TRUE.          ! If TRUE files are written to the path given in outpath
   writeCSV     = .TRUE.          ! If TRUE write CSV output files
   writePARA    = .FALSE.         ! If TRUE write PARA.CSV output files
