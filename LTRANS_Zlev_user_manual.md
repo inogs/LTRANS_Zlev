@@ -703,6 +703,12 @@ $end
 ```
 The `storedincolor` flag was created to the settlement module to allow the output of quantities useful for debugging issues.
 
+Flat sea bottom             |  Sloppy sea bottom
+:--------------------------:|:--------------------------:
+![Stranding_Where_Flatter_Bottom](doc/Stranding_Where_Flatter_Bottom.png) | ![Stranding_Where_Sloppy_Bottom](doc/Stranding_Where_Sloppy_Bottom.png)
+
+##### 6.8 Stranding module
+
 ```
 $strandingparam
  stranding_on = .FALSE.             ! stranding module on (.TRUE.) or off (.FALSE.)
@@ -718,12 +724,8 @@ $end
 
 In the Zlev version of LTRANS the stranding module allows to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `StrandingMaxDistFromSurf` and the height of the particle above the bottom is not bigger than `StrandingMaxDistFromBott`. All those conditions must be fullfilled so that particles an strand, as illustrated in the next two graphics.
 
-Flat sea bottom             |  Sloppy sea bottom
-:--------------------------:|:--------------------------:
-![Stranding_Where_Flatter_Bottom](doc/Stranding_Where_Flatter_Bottom.png) | ![Stranding_Where_Sloppy_Bottom](doc/Stranding_Where_Sloppy_Bottom.png)
 
-
-##### 6.8 Conversion parameters
+##### 6.9 Conversion parameters
 
 ```fortran
 $convparam
@@ -738,7 +740,7 @@ $convparam
 $end
 ```
 
-##### 6.9 Grid files
+##### 6.10 Grid files
 
 ```fortran
 $hydromodelgrid
@@ -761,7 +763,7 @@ In the `hydromodelgrid` list, the parameters:
 - `Zgrid_depthinterp` enables the setup of a *smooth-interpolated* bathymetry instead of the sharp non-interpolated boundary for a Z grid.
 - `ADJele_fname` and `ADJele_file` were developed in the Zlev version to store the lists of adjacent elements and enable a quicker restart without recomputing this list at every new simulation.
 
-##### 6.10 Hydrodynamic fields
+##### 6.11 Hydrodynamic fields
 
 ```fortran
 $hydromodeloutput
@@ -803,7 +805,7 @@ Instead when ROMs netcdf are read all variables are stored in the same file so t
  - For ROMS input binary files the Stokes Drift components must be names `ustokes` and `vstokes`. As it is already the case for the U and V components of the wind speed, for ROMs input file the variables `ustokes` and `vstokes` must be defined on the staggered C-Arakawa grid ar the place of the U and V nodes respectively. 
  - For MITgcm binary input files, as it is already the case for the U and V components of the wind speed, it is supposed that the Stokes drift components in the x and y direction are defined at the `rho` nodes and LTRANS-Zlev interpolates them on the C-Arakawa grid at the place of the U and V nodes respectively.
 
-##### 6.11 Particle location input file
+##### 6.12 Particle location input file
 
 ```fortran
 $parloc
@@ -811,7 +813,7 @@ $parloc
 $end
 ```
 
-##### 6.12 Habitat Polygon Location Input Files 
+##### 6.13 Habitat Polygon Location Input Files 
 
 ```fortran
 $habpolyloc
@@ -820,7 +822,7 @@ $habpolyloc
 $end
 ```
 
-##### 6.13 Output files
+##### 6.14 Output files
 
 ```fortran
 $output
@@ -849,7 +851,7 @@ $output
 $end
 ```
 
-##### 6.14 Other parameters
+##### 6.15 Other parameters
 
 ```fortran
 $other
@@ -893,7 +895,7 @@ New parameters specific to the current version were developed for debugging purp
 
 The `OilOn` flag and the parameters detailed in section 6.15 were developed by the authors of the **OILTRANS** module.
 
-##### 6.15 Oil Spill parameters
+##### 6.16 Oil Spill parameters
 
 ```fortran
 $oilparams
