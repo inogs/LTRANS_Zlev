@@ -55,14 +55,13 @@ CONTAINS
     if(stranding_on)then
     if((P_depth+abs(StrandingMaxDistFromBott)>=Pz) &
                  .and.( Pz>=-abs(StrandingMaxDistFromSurf) )          ) then 
-      if(coastdist<StrandingDist)then! If (StrandingDist>0) n can strand
+      if(coastdist<StrandingDist .or.  intersectf>0)then! If (StrandingDist>0) n can strand
             stranded(n)=.TRUE.
       elseif(abs(StrandingDist)<1e-5 .and. intersectf>0)then! If (StrandingDist=0 and bound intersected) n can strand
             stranded(n)=.TRUE.
       endif
     endif
     endif
-
   END SUBROUTINE testStranding
 
   SUBROUTINE p_Stranding(n)

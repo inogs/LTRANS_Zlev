@@ -919,7 +919,7 @@ contains
     integer :: stepIT,ios  
     CHARACTER(len=200) :: namefile                                      !--- CL-OGS 
     real :: before,after
-    integer :: n,nunborn,npsetl,npdead,npout,npstrd                  !--- CL-OGS
+    integer :: n,nunborn,npsetl,npdead,npout,npstrd                 !--- CL-OGS
       
         npsetl=0
         npstrd=0
@@ -929,6 +929,8 @@ contains
            !If particle settled or dead
             if(settlementon)then
               if(isSettled(n)) npsetl=npsetl+1
+            endif
+            if(stranding_on)then
               if(isStranded(n)) npstrd=npstrd+1
             endif
             if(mortality)then
@@ -2144,7 +2146,7 @@ contains
 
        ENDIF
       enddo
-      
+     
       if(waterFlag) return
 
       newXpos = nXpos
@@ -2175,7 +2177,7 @@ contains
             newYpos = Ypos+(fintersectY-Ypos)*posfactor/10.0
             CALL setEle(newXpos,newYpos,max(par(n,pZ),newZpos),n,it,2,ele_err)
             if(ele_err.eq.0)then
-               write(*,*)'Stranded particle ',n,' put at ',posfactor*10., &
+               write(*,*)'particle ',n,' found out of the boundary, put at ',posfactor*10., &
                '% of the distance from the boundary for setEle reasons'
                exit
             endif
@@ -2244,7 +2246,7 @@ contains
             Endif !ele_err
             call getDepth(newXpos,newYpos,n,it,nP_depth,Fstlev,conflict_tmp)
             if(Fstlev<=us)then
-               write(*,*)'Stranded particle ',n,' put at ',posfactor*10, &
+               write(*,*)'particle ',n,' found out of the boundary, put at ',posfactor*10., &
                '% of the distance from the boundary for depth reasons'
                exit
             endif
@@ -2530,7 +2532,7 @@ contains
       endif
 
 
-      if(OpenOceanBoundary)then
+      !if(OpenOceanBoundary)then
         if(.not. isOut(n))then 
           if(settlementon) then
             CALL testSettlement(par(n,pAge),n,par(n,pX),par(n,pY),par(n,pZ),inpoly, &
@@ -2555,7 +2557,6 @@ contains
           if(stranding_on) then
             CALL testStranding(n,par(n,pX),par(n,pY),par(n,pZ), &
                                 P_depth,klev,saveintersectf,coastdist)
-            !if(inpoly>0.and.isStranded(n))write(*,*)'it=',it,' n=',n,' is in poly',inpoly
             if (isStranded(n)) then
               par(n,pnZ) = par(n,pZ) 
               par(n,pLifespan) = par(n,pAge)
@@ -2570,7 +2571,7 @@ contains
             endif
           endif
         endif
-      endif
+      !endif
 !--- CL-OGS: END OF SETTLEMENT SECTION !-----------------------------------------------
   
       private_Average_Numpart(ID_ALIVE)=private_Average_Numpart(ID_ALIVE)+1

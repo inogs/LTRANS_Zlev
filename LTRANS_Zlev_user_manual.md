@@ -707,8 +707,7 @@ Flat sea bottom             |  Sloppy sea bottom
 :--------------------------:|:--------------------------:
 ![Stranding_Where_Flatter_Bottom](doc/Stranding_Where_Flatter_Bottom.png) | ![Stranding_Where_Sloppy_Bottom](doc/Stranding_Where_Sloppy_Bottom.png)
 
-##### 6.8 Stranding module
-
+##### 6.8 Stranding and re-floating
 ```
 $strandingparam
  stranding_on = .FALSE.             ! stranding module on (.TRUE.) or off (.FALSE.)
@@ -719,12 +718,22 @@ $strandingparam
  strandingMaxDistFromBott = 9999999 ! maximal distance from bottom depth at which stranding can occur
                                     ! (if strandingMaxDistFromBott > maximal depth of the domain, 
                                     ! then stranding becomes independent of the distance from the bottom)
+ refloat = .FALSE.
+ refloat_Th =  100                  ! re-floating half time in days
 $end
 ```
 
 In the Zlev version of LTRANS the stranding module allows to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `StrandingMaxDistFromSurf` and the height of the particle above the bottom is not bigger than `StrandingMaxDistFromBott`. All those conditions must be fullfilled so that particles an strand, as illustrated in the next two graphics.
 
 
+With`refloat=.True.` the stranded particles may return into the water and be further advected.
+The probability P that a given particle has to refloat decreases exponentially with the time tS that this particle spent stranded:
+```latex
+P_{refloat} = 1- 0.5 exp(−tS/Th)
+```
+Where Th is the half-life time. 
+At each time step, for each stranded particle a random number generator, Rrefloat, is called up and the particle is released 
+back into the water if Rrefloat < Prefloat. 
 ##### 6.9 Conversion parameters
 
 ```fortran
