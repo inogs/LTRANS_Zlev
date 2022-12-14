@@ -203,6 +203,10 @@ $strandingparam
  strandingMaxDistFromBott = 99999.0 ! maximal distance from bottom depth at which stranding can occur
                                     ! (if strandingMaxDistFromBott > maximal depth of the domain, 
                                     ! then stranding becomes independent of the distance from the bottom)
+  refloat  = .FALSE.
+  refloat_Pc = 0.0
+  refloat_Po = 0.5
+  refloat_Tc = 864000
 $end
 
 
