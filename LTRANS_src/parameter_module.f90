@@ -52,6 +52,9 @@ CONTAINS
     habitatfile='NONE'
     holefile='NONE'
     swdown_ASCIIfname='NONE'
+    Wind_hc=0.1  ! hc=0.1 creates vertical profile with 100% wind drift in depth range [0,-0.1] m,
+    Wind_ke=15.0 ! bellow hc, with ke=15.0 the exponential decay goes from 100% of the wind at 
+                  ! depth hc and then decays up to only 5% of the wind drift at -0.3m depth
     SeabedRelease=.FALSE.
     SeabedRelease_meters=0.0
     Stokes=.False.

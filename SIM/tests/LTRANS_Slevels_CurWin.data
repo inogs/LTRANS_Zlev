@@ -73,6 +73,8 @@ $hydroparam
 
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
+  Wind_hc=0.1
+  Wind_ke=15.0
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   Stokes             = .False.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
