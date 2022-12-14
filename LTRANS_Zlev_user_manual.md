@@ -703,10 +703,6 @@ $end
 ```
 The `storedincolor` flag was created to the settlement module to allow the output of quantities useful for debugging issues.
 
-Flat sea bottom             |  Sloppy sea bottom
-:--------------------------:|:--------------------------:
-![Stranding_Where_Flatter_Bottom](doc/Stranding_Where_Flatter_Bottom.png) | ![Stranding_Where_Sloppy_Bottom](doc/Stranding_Where_Sloppy_Bottom.png)
-
 ##### 6.8 Stranding and re-floating
 ```
 $strandingparam
@@ -719,21 +715,29 @@ $strandingparam
                                     ! (if strandingMaxDistFromBott > maximal depth of the domain, 
                                     ! then stranding becomes independent of the distance from the bottom)
  refloat = .FALSE.
- refloat_Th =  100                  ! re-floating half time in days
+ refloat_Pc = 0.0                   ! Parameter used in the refloating probability : P_refloat = Pc + Po.exp(−tS/Tc)
+ refloat_Po = 0.5                   ! Parameter used in the refloating probability : P_refloat = Pc + Po.exp(−tS/Tc)
+ refloat_Tc = 864000                ! Parameter characteristic of the time used in P_refloat = Pc + Po.exp(−tS/Tc)
 $end
 ```
 
-In the Zlev version of LTRANS the stranding module allows to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `StrandingMaxDistFromSurf` and the height of the particle above the bottom is not bigger than `StrandingMaxDistFromBott`. All those conditions must be fullfilled so that particles an strand, as illustrated in the next two graphics.
+In the Zlev version of LTRANS the stranding module allows to consider as stranded any particle approaching the coast at a distance  `StrandingDist` ,  if the depth at that instant is not greater than `StrandingMaxDistFromSurf` and the height of the particle above the bottom is not bigger than `StrandingMaxDistFromBott`. All those conditions must be fullfilled so that particles can strand, as illustrated in the next two graphics.
 
+Flat sea bottom             |  Sloppy sea bottom
+:--------------------------:|:--------------------------:
+![Stranding_Where_Flatter_Bottom](doc/Stranding_Where_Flatter_Bottom.png) | ![Stranding_Where_Sloppy_Bottom](doc/Stranding_Where_Sloppy_Bottom.png)
 
 With`refloat=.True.` the stranded particles may return into the water and be further advected.
-The probability P that a given particle has to refloat decreases exponentially with the time tS that this particle spent stranded:
-```latex
-P_{refloat} = 1- 0.5 exp(−tS/Th)
+The probability P that a given particle has to refloat decreases exponentially with the time `ts` that this particle spent stranded:
 ```
-Where Th is the half-life time. 
+Prefloat = Pc + Po exp(−ts/Tc)
+```
+Where Tc is a characteristic of the time spent by a particle on the beach before being resuspended again. 
+Pc, Po and TC can be parameterized at run time by setting the variables `refloat_Pc`, `refloat_Po` and `refloat_Tc`, 
+
 At each time step, for each stranded particle a random number generator, Rrefloat, is called up and the particle is released 
 back into the water if Rrefloat < Prefloat. 
+
 ##### 6.9 Conversion parameters
 
 ```fortran

@@ -262,7 +262,13 @@
   DOUBLE PRECISION :: StrandingDist          !--- CL-OGS : maximal distance from land at which stranding can occur (in meters)
   DOUBLE PRECISION :: strandingMaxDistFromSurf          !--- CL-OGS : maximal depth (distance from surface) at which stranding can occur                  
   DOUBLE PRECISION :: StrandingMaxDistFromBott  !--- CL-OGS : maximal distance from bottom depth at which stranding can occur                 
-  namelist/strandingparam/stranding_on,StrandingDist,strandingMaxDistFromSurf,StrandingMaxDistFromBott  !--- CL-OGS : additional parameters
+  LOGICAL :: refloat                             ! With`refloat=.True.` the stranded particles may return into the water and be further advected.
+  DOUBLE PRECISION :: refloat_Pc                 ! Parameter used in the refloating probability : P_refloat = Pc + Po.exp(−tS/Tc)
+  DOUBLE PRECISION :: refloat_Po                 ! Parameter used in the refloating probability : P_refloat = Pc + Po.exp(−tS/Tc)
+  DOUBLE PRECISION :: refloat_Tc                 ! Parameter characteristic of the time used in P_refloat = Pc + Po.exp(−tS/Tc)
+  namelist/strandingparam/stranding_on,StrandingDist,strandingMaxDistFromSurf, &
+           StrandingMaxDistFromBott, &   
+           refloat,refloat_Pc,refloat_Po,refloat_Tc
 
 !*** CONVERSION MODULE PARAMETERS ***
   DOUBLE PRECISION :: PI            ! Pi

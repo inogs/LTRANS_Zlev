@@ -1290,7 +1290,7 @@ contains
 
 !        ***** END IMIOM *****
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement
-    USE STRANDING_MOD, ONLY: isStranded,p_Stranding,testStranding
+    USE STRANDING_MOD, ONLY: isStranded,p_Stranding,testStranding,testRefloating
     USE BEHAVIOR_MOD,   ONLY: updateStatus,behave,setOut,isOut,isDead,die
     USE BOUNDARY_MOD,   ONLY: mbounds,ibounds,intersect_reflect,Get_coastdist
     USE CONVERT_MOD,    ONLY: x2lon,y2lat
@@ -1413,7 +1413,15 @@ contains
  
 !--- CL-OGS:   !If particle stranded, skip tracking
       if(stranding_on)then
-        if(isStranded(n)) return
+        if(isStranded(n))then
+          call testRefloating(n,par(n,pAge)-par(n,pLifespan))
+          if(isStranded(n))then
+              return
+          else
+              par(n,pLifespan) = -1
+              par(n,pStatus) = 400
+          endif
+        endif
       endif
 
       if(mortality)then

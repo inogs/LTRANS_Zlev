@@ -5,7 +5,7 @@ MODULE STRANDING_MOD
 
   LOGICAL, ALLOCATABLE, DIMENSION(:) :: stranded
   PUBLIC :: initStranding,testStranding,finStranding,isStranded, &
-             p_Stranding
+             p_Stranding,testRefloating
 CONTAINS
 
   SUBROUTINE initStranding()
@@ -77,6 +77,30 @@ CONTAINS
 
   END SUBROUTINE p_Stranding
 
+
+  SUBROUTINE testRefloating(n,tS)
+    ! With`refloat=.True.` the stranded particles may return into the water and be further advected.
+    ! The probability P that a given particle has to refloat decreases exponentially with the time tS that this particle spent stranded:
+    !   P_refloat = 1.0 - 0.5 exp(−tS/refloat_Th)
+    ! Where Th is the half-life time.
+    ! At each time step, for each stranded particle a random number generator, Rrefloat, is called up and the particle is released
+    ! back into the water if Rrefloat < Prefloat
+    USE PARAM_MOD, ONLY:stranding_on,refloat,refloat_Pc,refloat_Po,refloat_Tc
+    USE RANDOM_MOD, ONLY: genrand_real1
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: n
+    DOUBLE PRECISION, INTENT(IN) :: tS ! time spent stranded
+    DOUBLE PRECISION :: P_refloat, Rand_refloat
+
+    if(stranding_on .and. refloat)then
+      P_refloat = refloat_Pc + refloat_Po * exp(-tS/refloat_Tc)
+      Rand_refloat=genrand_real1()
+      if(Rand_refloat<P_refloat)then
+        stranded(n) = .FALSE.
+      endif
+    endif
+
+  END SUBROUTINE testRefloating
 
 
 END MODULE STRANDING_MOD
