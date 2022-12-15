@@ -1286,7 +1286,8 @@ contains
                               OilOn,Wind,SigWaveHeight,MeanWavePeriod,UWind_10,&
                               VWind_10,PeakDirection,PeakWaveLength,pi,        &
                               Stokes,Stokes_hc,Stokes_ke,         &
-                              constDens,Write_coastdist
+                              constDens,Write_coastdist, &
+                              Wind_hc,Wind_ke         
 
 !        ***** END IMIOM *****
     USE SETTLEMENT_MOD, ONLY: isSettled,testSettlement
@@ -1362,6 +1363,7 @@ contains
     !END IMIOM
     INTEGER:: posfactor
     DOUBLE PRECISION :: PTemptmp,Stokes_exponential_decay 
+    DOUBLE PRECISION :: Wind_exponential_decay 
     !P_swdown = 0.0
 
     dbg=.FALSE.
@@ -1854,6 +1856,10 @@ contains
                   VWindDrift = idt * WindDriftFac * PWind * &
                         sin(alpha - (WindDriftDev *(pi/180.0)))
 
+
+             Wind_exponential_decay =  exp( abs(Wind_ke) * min( 0.0 , abs(Wind_hc)+P_surfdist) )
+             UWindDrift = UWindDrift * Wind_exponential_decay
+             VWindDrift = VWindDrift * Wind_exponential_decay
 
              
              if ((isnan(UWindDrift) .or. isnan(UStokesDrift) ))then 
@@ -3944,15 +3950,16 @@ contains
         endif     
 
           call runge_kutta_2d(n,p,Xpar,Ypar,P_angle,VAR_ID_uwind,VAR_ID_vwind,P_Uw,P_Vw)
+
+          Average_Value(ID_U_WIND)=Average_Value(ID_U_WIND)+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
+          Average_Value(ID_V_WIND)=Average_Value(ID_V_WIND)+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
+          Average_Numpart(ID_U_WIND)= Average_Numpart(ID_U_WIND)+1                           !--- CL-OGS
  
           !calculate wind vector magnitude
           PWind = sqrt((P_Uw*cos(P_angle) - P_Vw*sin(P_angle))**2.0    & !u rectified to E-W orientation
                       + (P_Uw*sin(P_angle) + P_Vw*cos(P_angle))**2.0)    !v rectified to N-S orientation
 !        
        
-          Average_Value(ID_U_WIND)=Average_Value(ID_U_WIND)+(P_Uw*cos(P_angle) - P_Vw*sin(P_angle)) 
-          Average_Value(ID_V_WIND)=Average_Value(ID_V_WIND)+(P_Uw*sin(P_angle) + P_Vw*cos(P_angle)) 
-          Average_Numpart(ID_U_WIND)= Average_Numpart(ID_U_WIND)+1                           !--- CL-OGS
 
       ENDDO 
 

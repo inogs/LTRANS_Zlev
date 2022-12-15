@@ -74,6 +74,8 @@ $hydroparam
 
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
+  Wind_hc=0.1
+  Wind_ke=15.0
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
   Stokes             = .True.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   Stokes_hc=0.3                 ! Stokes drift read as a separate variable will be
