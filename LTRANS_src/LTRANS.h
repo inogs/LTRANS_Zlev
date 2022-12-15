@@ -120,9 +120,8 @@
   DOUBLE PRECISION :: WindWeatherFac ! Wind Reduction Factor (between 0.0 and 1.0) applied to Oil Spill WEATHERING only 
   DOUBLE PRECISION :: WindDriftFac ! Wind Drift factor, initially 0.035 in OILTRANS 
   DOUBLE PRECISION :: WindDriftDev ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS
-  DOUBLE PRECISION :: Wind_hc      ! hc=-0.3 creates vertical profile with 100% wind drift in depth range [0,-0.1] m,
-  DOUBLE PRECISION :: Wind_ke      ! bellow hc, with ke=15.0 the exponential decay goes from 100% of the wind at 
-                                    ! depth hc and then decays up to only 5% of the wind drift at -0.3m depth
+  DOUBLE PRECISION :: Wind_hc      ! Wind_hc and Wind_ke used to create a vertical profile of wind drift with 100% wind drift in depth range [-hc, 0] m,
+  DOUBLE PRECISION :: Wind_ke      ! while bellow hc the exponential decay is ruled by Wind_ke following WindDrift = WindDrift0 * exp( |Wind_ke| * min( 0 , |Wind_hc|-Z) ) 
   LOGICAL          :: LinearVInterp  ! if True uses linear interpolation scheme on the vertical direction instead of the tension spline fitting.
   DOUBLE PRECISION :: StokDriftFac ! Stokes Drift factor, initially 0.016 in OILTRANS, used to compute StokDrift if readStokDrift is False
   LOGICAL :: Stokes             ! Include Stokes drift effects (T/F)

@@ -498,9 +498,8 @@ $hydroparam
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of  
                                 ! wind vector), initially 5.0 in OILTRANS 
-  Wind_hc=0.1                   ! hc=0.1 creates vertical profile with 100% wind drift in depth range [0,-0.1] m,
-  Wind_ke=15.0                  ! bellow hc, with ke=15.0 the exponential decay goes from 100% of the wind at 
-                                ! depth hc and then decays up to only 5% of the wind drift at -0.3m depth
+  Wind_hc=0.1                   ! Wind_hc and Wind_ke used to create a vertical profile of wind drift with 100% wind drift in depth range [-hc, 0] m,
+  Wind_ke=15.0                  ! while bellow hc the exponential decay is ruled by Wind_ke following WindDrift = WindDrift0 * exp( |Wind_ke| * min( 0 , |Wind_hc|-Z) ) 
   Stokes             = .True.   ! if .TRUE. then apply Stokes Drift 
                                 ! Stokes drift is read from input file if `readStokDrift=.True.`
                                 ! with a drift intensity decaying with the particles depth using `Stokes_hc` and `Stokes_ke` .
@@ -526,7 +525,7 @@ New parameters specific to the Zlev version of LTRANS are
 - ` readIwind `, `constIwind`, `WindIntensity` are options used to read and test the effects of using the average wind intensity calculated by the Eulerian model instead of calculating it from the wind fields within the  Lagrangian model.
 - `WindWeatherFac` allows to use, during the weathering processes, only a percentage of the wind intensity (read or calculated by LTRANS)  which may be useful in case of high time resolution fields presenting peaks of elevated intensity.
 - `WindDriftFac`, `WindDriftDev` and `StokDriftFac` allow to customize the wind drift factor and deviation (in degrees) to the right hand side of the wind vector, as well as the Stokes Drift Factor. 
-- `Wind_hc` and `Wind_ke` are used to create a vertical profile `Wind(Z)=Wind0*min(1.0,exp(-ke*(|hc-Z|)))`  with 100% wind drift in depth range [-|Wind_hc|,0] m, while bellow `Wind_hc` an exponential decay ruled by the parameter `Wind_ke` is applied.
+- `Wind_hc` and `Wind_ke` are used to create a vertical profile `Wind(Z)=Wind0*min(1.0,exp(-ke*(|hc-Z|)))`  with 100% wind drift in depth range [-|Wind_hc|,0] m, while bellow `Wind_hc` an exponential decay ruled by the parameter `Wind_ke` is applied according to `WindDrift = WindDrift0 * exp( |Wind_ke| * min( 0 , |Wind_hc|-Z) )` 
 - `LinearVInterp` flag, when set to `.True.`, enables the linear interpolation of the hydrodynamic fields in the vertical direction, instead of using the TSPACK tension spine fitting.
 - `readStokDrift` flag: when `Stokes` is `.True.`, if `readStokDrif=.True.` then read in StokDrift from input binary file, otherwise if `readStokDrif=.False.` then use StokDriftFac and wind fields (`Wind` must be set to `.True.`) to compute Stokes Drift. 
 - `Stokes_hc=0.3` : depth above which Stokes drift is maximal and constant. Stokes drift applied at 100% intensity in depth range [-hc,0] meters,
