@@ -113,6 +113,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           if(is_non_zero_file(plotdir+'/setup_'+identifier+'.py')):
               print('File '+plotdir+'/setup_'+identifier+'.py ALREADY EXISTS you first have to delete it if you want to proceed')
               quit()
+          os.system('mkdir '+plotdir)
           fw=open(plotdir+'/setup_'+identifier+'.py','w')
           fw.write("dirin='"+directory+"' \n")
           fw.write("identifier='"+identifier+"' \n")
@@ -169,7 +170,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                    if(word[1:4]=='END' or word[1:5]=='&END'):
                         for i in range(1,len(VarNam_List)):
                           if(VarNam_List[i]==''):break
-                          print('output frequency(',VarNam_List[i],')=',Freqcy_List[i])
+                          #print('output frequency(',VarNam_List[i],')=',Freqcy_List[i])
                         for num,n1 in enumerate(VarNam_List):
                           name1=n1.decode('ascii')
                           for char in name1:
