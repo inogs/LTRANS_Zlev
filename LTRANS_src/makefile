@@ -185,7 +185,7 @@ OBJS          = gridcell_module.o interpolation_module.o parameter_module.o \
 				conversion_module.o oil_module_Zlev.o stokes_drift_module.o  \
 				hydrodynamic_module.o norm_module.o                         \
 				boundary_module.o hor_turb_module.o settlement_module.o     \
-				ver_turb_module.o behavior_module.o stranding_module.o                 
+				ver_turb_module.o stranding_module.o behavior_module.o                 
 
 ifdef HDF5
 	LIBS      = -L$(NETCDF_LIBDIR) -lnetcdf -lnetcdff -L$(HDF5_LIBDIR) -lhdf5_hl -lhdf5 $(EXTRA_LIBS_AND_FLAGS) -lcurl
