@@ -101,7 +101,7 @@ endif
 ifdef INTEL_g100
   Intel := on
   Gnu := 
-  DEBUGFLAGS= -O3 -march=native
+  DEBUGFLAGS= -O3 -xcore-avx2
   ifdef Intel
    FC = ifort
    F90C = ifort
@@ -127,7 +127,7 @@ ifdef INTEL_g100
     NETCDF_LIBDIR = ${NETCDF_FORTRAN_HOME}/lib     -L ${NETCDF_C_HOME}/lib
     HDF5_LIBDIR = ${HDF5_HOME}/lib  -L ${CURL_HOME}/lib 
   #FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend-source -assume byterecl -I$(NETCDF_INCDIR)
-  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -march=native -funroll-loops -xhost -xcore-avx2 -axCORE-AVX2,AVX -fpp -assume byterecl -I$(NETCDF_INCDIR)
+  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -funroll-loops -xcore-avx2 -axCORE-AVX2,AVX -fpp -assume byterecl -I$(NETCDF_INCDIR)
   ifdef Debug 
     FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
   endif
@@ -217,6 +217,6 @@ LTRANS : $(OBJS)
 
 clean:
 	@echo "####################################################################################"
-	\rm *.o *.mod ../$(LTRANSEXE)
+	\rm *.o *.mod
 
 
