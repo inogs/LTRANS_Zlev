@@ -1338,7 +1338,7 @@ CONTAINS
         readStokDrift, &
 !      *****   IMIOM      *****
           swan_prefix, swan_suffix,swan_filenum,WindWaveModel,SigWaveHeight,   &
-          MeanWavePeriod,UWind_10,VWind_10,PeakDirection,PeakWaveLength,OilOn
+          MeanWavePeriod,PeakDirection,PeakWaveLength,OilOn
 !      ***** END IMIOM *****
         
     USE netcdf
@@ -2003,6 +2003,7 @@ CONTAINS
       ! WIND WAVE MODEL DATA  ------------------------------------
       IF(OilOn)then
        if(WindWaveModel)THEN
+         write(*,*)'WindWaveModel activated'
          if (tdim==1)then ! each of the three timestep are in different files
            nfmax=3
            nfn=1
@@ -2195,12 +2196,28 @@ CONTAINS
             !close the dataset and reassign the NCID
             STATUS = NF90_CLOSE(NCID)
          ENDDO
+
+         write(*,*)'Wind fields will be overwritten by Wave Model Winds'
+         DO nloop=1,3
+           do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+             do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
+               count = (j-1)*ui + i
+               t_uwind(nloop,count) = modelUwind(i,j,nloop) * m_u(i,j,us_tridim)
+             enddo
+           enddo
+         ENDDO
+         DO nloop=1,3
+           do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+             do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
+               count = (j-1)*vi + i
+               t_vwind(nloop,count) = modelVwind(i,j,nloop) * m_v(i,j,us_tridim)
+             enddo
+           enddo
+         ENDDO
         else   ! if WindWaveModel
-              write(*,*)'SigWaveHeight=',SigWaveHeight
+              write(*,*)'WindWaveModel not activated'
               swanHs   = SigWaveHeight
               swantm01 = MeanWavePeriod
-              if(.not.readUwind)  modelUwind = UWind_10
-              if(.not.readVwind)  modelVwind = VWind_10
               swanpd   = PeakDirection
               swanwl   = PeakWaveLength
         endif                ! if WindWaveModel
@@ -2210,35 +2227,13 @@ CONTAINS
          do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
             do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
               count = (j-1)*vi + i
-              t_hsig(nloop,count) = swanHs(i,j,nloop) * m_r(i,j,us)
-              t_tm01(nloop,count) = swantm01(i,j,nloop) * m_r(i,j,us)
-              t_pdir(nloop,count) = swanpd(i,j,nloop) * m_r(i,j,us)
-              t_wlen(nloop,count) = swanwl(i,j,nloop) * m_r(i,j,us)
+              t_hsig(nloop,count) = swanHs(i,j,nloop) * m_r(i,j,us_tridim)
+              t_tm01(nloop,count) = swantm01(i,j,nloop) * m_r(i,j,us_tridim)
+              t_pdir(nloop,count) = swanpd(i,j,nloop) * m_r(i,j,us_tridim)
+              t_wlen(nloop,count) = swanwl(i,j,nloop) * m_r(i,j,us_tridim)
             enddo
          enddo
         ENDDO
-        if(windwavemodel.or.(UWind_10.ne.0 .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
-              write(*,*)'overwrite ROMS U Wind'
-              DO nloop=1,3
-                do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-                  do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-                    count = (j-1)*ui + i
-                    t_uwind(nloop,count) = modelUwind(i,j,nloop) * m_u(i,j,us)
-                  enddo
-                enddo
-              ENDDO
-        end if
-        if(windwavemodel.or.(VWind_10.ne.0 .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
-             write(*,*)'overwrite ROMS V Wind'
-              DO nloop=1,3
-                do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-                  do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-                    count = (j-1)*vi + i
-                t_vwind(nloop,count) = modelVwind(i,j,nloop) * m_v(i,j,us)
-                  enddo
-                enddo
-              ENDDO
-        end if
       END IF        ! if OilOn
 
 
@@ -2269,7 +2264,7 @@ CONTAINS
         WindIntensity,readIwind,constIwind,readStokDrift,                      &
 !      *****   IMIOM      *****
           swan_prefix, swan_suffix,swan_filenum,WindWaveModel,SigWaveHeight,   &
-          MeanWavePeriod,UWind_10,VWind_10,PeakDirection,PeakWaveLength,OilOn
+          MeanWavePeriod,PeakDirection,PeakWaveLength,OilOn
 !      ***** END IMIOM *****
     USE netcdf
     USE RANDOM_MOD, ONLY: genrand_real1
@@ -2884,8 +2879,8 @@ CONTAINS
     ! WIND WAVE MODEL DATA  ------------------------------------
     IF(OilOn)then
      write(*,*)'OilOn'
-     if(WindWaveModel .and. (.not. Zgrid))THEN
-          write(*,*)'WindWaveModel'
+     if(WindWaveModel)THEN
+          write(*,*)'WindWaveModel activated'
           nvarf=1
           scounter = iint + swan_filenum
 
@@ -3049,13 +3044,24 @@ CONTAINS
           !close the dataset and reassign the NCID
           STATUS = NF90_CLOSE(NCID)
 
+           write(*,*)'Wind fields will be overwritten by Wave Model Winds'
+           do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
+             do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
+               count = (j-1)*ui + i
+               t_uwind(t_f,count) = modelUwindf(i,j,1) * m_u(i,j,us_tridim)
+             enddo
+           enddo
+           do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
+             do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
+               count = (j-1)*vi + i
+               t_vwind(t_f,count) = modelVwindf(i,j,1) * m_v(i,j,us_tridim)
+             enddo
+           enddo
+
       else   ! if WindWaveModel
-            write(*,*)'not WindWaveModel or Zgrid',SigWaveHeight
+            write(*,*)'WindWaveModel not activated'
             swanHsf   = SigWaveHeight
-            write(*,*)'SigWaveHeight passed'
             swantm01f = MeanWavePeriod
-            if(.not.readUwind)  modelUwindf = UWind_10
-            if(.not.readVwind)  modelVwindf = VWind_10
             swanpdf   = PeakDirection
             swanwlf   = PeakWaveLength
       endif                ! if WindWaveModel
@@ -3070,24 +3076,6 @@ CONTAINS
             t_wlen(t_f,count) = swanwlf(i,j,1) * m_r(i,j,us_tridim)
           enddo
        enddo
-      if(windwavemodel.or.((.not.readUwind) .and. (.not. Zgrid)))then     !only overwrite ROMS t_uwind (from sustr) if using windwavesmodel OR overwriting by constant U wind
-            write(*,*)'overwrite ROMS U Wind'
-              do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-                do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-                  count = (j-1)*ui + i
-                  t_uwind(t_f,count) = modelUwindf(i,j,1) * m_u(i,j,us_tridim)
-                enddo
-              enddo
-      end if
-      if(windwavemodel.or.((.not.readVwind) .and. (.not. Zgrid)))then    !only overwrite ROMS t_vwind (from sustr) if using windwavesmodel OR overwriting by constant V wind
-           write(*,*)'overwrite ROMS V Wind'
-              do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-                do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-                  count = (j-1)*vi + i
-              t_vwind(t_f,count) = modelVwindf(i,j,1) * m_v(i,j,us_tridim)
-                enddo
-              enddo
-      end if
     END IF        ! if OilOn
 
 

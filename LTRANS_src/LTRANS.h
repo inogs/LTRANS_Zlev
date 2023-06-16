@@ -473,8 +473,6 @@ DOUBLE PRECISION :: SigWaveHeight
 DOUBLE PRECISION :: SigWavePeriod
 DOUBLE PRECISION :: SigWaveLength
 DOUBLE PRECISION :: MeanWavePeriod
-DOUBLE PRECISION :: UWind_10
-DOUBLE PRECISION :: VWind_10
 DOUBLE PRECISION :: PeakDirection
 DOUBLE PRECISION :: PeakWaveLength
 DOUBLE PRECISION :: MixingDepth
@@ -482,6 +480,6 @@ DOUBLE PRECISION :: Cd
 DOUBLE PRECISION :: Disper
 
 namelist/windswaves/WindWaveModel,swan_prefix,swan_filenum,swan_suffix,SigWaveHeight, &
-                  SigWavePeriod,SigWaveLength,MeanWavePeriod,UWind_10,VWind_10,     &
+                  SigWavePeriod,SigWaveLength,MeanWavePeriod,     &
                   PeakDirection,PeakWaveLength,MixingDepth,Cd,Disper
 

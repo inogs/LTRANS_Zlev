@@ -101,7 +101,7 @@ endif
 ifdef INTEL_g100
   Intel := on
   Gnu := 
-  DEBUGFLAGS= -O3 -march=native
+  DEBUGFLAGS= -O3 -xcore-avx2
   ifdef Intel
    FC = ifort
    F90C = ifort
@@ -127,7 +127,7 @@ ifdef INTEL_g100
     NETCDF_LIBDIR = ${NETCDF_FORTRAN_HOME}/lib     -L ${NETCDF_C_HOME}/lib
     HDF5_LIBDIR = ${HDF5_HOME}/lib  -L ${CURL_HOME}/lib 
   #FFLAGS = -O3 -fno-math-errno -unroll=3 -cpp  -extend-source -assume byterecl -I$(NETCDF_INCDIR)
-  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -march=native -funroll-loops -xhost -xcore-avx2 -axCORE-AVX2,AVX -fpp -assume byterecl -I$(NETCDF_INCDIR)
+  FFLAGS =  -D_FILE_OFFSET_BITS=64 -O3 -funroll-loops -xcore-avx2 -axCORE-AVX2,AVX -fpp -assume byterecl -I$(NETCDF_INCDIR)
   ifdef Debug 
     FFLAGS = $(DEBUGFLAGS) -O0 -fno-omit-frame-pointer -cpp -ggdb -g3 -I$(NETCDF_INCDIR) 
   endif
@@ -185,7 +185,7 @@ OBJS          = gridcell_module.o interpolation_module.o parameter_module.o \
 				conversion_module.o oil_module_Zlev.o stokes_drift_module.o  \
 				hydrodynamic_module.o norm_module.o                         \
 				boundary_module.o hor_turb_module.o settlement_module.o     \
-				ver_turb_module.o behavior_module.o stranding_module.o                 
+				ver_turb_module.o stranding_module.o behavior_module.o                 
 
 ifdef HDF5
 	LIBS      = -L$(NETCDF_LIBDIR) -lnetcdf -lnetcdff -L$(HDF5_LIBDIR) -lhdf5_hl -lhdf5 $(EXTRA_LIBS_AND_FLAGS) -lcurl
@@ -217,6 +217,6 @@ LTRANS : $(OBJS)
 
 clean:
 	@echo "####################################################################################"
-	\rm *.o *.mod ../$(LTRANSEXE)
+	\rm *.o *.mod
 
 

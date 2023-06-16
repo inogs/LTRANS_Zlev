@@ -1283,8 +1283,8 @@ contains
                               Write_Temp_min_max_ins,Write_Salt_min_max_ins, &
                               Write_Poly_Presence, &                            !--- CL-OGS
 !        ***** IMIOM *****
-                              OilOn,Wind,SigWaveHeight,MeanWavePeriod,UWind_10,&
-                              VWind_10,PeakDirection,PeakWaveLength,pi,        &
+                              OilOn,Wind,SigWaveHeight,MeanWavePeriod,&
+                              PeakDirection,PeakWaveLength,pi,        &
                               Stokes,Stokes_hc,Stokes_ke,         &
                               constDens,Write_coastdist, &
                               Wind_hc,Wind_ke         

@@ -1,23 +1,26 @@
-PACKAGEDIRECTORY="/g100/home/userexternal/clauren1/LTRANS_JRC/"
+import os,sys
+LTRANS_tools = os.getenv('LTRANS_tools')+'/'
+PACKAGEDIRECTORY = os.getenv('LTRANS_Zlev')+'/'
+MITgcmdirectory=os.getenv('MITgcm_outputs')+'/'
 #
 writeUniformIniParlocFile=True  
 (io,i_f,istep)=(0,0,10)
 (jo,j_f,jstep)=(0,0,10)
 #
-MITgcmdirectory='/g100/home/userexternal/clauren1/LTRANS_JRC/SIM/MITgcm_outputs/'
 f_Eta='Eta.'
 f_RHOA='RHOAnoma.'
-f_U='U_hr_ave.'
-f_V='V_hr_ave.'
-f_W='W_hr_ave.'
+f_U='U.'
+f_V='V.'
+f_W='W.'
 f_S='S.'
 f_T='T.'
 f_KPPdiffS='KPPdiffS.'
 f_EXFuwind='EXFuwind.'
 f_EXFvwind='EXFvwind.'
-identifier='boxes_NiNj64'
+identifier='example'
 BATI_PREC=4
 #############################################################
+sys.path.append(LTRANS_tools+'/pymodules')
 import numpy as np
 import os,sys
 import glob
