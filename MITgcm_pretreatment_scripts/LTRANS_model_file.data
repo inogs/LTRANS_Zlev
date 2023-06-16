@@ -348,8 +348,6 @@ $windswaves
   SigWavePeriod      = -999
   SigWaveLength      = -999
   MeanWavePeriod     = -999
-  UWind_10           = -999
-  VWind_10           = -999
   PeakDirection      = -999
   PeakWaveLength     = -999
   MixingDepth        = -999

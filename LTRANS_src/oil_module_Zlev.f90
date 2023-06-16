@@ -133,7 +133,7 @@ MODULE OIL_MOD
     !*****************************
     SUBROUTINE OilModel(o_attrib,par,nParWater,nParStranding,WindInst,TempInst,WAngleInst,WaterDepth)
         USE PARAM_MOD,    ONLY:    numpar,idt,SecSpill,spreading,emulsification,  &
-               evaporation,dispersion,Remove_Stranded_Oil,pi,Wind,SaltTempOn,Uwind_10,Vwind_10,  &
+               evaporation,dispersion,Remove_Stranded_Oil,pi,Wind,SaltTempOn,constUwind,constVwind,  &
                WaterTemp,Ext0,VolumeSpill,iprint
 
 
@@ -177,7 +177,7 @@ MODULE OIL_MOD
         IF(Wind)then
            WindSpeed=WindInst
         else
-           WindSpeed = sqrt((Uwind_10**2.0) + (Vwind_10**2.0))
+           WindSpeed = sqrt((constUwind**2.0) + (constVwind**2.0))
         endif
         !WRITE(*,*)'OilTime & SecSpill = ',Oil_Time,'  ',SecSpill,'Wind=',WindSpeed
         IF(.not. SaltTempOn)then
@@ -671,7 +671,7 @@ MODULE OIL_MOD
     !*     Subroutine SpreadOptions    *
     !***********************************
     SUBROUTINE SpreadOptions(ElapsedTime,SprdCase,CoefR,CoefQ)
-    USE PARAM_MOD,     ONLY: PI,SprdOption,idt,numpar,Uwind_10,Vwind_10
+    USE PARAM_MOD,     ONLY: PI,SprdOption,idt,numpar,constUwind,constVwind
 
     IMPLICIT NONE
 
@@ -786,7 +786,7 @@ MODULE OIL_MOD
             !"Development and application of oil spill model for Singapore coastal waters"
             !Journal of Hydraulic Engineering 129:7 (2003) 495-503
             SprdCase = 4
-            !WindSpeed = sqrt((Uwind_10**2.0) + (Vwind_10**2.0))
+            !WindSpeed = sqrt((constUwind**2.0) + (constVwind**2.0))
             AreaOil = 2270.0 * (DeltaRho * (RhoWater/RhoOil))**(2.0/3.0) &
                 * (VolumeOil * m32bbl)**(2.0/3.0) * (ElapsedTime * sec2min)**(1.0/2.0) &
                 + (40.0 * (DeltaRho * (RhoWater/RhoOil))**(1.0/3.0) * (ElapsedTime &
@@ -1114,7 +1114,7 @@ MODULE OIL_MOD
     !*     Subroutine Evaporate  *
     !*****************************
     SUBROUTINE Evaporate(ElapsedTime)
-    USE PARAM_MOD, ONLY: Uwind_10,Vwind_10,EvapOption,idt,VolumeSpill,Oil_Resin,Oil_Asph, &
+    USE PARAM_MOD, ONLY: constUwind,constVwind,EvapOption,idt,VolumeSpill,Oil_Resin,Oil_Asph, &
                          Fingas_B,Fingas_T,Fingas_TYP  ! c.laurent-OGS:  Fingas_B,Fingas_T,Fingas_TYP 
                          ! reintroduced to avoid using fingas with fixed coefficients 
     IMPLICIT NONE
@@ -1225,7 +1225,7 @@ MODULE OIL_MOD
             !"Evaporation rate of spills of hydrocarbons and petroleum mixtures"
             !Environmental Science and Technology, 1984. vol 18, pp 834-480
             !as modified by ADIOS2 (NOAA 2000)
-            !WindSpeed = sqrt((Uwind_10**2.0) + (Vwind_10**2.0))
+            !WindSpeed = sqrt((constUwind**2.0) + (constVwind**2.0))
             Ke = 1.5E-3 * WindSpeed**0.78
             PercentEvap = ((Ke * AreaOil * idt) / VolumeSpill) * &
                             exp(6.3 - ((10.3 * (InitBP + (dTdFe * CumPercentEvap))) / (WaterTempInst + 273.15))) &
@@ -1361,7 +1361,7 @@ MODULE OIL_MOD
     !Oil and Chemical Pollution, Vol 4, pp 281-310
 
     USE PARAM_MOD,    ONLY:    SigWaveHeight,SigWaveLength,SigWavePeriod,idt,     &
-                            UWind_10,VWind_10,Wind,windwavemodel
+                            constUwind,constVwind,Wind,windwavemodel
     IMPLICIT NONE
 
     !I/O variables
@@ -1422,7 +1422,7 @@ MODULE OIL_MOD
     Dbwe = 0.0034 * RhoWater * Gravity * (Hbreak**2.0)
 
     !Calculate fraction of sea surface hit by breaking waves
-    !WindSpeed = sqrt((Uwind_10**2.0) + (Vwind_10**2.0))
+    !WindSpeed = sqrt((constUwind**2.0) + (constVwind**2.0))
     IF (WindSpeed <= Uth ) THEN
         FracWave = 3E-06 * (WindSpeed**3.5 / waveperiod)
     ELSE
