@@ -88,9 +88,9 @@ def getnznynx(ARRAY):
 def getgridparamsfromSTDOUT(directory,identifier,dirout='',
            f_Eta='Eta.',f_RHOA='RHOAnoma.',
            f_U='U.',f_V='V.',f_W='W.',f_S='S.',f_T='T.',
-           f_KPPdiffS='KPPdiffS.',f_EXFuwind='EXFuwind.',f_EXFvwind='EXFvwind.',plotdir='./'):
+           f_KPPdiffS='KPPdiffS.',f_EXFuwind='EXFuwind.',f_EXFvwind='EXFvwind.',f_EXFIwind='EXFiwind.',plotdir='./',fileextension=''):
 
-        FilesNamesContain=[f_Eta,f_RHOA,f_U,f_V,f_W,f_S,f_T,f_KPPdiffS,f_EXFuwind,f_EXFvwind]
+        FilesNamesContain=[f_Eta,f_RHOA,f_U,f_V,f_W,f_S,f_T,f_KPPdiffS,f_EXFuwind,f_EXFvwind,f_EXFIwind]
         Freqcy_List=np.zeros((1000),dtype=float)
         VarNam_List=np.empty((1000),dtype="S15")
         VarNam_List[:]=''
@@ -128,6 +128,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           nXYZ=''
           countline=0
           words=['','']
+          nXYZ_dimsFacets=''
           for line in filecontent:
              countline+=1
              if(countline>5000):break
@@ -219,7 +220,12 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                         string=(''.join(words[i:i+3]))
                         string='n'+string[1]+'rho_in'+string[2:] #  'Nx -> nxrho_in'
                         nXYZ=nXYZ+string+' \n'
-                        #print(nXYZ)
+                        #print('nXYZ=',nXYZ)
+                        break
+                  elif(word=='dimsFacets'):
+                        nx_dimsFacets=words[i+2:i+3][0][:-1]
+                        ny_dimsFacets=words[i+3:i+4][0][:-1]
+                        nXYZ_dimsFacets='nxrho_in='+nx_dimsFacets+' \nnyrho_in='+ny_dimsFacets+' \n'
                         break
                   elif(word=='&DIAGNOSTICS_LIST'):
 #                  elif(len(words)>=i+3):
@@ -228,6 +234,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                         print('lets wait for frequency, words=',words)
                         linestartwait=countline
                         break
+          if(len(nXYZ_dimsFacets)>0) : nXYZ=nXYZ_dimsFacets
           print('----------')
           fw.write(delXYZ)
           print(delXYZ)
@@ -288,16 +295,17 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           fw.write('reslon=float(nxrho_in)/delX \n')
           fw.write('reslat=float(nyrho_in)/delY \n')
           fw.write('f_newvarname=[ "zeta","rho", "u", "v" ,"w", "salt","temp", "AKs", "uwind", "vwind"] \n')
-          maxnumfiles=10
+          maxnumfiles=11
           FoundFile=[False]*maxnumfiles
           FilesNames=['']*maxnumfiles
+          FilesPrefix=['']*maxnumfiles
           numfieldfiles=0
           f_filenames='f_filenames = '
           count=0
           found=0
           print(FilesNamesContain)
 
-          for name in FilesNamesContain:
+          for numf,name in enumerate(FilesNamesContain):
             LIST = glob.glob(directory+name+'*')
             LIST.sort()
             if(len(LIST)==1):
@@ -338,9 +346,11 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
                         if(FILESTEP==9999999999):FILESTEP=0
                         NUMDAYS=int(NUMFILES*abs(float(FreqOutput)/86400.0))
                 FilesNames[count]=directory+fname
-                fname=fname[:-len(extension)-NUMDIGITS]
-                #print(extension)
-                #print(fname)
+                if(NUMDIGITS>0):ONEFORDOT=1
+                else:ONEFORDOT=0
+                fname=fname[:-len(extension)-NUMDIGITS+1-ONEFORDOT]
+                FilesPrefix[count]=fname
+                print(FilesNames[count],FilesPrefix[count],fname,extension,NUMDIGITS)
                 f_filenames=f_filenames+"'"+fname+"',"
                 found=found+1
                 numfieldfiles=numfieldfiles+1
@@ -384,7 +394,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           exec(code, globals(), None)
           runcommand('sed -i s/NUMUSLEVELS/'+str(nzrho_in)+'/ '+dirout+'LTRANS_'+identifier+'.data')
           runcommand('sed -i s/NUMWSLEVELS/'+str(nzrho_in+1)+'/ '+dirout+'LTRANS_'+identifier+'.data')
-          listsigles=['READZETA','READDENS','READU','READV','READW','READSALT','READTEMP','READAKS','READuWIND','READvWIND']
+          listsigles=['READZETA','READDENS','READU','READV','READW','READSALT','READTEMP','READAKS','READuWIND','READvWIND','READiWIND']
           for count in range(0,maxnumfiles):
            if(FoundFile[count]):
              runcommand('sed -i s/'+listsigles[count]+'/.TRUE./ '+dirout+'LTRANS_'+identifier+'.data')
@@ -395,7 +405,18 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           runcommand('sed -i s/MITgcmFIELDSDIRECTORY/'+str(directory.replace('/','!?'))+'/ '+dirout+'LTRANS_'+identifier+'.data')
           runcommand('sed -i "s/!?/\//g" '+dirout+'LTRANS_'+identifier+'.data')
           print('*')
-          runcommand('sed -i "s/PREFIXLIST/'+(str(f_filenames)[13:-1]).replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXZETA/'+FilesPrefix[0].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXDENS/'+FilesPrefix[1].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXUVEL/'+FilesPrefix[2].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXVVEL/'+FilesPrefix[3].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXWVEL/'+FilesPrefix[4].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXSALT/'+FilesPrefix[5].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXTEMP/'+FilesPrefix[6].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXAKS/'+FilesPrefix[7].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXUWIND/'+FilesPrefix[8].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXVWIND/'+FilesPrefix[9].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          runcommand('sed -i "s/PREFIXIWIND/'+FilesPrefix[10].replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
+          #runcommand('sed -i "s/PREFIXLIST/'+(str(f_filenames)[13:-1]).replace("'",'?!')+'/" '+dirout+'LTRANS_'+identifier+'.data')
           print('***')
           runcommand('sed -i s/EXTENSION/?!'+f_filesextension+'?!/ '+dirout+'LTRANS_'+identifier+'.data')
           print('*****')
@@ -406,7 +427,6 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           runcommand('sed -i s/NUMDIGITS/'+str(NUMDIGITS)+'/ '+dirout+'LTRANS_'+identifier+'.data')
           runcommand('sed -i s/FILENUM/'+str(FILENUM)+'/ '+dirout+'LTRANS_'+identifier+'.data')
           runcommand('sed -i s/FILESTEP/'+str(FILESTEP)+'/ '+dirout+'LTRANS_'+identifier+'.data')
-        
 def reversefindOccurences(s, ch):
         for i in range(len(s)-1,-1,-1):
                 if (s[i]==ch):break

@@ -61,7 +61,7 @@ $hydroparam
   constUwind = 0.00             ! Constant value for Uwind if readUwind is .FALSE.
   readVwind  = READvWIND        ! If .TRUE. read in Vwind from NetCDF file, else use constVwind
   constVwind = 0.00             ! Constant value for Vwind if readVwind is .FALSE.
-  readIwind  = .False.          ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
+  readIwind  = READiWIND           ! If .TRUE. read in Iwind from NetCDF file, else use constIwind
   constIwind = 0.00             ! Constant value for Iwind if readIwind is .FALSE.
 
   Wind               = .False.  ! If .TRUE. then WindDrift and StokesDrift are enabled 
@@ -73,7 +73,10 @@ $hydroparam
 
   WindDriftFac=0.035            ! Wind Drift factor, initially 0.035 in OILTRANS 
   WindDriftDev=5.0              ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS 
+  Wind_hc=0.1
+  Wind_ke=15.0
   StokDriftFac=0.016            ! Stokes Drift factor, initially 0.016 in OILTRANS 
+  Stokes             = .FALSE.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
 $end
@@ -127,7 +130,7 @@ $behavparam
                              ! in meters above bottom (this should be a positive value
                              ! Note: this formulation may need some work
 
-  GrainSize_fname = "/home/claurent/LTRANS_vZlev_PACKAGE//input/GRAINSIZEFILENAME" ! for Behavior 8
+  GrainSize_fname = "GRAINSIZEFILENAME" ! for Behavior 8
   read_GrainSize  = .False.           ! for Behavior 8
   DVMtime = 0                         ! maximum time spent doing DVM (if DVMtime>0, used for behavior 8 and 9 and 11)
   SettlementSize = 14              
@@ -182,14 +185,21 @@ $settleparam
  pedges     = 5              ! Number of habitat polygon edge points (# of rows in habitat polygon file)
  hedges     = 1              ! Number of hole edge points (number of rows in holes file)
 
- StrandingDist= -999           ! Stranding Distance in meters from land (Disabled if StrandingDist<=0)
- strandingmaxdepth =300.00      ! maximal depth at which stranding can occur                  
- strandingmaxdistfromdepth=10.0 ! maximal distance from bottom depth at which stranding can occur                  
  storedincolor=1                ! if ==1: If particle is in a polygon, store the poly-number in color array
 				! if ==2: store the element number in which is the particle in color array
 				! if ==0: store Status in color array
 $end
 
+$strandingparam
+ stranding_on = .TRUE.             ! stranding module on (.TRUE.) or off (.FALSE.)
+ StrandingDist= 250.0                ! Stranding Distance in meters from land 
+ strandingMaxDistFromSurf = 1.0     ! maximal distance from surface at which stranding can occur 
+                                    ! (if strandingMaxDistFromSurf > maximal depth of the domain, 
+                                    ! then stranding becomes independent of the distance from the surface)
+ strandingMaxDistFromBott = 99999.0 ! maximal distance from bottom depth at which stranding can occur
+                                    ! (if strandingMaxDistFromBott > maximal depth of the domain, 
+                                    ! then stranding becomes independent of the distance from the bottom)
+$end
 
 
 !*** CONVERSION MODULE PARAMETERS ***
@@ -220,7 +230,17 @@ $end
   !Filename = prefix + filenum + suffix
 $hydromodeloutput
   dirin='MITgcmFIELDSDIRECTORY'
-  prefix=PREFIXLIST  ! NetCDF Input Filename prefix                     
+  prefix_Zeta = 'PREFIXZETA'      
+  prefix_Salt = 'PREFIXSALT'      
+  prefix_Temp = 'PREFIXTEMP'      
+  prefix_Uvel = 'PREFIXUVEL'      
+  prefix_Vvel = 'PREFIXVVEL'      
+  prefix_Wvel = 'PREFIXWVEL'      
+  prefix_Aks  = 'PREFIXAKS'      
+  prefix_Dens = 'PREFIXDENS'      
+  prefix_Uwind= 'PREFIXUWIND'      
+  prefix_Vwind= 'PREFIXVWIND'      
+  prefix_Iwind= 'PREFIXIWIND'      
   numdigits = NUMDIGITS                  ! Number of digits in number portion of file name (with leading zeros)
   suffix=EXTENSION                       ! NetCDF Input Filename suffix
   filenum = FILENUM                      ! Number in first NetCDF input filename
@@ -336,7 +356,6 @@ $oilprocs
   Remove_Stranded_Oil= .False.
   Dispersion         = .True.
   Langmuir           = .False.
-  Stokes             = .True.
 $end
 
 $windswaves

@@ -3,7 +3,10 @@ LTRANS_tools = os.getenv('LTRANS_tools')+'/'
 PACKAGEDIRECTORY = os.getenv('LTRANS_Zlev')+'/'
 MITgcmdirectory=os.getenv('MITgcm_outputs')+'/'
 #
-writeUniformIniParlocFile=True  
+writeUniformIniParlocFile=True
+# writeUniformIniParlocFile=True attiva rilascio di particelle solo nelle celle di acqua ogni 10 celle partendo dalla prima cella
+#   rm  /g100_work/OGS23_PRACE_IT/LAGRANGIAN/NECTON/5yrs_new_GGL/LTRANS_Zlev//SIM/rundir_example/LTRANS_example.data ; rm /g100_work/OGS23_PRACE_IT/LAGRANGIAN/NECTON/5yrs_new_GGL/LTRANS_Zlev//plot_scripts//setup_example.py 
+ 
 (io,i_f,istep)=(0,0,10)
 (jo,j_f,jstep)=(0,0,10)
 #
@@ -232,14 +235,14 @@ tools.runcommand('sed -i "s/!?/\//g" '+LTRANSrundir+'LTRANS_'+identifier+'.data'
 Zvec=np.zeros((nzrho_in), dtype=np.float32)
 for k in range(nzrho_in-1,-1,-1):
         Zvec[k]=ZvecMIT[(nzrho_in-1)-k]
-Zp1_mod=np.zeros((nzrho_in+1), dtype=np.float)
+Zp1_mod=np.zeros((nzrho_in+1), dtype=np.float64)
 Zp1_mod[:]=999999.
-Zp1=np.zeros((nzrho_in+1), dtype=np.float)
+Zp1=np.zeros((nzrho_in+1), dtype=np.float64)
 Zp1[nzrho_in]=0.0
 for k in range(nzrho_in,-1,-1):
         Zp1[k] =Zp1MIT[(nzrho_in)-k]
 h=np.zeros((nyrho_in,nxrho_in),dtype=float)
-KBottomRUV=np.zeros((3,nyrho_in,nxrho_in), dtype=np.int)
+KBottomRUV=np.zeros((3,nyrho_in,nxrho_in), dtype=int)
 #################### READING INVERSING WRITING GRID  ###########################
 for nf in range(0,numgridfiles):
         #g_filenames =['XC.data','YC.data','hFacC.data','XG.data','YG.data','Depth.data'] 
@@ -369,19 +372,19 @@ for j in range(0,nyrho_in):
                                         # MAKE IT FULL CELL
                                         KBottomRUV[0,j,i]=kinv +(1) # +(1) as LTRANS is fortran, indexes from 1 to nzrho_in
                                         if(h[j,i]<-Zp1MIT[k] or h[j,i]>-Zp1MIT[k+1]):
-                                         print('--------------------------')
+                                         print('----------- STOP 1---------------')
                                          print('INCONSISTENCY i=',i,' j=',j,' k=',k,' kinv=',kinv +(1),'hfac[k-1,k-k+1]= (',hFac[max(0,k-1),j,i],hFac[k,j,i],hFac[min(nzrho_in-1,k+1),j,i],')')
                                          print('h=',h[j,i],' Zp1MIT[',max(0,k-1),']=',Zp1MIT[max(0,k-1)],' Zp1MIT[',k,']=',Zp1MIT[k],' Zp1MIT[',k+1,']=',Zp1MIT[k+1])
-                                         print('--------------------------')
+                                         print('------------STOP 1--------------')
                                          quit()
                                         break
                                 elif(hFac[k,j,i]==0.0 and hFac[k-1,j,i]!=0.0):
                                         KBottomRUV[0,j,i]=kinv+1 +(1) # +(1) as LTRANS is fortran, indexes from 1 to nzrho_in
                                         if(h[j,i]<-Zp1MIT[k] or h[j,i]>-Zp1MIT[k+1]):
-                                         print('--------------------------')
+                                         print('----------STOP 2----------------')
                                          print('INCONSISTENCY i=',i,' j=',j,' k=',k,' kinv=',kinv +(1),'hfac[k-1,k-k+1]= (',hFac[max(0,k-1),j,i],hFac[k,j,i],hFac[min(nzrho_in-1,k+1),j,i],')')
                                          print('h=',h[j,i],' Zp1MIT[',max(0,k-1),']=',Zp1MIT[max(0,k-1)],' Zp1MIT[',k,']=',Zp1MIT[k],' Zp1MIT[',k+1,']=',Zp1MIT[k+1])
-                                         print('--------------------------')
+                                         print('----------STOP 2----------------')
                                          quit()
                                         break
                                 elif(k==nzrho_in-1 and hFac[k,j,i]!=0.0): 
@@ -405,7 +408,7 @@ KBottomRUV[2,nyrho_in-1,:]=KBottomRUV[0,nyrho_in-1,:]
 print('        computing masks...')
 
 if(nxu_in != nxrho_in-1 or nyv_in !=nyrho_in-1 or nzrho_in_w != nzrho_in+1): stop
-LTRANSmask_rho=np.zeros((nzrho_in  ,nyrho_in  ,nxrho_in  ), dtype=np.int)
+LTRANSmask_rho=np.zeros((nzrho_in  ,nyrho_in  ,nxrho_in  ), dtype=int)
 for j in range(0,nyrho_in):
         for i in range(0,nxrho_in):
                 if(KBottomRUV[0,j,i]==0 or KBottomRUV[1,j,i]==0 or KBottomRUV[2,j,i]==0):
