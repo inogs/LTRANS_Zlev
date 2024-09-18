@@ -8,7 +8,7 @@
 #==========================================================================
 #                         USER-DEFINED OPTIONS                            =
 #==========================================================================
-OMP :=    # turn on to enable openmp (turn it off to have a sequential executable)
+OMP :=     # turn on to enable openmp (turn it off to have a sequential executable)
 Debug :=    # turn on to activate debug flags
 #
 #    Turn one of the following on to link the libraries and flags specific to a given cluster:
@@ -217,6 +217,6 @@ LTRANS : $(OBJS)
 
 clean:
 	@echo "####################################################################################"
-	\rm *.o *.mod
+	\rm *.o *.mod *.optrpt
 
 

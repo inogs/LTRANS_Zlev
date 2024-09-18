@@ -663,7 +663,7 @@ contains
       ENDIF
 
     enddo
-    if(counterrors>0)then
+    if(counterrors>0 .AND. (ErrorFlag < 1 .OR. ErrorFlag > 3))then
      write(*,*)'Some particles have an initial location out of the water basin'
      write(*,*)'The Program Cannot Continue and is Terminating'
      stop
@@ -916,6 +916,8 @@ contains
            !If particle settled or dead
             if(settlementon)then
               if(isSettled(n)) npsetl=npsetl+1
+            endif
+            if(stranding_on)then
               if(isStranded(n)) npstrd=npstrd+1
             endif
             if(mortality)then

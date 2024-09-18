@@ -2955,48 +2955,52 @@ SUBROUTINE output_xyBounds()
 
   open(1,FILE='xybounds.bln',STATUS='REPLACE')
   DO klev=1,us_tridim
-    numpoly = bnds(bnum(klev),klev)%poly       !numpoly = # of polygons
-
-    !Allocate polysizes to the number of polygons
-    allocate(polysizes(numpoly),STAT=STATUS)
-    IF(STATUS /= 0) write(*,*) 'Problem allocate polysizes'
-
-    polysizes = 0       !initialize all polygon sizes to 0
-
-    !iterate through boundaries incrementing polysize depending on
-    !   polygon each boundary is part of
-    do bnd=1,bnum(klev)
-      polysizes(bnds(bnd,klev)%poly) = polysizes(bnds(bnd,klev)%poly) + 1
-    enddo
-
-    pstart = 1
-
-    do m=1,numpoly                          !iterate through the polygons
-      write(1,*) polysizes(m)+1,',',1       !write polysize,1 for .bln 1st row
-      pend = pstart + polysizes(m) - 1      !calculate last bnds location
-      do bnd=pstart,pend                      !iterate through polygon bnds
-        i = bnds(bnd,klev)%ii                      !i position
-        j = bnds(bnd,klev)%jj                      !j position
-        if( bnds(bnd,klev)%onU ) then                !if on U Grid
-          write(1,*) x_u(i,j),',',y_u(i,j),',',klev  !  write x & y of U node
-        else                                      !else
-          write(1,*) x_v(i,j),',',y_v(i,j),',',klev  !  write x & y of V node
-        endif
+    if(bnum(klev)>0)then
+      numpoly = bnds(bnum(klev),klev)%poly       !numpoly = # of polygons
+     
+      !Allocate polysizes to the number of polygons
+      allocate(polysizes(numpoly),STAT=STATUS)
+      IF(STATUS /= 0) write(*,*) 'Problem allocate polysizes'
+     
+      polysizes = 0       !initialize all polygon sizes to 0
+     
+      !iterate through boundaries incrementing polysize depending on
+      !   polygon each boundary is part of
+      do bnd=1,bnum(klev)
+        polysizes(bnds(bnd,klev)%poly) = polysizes(bnds(bnd,klev)%poly) + 1
       enddo
-      bnd = pstart                            !go back to polygon's first bnd
-      i = bnds(bnd,klev)%ii                        !  to close the polygon
-      j = bnds(bnd,klev)%jj
-      if( bnds(bnd,klev)%onU ) then
-        write(1,*) x_u(i,j),',',y_u(i,j),',',klev
-      else
-        write(1,*) x_v(i,j),',',y_v(i,j),',',klev
-      endif
-
-      pstart = pstart + polysizes(m)        !calculate start of next polygon
-
-    enddo
-
-    deallocate(polysizes)
+     
+      pstart = 1
+     
+      do m=1,numpoly                          !iterate through the polygons
+        write(1,*) polysizes(m)+1,',',1       !write polysize,1 for .bln 1st row
+        pend = pstart + polysizes(m) - 1      !calculate last bnds location
+        do bnd=pstart,pend                      !iterate through polygon bnds
+          i = bnds(bnd,klev)%ii                      !i position
+          j = bnds(bnd,klev)%jj                      !j position
+          if( bnds(bnd,klev)%onU ) then                !if on U Grid
+            write(1,*) x_u(i,j),',',y_u(i,j),',',klev  !  write x & y of U node
+          else                                      !else
+            write(1,*) x_v(i,j),',',y_v(i,j),',',klev  !  write x & y of V node
+          endif
+        enddo
+        bnd = pstart                            !go back to polygon's first bnd
+        i = bnds(bnd,klev)%ii                        !  to close the polygon
+        j = bnds(bnd,klev)%jj
+        if( bnds(bnd,klev)%onU ) then
+          write(1,*) x_u(i,j),',',y_u(i,j),',',klev
+        else
+          write(1,*) x_v(i,j),',',y_v(i,j),',',klev
+        endif
+     
+        pstart = pstart + polysizes(m)        !calculate start of next polygon
+     
+      enddo
+     
+      deallocate(polysizes)
+    else 
+      write(*,*)'warning : output_xybounds: no bounds found for level',klev
+    endif
 
   enddo ! klev=1,us_tridim
 
@@ -3032,51 +3036,55 @@ SUBROUTINE output_llBounds()
   open(1,FILE='llbounds.bln',STATUS='REPLACE')
   
   DO klev=1,us_tridim
-    numpoly = bnds(bnum(klev),klev)%poly       !numpoly = # of polygons
-
-    !Allocate polysizes to the number of polygons
-    allocate(polysizes(numpoly),STAT=STATUS)
-    IF(STATUS /= 0) write(*,*) 'Problem allocate polysizes'
-
-    polysizes = 0       !initialize all polygon sizes to 0
-
-    !iterate through boundaries incrementing polysize depending on
-    !   polygon each boundary is part of
-    do bnd=1,bnum(klev)
-      polysizes(bnds(bnd,klev)%poly) = polysizes(bnds(bnd,klev)%poly) + 1
-    enddo
-
-    pstart = 1
-
-    do m=1,numpoly                      !iterate through the polygons
-      if(m<=num_mbnd(klev))then
-        write(1,*) polysizes(m)+1,',',1,',',polynestdeg(m,klev)   !write polysize,1,1 for first row of land bnd
-      else                                  
-        write(1,*) polysizes(m)+1,',',0,',',polynestdeg(m,klev)   !write polysize,1,1 for first row of island
-      endif
-      pend = pstart + polysizes(m) - 1  !calculate polygon last bnds location
-      do bnd=pstart,pend                  !iterate through polygon bnds
-        i = bnds(bnd,klev)%ii                  !i position
-        j = bnds(bnd,klev)%jj                  !j position
-        if( bnds(bnd,klev)%onU ) then          !if on U Grid write lon & lat of U node
+    if(bnum(klev)>0)then
+      numpoly = bnds(bnum(klev),klev)%poly       !numpoly = # of polygons
+    
+      !Allocate polysizes to the number of polygons
+      allocate(polysizes(numpoly),STAT=STATUS)
+      IF(STATUS /= 0) write(*,*) 'Problem allocate polysizes'
+    
+      polysizes = 0       !initialize all polygon sizes to 0
+    
+      !iterate through boundaries incrementing polysize depending on
+      !   polygon each boundary is part of
+      do bnd=1,bnum(klev)
+        polysizes(bnds(bnd,klev)%poly) = polysizes(bnds(bnd,klev)%poly) + 1
+      enddo
+    
+      pstart = 1
+    
+      do m=1,numpoly                      !iterate through the polygons
+        if(m<=num_mbnd(klev))then
+          write(1,*) polysizes(m)+1,',',1,',',polynestdeg(m,klev)   !write polysize,1,1 for first row of land bnd
+        else                                  
+          write(1,*) polysizes(m)+1,',',0,',',polynestdeg(m,klev)   !write polysize,1,1 for first row of island
+        endif
+        pend = pstart + polysizes(m) - 1  !calculate polygon last bnds location
+        do bnd=pstart,pend                  !iterate through polygon bnds
+          i = bnds(bnd,klev)%ii                  !i position
+          j = bnds(bnd,klev)%jj                  !j position
+          if( bnds(bnd,klev)%onU ) then          !if on U Grid write lon & lat of U node
+            write(1,*) x2lon(x_u(i,j),y_u(i,j)),',',y2lat(y_u(i,j)),',',klev
+          else                            !else write lon & lat of V node
+            write(1,*) x2lon(x_v(i,j),y_v(i,j)),',',y2lat(y_v(i,j)),',',klev
+          endif
+        enddo
+        bnd = pstart                        !go back to polygon's first bnd
+        i = bnds(bnd,klev)%ii                    !  to close the polygon
+        j = bnds(bnd,klev)%jj
+        if( bnds(bnd,klev)%onU ) then
           write(1,*) x2lon(x_u(i,j),y_u(i,j)),',',y2lat(y_u(i,j)),',',klev
-        else                            !else write lon & lat of V node
+        else
           write(1,*) x2lon(x_v(i,j),y_v(i,j)),',',y2lat(y_v(i,j)),',',klev
         endif
+    
+        pstart = pstart + polysizes(m)    !calculate start of next polygon
+    
       enddo
-      bnd = pstart                        !go back to polygon's first bnd
-      i = bnds(bnd,klev)%ii                    !  to close the polygon
-      j = bnds(bnd,klev)%jj
-      if( bnds(bnd,klev)%onU ) then
-        write(1,*) x2lon(x_u(i,j),y_u(i,j)),',',y2lat(y_u(i,j)),',',klev
-      else
-        write(1,*) x2lon(x_v(i,j),y_v(i,j)),',',y2lat(y_v(i,j)),',',klev
-      endif
-
-      pstart = pstart + polysizes(m)    !calculate start of next polygon
-
-    enddo
-    deallocate(polysizes)
+      deallocate(polysizes)
+    else 
+      write(*,*)'warning : output_llbounds: no bounds found for level',klev
+    endif
   enddo ! klev=1,us_tridim
   close(1)
 
