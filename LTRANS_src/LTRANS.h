@@ -156,6 +156,7 @@
                                                            ! vertical displacement due to the variations of the sea surface height
                                                            ! or displacements due to the raising of the bottom sea depth 
                                     ! *****  IMIOM *****  1000 = oil particles
+  LOGICAL :: BottomRelease          ! Set to .true. to release particles 1m above the bottom, .False. by default 
   LOGICAL :: OpenOceanBoundary      ! Note: If you want to allow particles to "escape" via open ocean 
                                     !   boundaries, set this to TRUE; Escape means that the particle 
                                     !   will stick to the boundary and stop moving
@@ -204,7 +205,8 @@
            surflayer_lowerdepth_night,surflayer_upperdepth_night,     &
            DVMtime,SettlementSize,  &
            SeabedRelease,SeabedRelease_meters,Seabed_layerheight, &
-           Write_Temp_min_max_ins,Write_Salt_min_max_ins,Write_coastdist
+           Write_Temp_min_max_ins,Write_Salt_min_max_ins,Write_coastdist, &
+          BottomRelease
 
 
 !*** DVM. The following are parameters for the Diurnal Vertical Migration (DVM) behavior type:

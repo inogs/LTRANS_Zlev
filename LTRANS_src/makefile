@@ -18,6 +18,9 @@ GFORTRAN_USGS :=
 PGI_USGS   :=
 Fluxus := 
 INTEL_g100 := on      
+
+OBJ_DIR = obj
+MOD_DIR = mod
 #==========================================================================
 #================   setting some default options, the =====================
 #================   user shouldnt need to change them =====================
@@ -133,8 +136,11 @@ ifdef INTEL_g100
   endif
 endif
 
-
-
+ifdef Intel
+  FFLAGS += -module $(MOD_DIR) 
+else
+  FFLAGS += -J$(MOD_DIR) 
+endif
 #------------------------------------------------
 #    Set NetCDF Library Locations.
 #    If NetCDF was compiled with HDF5, set:
@@ -180,12 +186,12 @@ else
 endif
 
 
-OBJS          = gridcell_module.o interpolation_module.o parameter_module.o \
-				point_in_polygon_module.o random_module.o tension_module.o  \
-				conversion_module.o oil_module_Zlev.o stokes_drift_module.o  \
-				hydrodynamic_module.o norm_module.o                         \
-				boundary_module.o hor_turb_module.o settlement_module.o     \
-				ver_turb_module.o stranding_module.o behavior_module.o                 
+OBJS          = $(OBJ_DIR)/gridcell_module.o $(OBJ_DIR)/interpolation_module.o $(OBJ_DIR)/parameter_module.o \
+				$(OBJ_DIR)/point_in_polygon_module.o $(OBJ_DIR)/random_module.o $(OBJ_DIR)/tension_module.o  \
+				$(OBJ_DIR)/conversion_module.o $(OBJ_DIR)/oil_module_Zlev.o $(OBJ_DIR)/stokes_drift_module.o  \
+				$(OBJ_DIR)/hydrodynamic_module.o $(OBJ_DIR)/norm_module.o                         \
+				$(OBJ_DIR)/boundary_module.o $(OBJ_DIR)/hor_turb_module.o $(OBJ_DIR)/settlement_module.o     \
+				$(OBJ_DIR)/ver_turb_module.o $(OBJ_DIR)/stranding_module.o $(OBJ_DIR)/behavior_module.o                 
 
 ifdef HDF5
 	LIBS      = -L$(NETCDF_LIBDIR) -lnetcdf -lnetcdff -L$(HDF5_LIBDIR) -lhdf5_hl -lhdf5 $(EXTRA_LIBS_AND_FLAGS) -lcurl
@@ -197,8 +203,6 @@ LTRANS : $(OBJS)
 	@echo "  Compiling LTRANS_vZ.f90"
 	@echo "$(F90C) $(FOPENMP_FLAG)  $(FFLAGS) -o ../$(LTRANSEXE) LTRANS.f90 $(OBJS) $(LIBS)"
 	@$(F90C) $(FOPENMP_FLAG)  $(FFLAGS) -o ../$(LTRANSEXE) LTRANS.f90 $(OBJS) $(LIBS)
-	#@echo "  Removing .o and .mod files"
-	#@\rm *.o *.mod
 	@echo "  "
 	@echo "####################################################################################"
 	@echo "  "
@@ -211,12 +215,16 @@ LTRANS : $(OBJS)
 	@echo "####################################################################################"
 	@echo "  "
 
-%.o: %.f90
+$(OBJ_DIR)/%.o: %.f90
+	@echo " "
 	@echo "  Compiling $<"
-	@$(FC) $(FOPENMP_FLAG)  $(FFLAGS) -c $<
+	@mkdir -p $(@D)
+	@mkdir -p $(MOD_DIR)
+	@echo "$(FC) $(FOPENMP_FLAG)  $(FFLAGS) -c $< -o $@"
+	@$(FC) $(FOPENMP_FLAG)  $(FFLAGS) -c $< -o $@
 
 clean:
 	@echo "####################################################################################"
-	\rm *.o *.mod *.optrpt *.i90
+	\rm -f $(OBJ_DIR)/*.o $(MOD_DIR)/*.mod $(OBJ_DIR)/*.optrpt $(OBJ_DIR)/*.i90 .o *.mod *.optrpt *.i90 
 
 
