@@ -1,9 +1,11 @@
 import os,sys
+Gridname='example'
 LTRANS_tools = os.getenv('LTRANS_tools')+'/'
 PACKAGEDIRECTORY = os.getenv('LTRANS_Zlev')+'/'
 MITgcmdirectory=os.getenv('MITgcm_outputs')+'/'
 #
 writeUniformIniParlocFile=True
+Reconstruct_missing_coordinates=False
 # writeUniformIniParlocFile=True attiva rilascio di particelle solo nelle celle di acqua ogni 10 celle partendo dalla prima cella
 #   rm  /g100_work/OGS23_PRACE_IT/LAGRANGIAN/NECTON/5yrs_new_GGL/LTRANS_Zlev//SIM/rundir_example/LTRANS_example.data ; rm /g100_work/OGS23_PRACE_IT/LAGRANGIAN/NECTON/5yrs_new_GGL/LTRANS_Zlev//plot_scripts//setup_example.py 
  
@@ -20,7 +22,7 @@ f_T='T.'
 f_KPPdiffS='KPPdiffS.'
 f_EXFuwind='EXFuwind.'
 f_EXFvwind='EXFvwind.'
-identifier='example'
+identifier=Gridname
 BATI_PREC=4
 #############################################################
 sys.path.append(LTRANS_tools+'/pymodules')
@@ -31,7 +33,8 @@ import datetime
 from numpy import array
 import struct
 import math
-import scipy.io.netcdf as NC
+#import scipy.io.netcdf as NC
+import netCDF4 as NC
 ############################
 import tools_module as tools
 import importlib.machinery
@@ -244,6 +247,26 @@ for k in range(nzrho_in,-1,-1):
 h=np.zeros((nyrho_in,nxrho_in),dtype=float)
 KBottomRUV=np.zeros((3,nyrho_in,nxrho_in), dtype=int)
 #################### READING INVERSING WRITING GRID  ###########################
+def reconstruct_lon_coordinate(lon_coord):
+   jlist,ilist=np.where(lon_coord<=0)
+   for j,i in zip(jlist,ilist):
+     jgood=np.where(lon_coord[:,i]>0)[0][0]
+     lon_coord[j,i]=lon_coord[jgood,i] 
+   for j in range(0,len(lon_coord),20):
+     with np.printoptions(precision=4, suppress=True, formatter={'float': '{:0.3f}'.format}, linewidth=400):
+       print(lon_coord[j,::20])
+   return lon_coord
+
+def reconstruct_lat_coordinate(lat_coord):
+   jlist,ilist=np.where(lat_coord<=0)
+   for j,i in zip(jlist,ilist):
+     igood=np.where(lat_coord[j,:]>0)[0][0]
+     lat_coord[j,i]=lat_coord[j,igood] 
+   for j in range(0,len(lat_coord),20):
+     with np.printoptions(precision=4, suppress=True, formatter={'float': '{:0.3f}'.format}, linewidth=400):
+       print(lat_coord[j,::20])
+   return lat_coord
+
 for nf in range(0,numgridfiles):
         #g_filenames =['XC.data','YC.data','hFacC.data','XG.data','YG.data','Depth.data'] 
         print('read grid file '+str(nf)+' : '+g_filenames[nf])
@@ -282,25 +305,32 @@ for nf in range(0,numgridfiles):
                 lon_rho =np.copy(var[0,0:nyrho_in,0:nxrho_in])
                 print('full lon min max=',np.min(var),np.max(var))
                 print('load lon min max=',np.min(lon_rho),np.max(lon_rho))
+                if(Reconstruct_missing_coordinates): lon_rho=reconstruct_lon_coordinate(lon_rho)
+                  
                 LONMIN=np.min(lon_rho)
                 tools.runcommand('sed -i s/LONMIN/'+str(LONMIN)+'/ '+LTRANSrundir+'LTRANS_'+identifier+'.data')
                 print('lon_rho:',np.shape(lon_rho),', [',np.min(lon_rho),', ... , ',np.max(lon_rho),']')
                 lon_u   = 0.5*(lon_rho[:,1:]+lon_rho[:,:-1]) 
+                if(Reconstruct_missing_coordinates): lon_u=reconstruct_lon_coordinate(lon_u)
                 #lon_u   = lon_rho[0:nyrho_in,0+1:nxrho_in]-1.0/reslon/2.0
                 print('lon_u:',np.shape(lon_u),', [',np.min(lon_u),', ... , ',np.max(lon_u),']')
                 lon_v   =np.copy(var[0,0+1:nyrho_in,0:nxrho_in]) 
+                if(Reconstruct_missing_coordinates): lon_v=reconstruct_lon_coordinate(lon_v)
                 print('lon_v:',np.shape(lon_v),', [',np.min(lon_v),', ... , ',np.max(lon_v),']')
         elif(nf==nfYC) : 
                 lat_rho =np.copy(var[0,0:nyrho_in,0:nxrho_in])
                 print('full lat min max=',np.min(var),np.max(var))
                 print('load lat min max=',np.min(lat_rho),np.max(lat_rho))
+                if(Reconstruct_missing_coordinates): lat_rho=reconstruct_lat_coordinate(lat_rho)
                 LATMIN=np.min(lat_rho)
                 tools.runcommand('sed -i s/LATMIN/'+str(LATMIN)+'/ '+LTRANSrundir+'LTRANS_'+identifier+'.data')
                 print('lat_rho:',np.shape(lat_rho),', [',np.min(lat_rho),', ... , ',np.max(lat_rho),']')
                 lat_u   =np.copy(var[0,0:nyrho_in,0+1:nxrho_in]) 
+                if(Reconstruct_missing_coordinates): lat_u=reconstruct_lat_coordinate(lat_u)
                 print('lat_u:',np.shape(lat_u),', [',np.min(lat_u),', ... , ',np.max(lat_u),']')
                 lat_v   =0.5*(lat_rho[1:,:]+lat_rho[:-1,:])
                 print('lat_v:',np.shape(lat_v),', [',np.min(lat_v),', ... , ',np.max(lat_v),']')
+                if(Reconstruct_missing_coordinates): lat_v=reconstruct_lat_coordinate(lat_v)
         elif(nf==nfhFacC):
                 hFac   =np.copy(var[0:nzrho_in,0:nyrho_in,0:nxrho_in])
                 print('hfac',np.shape(hFac))
@@ -308,9 +338,11 @@ for nf in range(0,numgridfiles):
                 lon_u=np.copy(var[0,0:nyrho_in,0+1:nxrho_in])
 #               lon_u   = 0.5*(lon_rho[:,1:]+lon_rho[:,:-1]) 
                 print('lon_u:',np.shape(lon_u),', [',np.min(lon_u),', ... , ',np.max(lon_u),']')
+                if(Reconstruct_missing_coordinates): lon_u=reconstruct_lon_coordinate(lon_u)
         elif(nf==nfYG) : 
                 lat_v=np.copy(var[0,0+1:nyrho_in,0:nxrho_in])
                 print('lat_v:',np.shape(lat_v),', [',np.min(lat_v),', ... , ',np.max(lat_v),']')
+                if(Reconstruct_missing_coordinates): lat_v=reconstruct_lat_coordinate(lat_v)
         elif  (nf==nfDepth) : 
                 h       =np.copy(var[0,0:nyrho_in,0:nxrho_in])
                 print('full h min max=',np.min(var),np.max(var))
@@ -554,7 +586,7 @@ outfile='GridforLTRANS-'+identifier+'-c'+str(skipindex)+'.nc'
 if(setupanddatafilerewritten): setupwriter.write('gridfilename="'+griddirout+outfile+'" \n')
 print('')
 print('-------- WRITING GRID FILE '+str(outfile)+'-----------')
-ncgridOUT= NC.netcdf_file(griddirout+outfile,"w")
+ncgridOUT = NC.Dataset(griddirout+outfile,'w', format='NETCDF4')
 ncgridOUT.createDimension("xi_rho",   sxy[x,rho])
 ncgridOUT.createDimension("xi_u",     sxy[x,u])
 ncgridOUT.createDimension("xi_v",     sxy[x,v])
@@ -565,6 +597,84 @@ ncgridOUT.createDimension("Z",        nzrho_in_cut)
 ncgridOUT.createDimension("Zi",       nzrho_in_cut+1) 
 ncgridOUT.createDimension("RUV",   int(3))
 
+ncvar=ncgridOUT.createVariable("eta_rho", 'f', ('eta_rho',))
+setattr(ncvar,'units'              , 'degrees_north')
+setattr(ncvar,'long_name'          , 'latitude')
+setattr(ncvar,'standard_name'      , 'latitude')
+setattr(ncvar,'axis'               , 'Y'        )
+setattr(ncvar,'valid_min'          , -90.      )
+setattr(ncvar,'valid_max'          , +90.      )
+setattr(ncvar,'_CoordinateAxisType', 'Lat'      )
+setattr(ncvar,'positive', 'north'      )
+setattr(ncvar,'missing_value',1e20)  #  
+setattr(ncvar,'fill_value',  1e20)   #  
+setattr(ncvar,'grid_mapping', 'WGS84') #
+setattr(ncvar,'grid_mapping_name', 'eta_rho xi_rho')
+ncvar[:]=lat_rho_out[:,0]
+
+ncvar=ncgridOUT.createVariable("xi_rho", 'f', ('xi_rho',))
+setattr(ncvar,'units'              , 'degrees_east')
+setattr(ncvar,'long_name'          , 'longitude')
+setattr(ncvar,'standard_name'      , 'longitude')
+setattr(ncvar,'axis'               , 'X'        )
+setattr(ncvar,'valid_min'          , -180.      )
+setattr(ncvar,'valid_max'          , +180.      )
+setattr(ncvar,'_CoordinateAxisType', 'Lon'      )
+setattr(ncvar,'positive', 'east'      )
+setattr(ncvar,'missing_value',1e20)  #  
+setattr(ncvar,'fill_value',  1e20)   #  
+setattr(ncvar,'grid_mapping', 'WGS84') #
+ncvar[:]=lon_rho_out[0,:]
+
+ncvar=ncgridOUT.createVariable("lat_rho", 'f', ('eta_rho', 'xi_rho',))
+setattr(ncvar,'units'              , 'degrees_north')
+setattr(ncvar,'long_name'          , 'lat_rho')
+setattr(ncvar,'standard_name'      , 'lat_rho')
+setattr(ncvar,'axis'               , 'Y'        )
+setattr(ncvar,'valid_min'          , -90.      )
+setattr(ncvar,'valid_max'          , +90.      )
+setattr(ncvar,'_CoordinateAxisType', 'Lat'      )
+setattr(ncvar,'positive', 'north'      )
+setattr(ncvar,'missing_value',1e20)  #  
+setattr(ncvar,'fill_value',  1e20)   #  
+setattr(ncvar,'grid_mapping', 'WGS84') #
+setattr(ncvar,'grid_mapping_name', 'eta_rho xi_rho')
+ncvar[:]=lat_rho_out[:,:]
+
+ncvar=ncgridOUT.createVariable("lon_rho", 'f', ('eta_rho', 'xi_rho',))
+setattr(ncvar,'units'              , 'degrees_east')
+setattr(ncvar,'long_name'          , 'lon_rho')
+setattr(ncvar,'standard_name'      , 'lon_rho')
+setattr(ncvar,'axis'               , 'X'        )
+setattr(ncvar,'valid_min'          , -180.      )
+setattr(ncvar,'valid_max'          , +180.      )
+setattr(ncvar,'_CoordinateAxisType', 'Lon'      )
+setattr(ncvar,'positive', 'east'      )
+setattr(ncvar,'missing_value',1e20)  #  
+setattr(ncvar,'fill_value',  1e20)   #  
+setattr(ncvar,'grid_mapping', 'WGS84') #
+setattr(ncvar,'grid_mapping_name', 'eta_rho xi_rho')
+ncvar[:]=lon_rho_out[:,:]
+
+ncvar=ncgridOUT.createVariable("h"      , 'f', ('eta_rho', 'xi_rho',))
+setattr(ncvar,'units'              , 'meters' )
+setattr(ncvar,'long_name'          , 'depth'  )
+setattr(ncvar,'standard_name'      , 'depth'  )
+setattr(ncvar,'axis'               , 'Z'      )
+setattr(ncvar,'valid_min'          , 0.       )
+setattr(ncvar,'positive'           , 'down'   )
+setattr(ncvar,'coordinate'         , 'eta_rho xi_rho')
+setattr(ncvar,'_CoordinateAxisType', 'heigth' )
+setattr(ncvar,'_CoordinateAxiszisPositive', 'down')
+ncvar[:]=np.minimum(h[:,:],-np.min(Zp1[nzrho_in-nzrho_in_cut:nzrho_in_w]))
+
+ncvar=ncgridOUT.createVariable("mask_rho", 'f', ('Z', 'eta_rho', 'xi_rho',))
+setattr(ncvar,'units'              , 'binary 0-1')
+setattr(ncvar,'long_name'          , 'mask_rho')
+setattr(ncvar,'standard_name'      , 'mask_rho')
+setattr(ncvar,'valid_min'          , 0.      )
+setattr(ncvar,'valid_max'          , +1.      )
+ncvar[:]=smaskrho_out[nzrho_in-nzrho_in_cut:nzrho_in,:,:]
 
 ncvar=ncgridOUT.createVariable("Z"            , 'f', ('Z', ))
 setattr(ncvar,'units'              , 'meters depth')
@@ -578,103 +688,61 @@ setattr(ncvar,'long_name'          , 'vertical coordinate of cell interface'  )
 setattr(ncvar,'standard_name'      , 'vertical coordinate of cell interface'  )
 ncvar[:]=Zp1[nzrho_in-nzrho_in_cut:nzrho_in_w]
 
-ncvar=ncgridOUT.createVariable("lon_rho", 'f', ('eta_rho', 'xi_rho',))
-setattr(ncvar,'units'              , 'degrees_east')
-setattr(ncvar,'long_name'          , 'lon_rho')
-setattr(ncvar,'standard_name'      , 'lon_rho')
-setattr(ncvar,'axis'               , 'X'        )
-setattr(ncvar,'valid_min'          , -180.      )
-setattr(ncvar,'valid_max'          , +180.      )
-setattr(ncvar,'_CoordinateAxisType', 'longitude'      )
-ncvar[:]=lon_rho_out[:,:]
-
-ncvar=ncgridOUT.createVariable("lat_rho", 'f', ('eta_rho', 'xi_rho',))
-setattr(ncvar,'units'              , 'degrees_north')
-setattr(ncvar,'long_name'          , 'lat_rho')
-setattr(ncvar,'standard_name'      , 'lat_rho')
-setattr(ncvar,'axis'               , 'Y'        )
-setattr(ncvar,'valid_min'          , -90.      )
-setattr(ncvar,'valid_max'          , +90.      )
-setattr(ncvar,'_CoordinateAxisType', 'latitude'      )
-ncvar[:]=lat_rho_out[:,:]
-
-ncvar=ncgridOUT.createVariable("mask_rho", 'f', ('Z', 'eta_rho', 'xi_rho',))
-setattr(ncvar,'units'              , 'binary 0-1')
-setattr(ncvar,'long_name'          , 'mask_rho')
-setattr(ncvar,'standard_name'      , 'mask_rho')
-setattr(ncvar,'axis'               , 'Y'        )
-setattr(ncvar,'valid_min'          , 0.      )
-setattr(ncvar,'valid_max'          , +1.      )
-ncvar[:]=smaskrho_out[nzrho_in-nzrho_in_cut:nzrho_in,:,:]
-
-ncvar=ncgridOUT.createVariable("lon_u", 'f', ('eta_u', 'xi_u',))
-setattr(ncvar,'units'              , 'degrees_east')
-setattr(ncvar,'long_name'          , 'lon_u')
-setattr(ncvar,'standard_name'      , 'lon_u')
-setattr(ncvar,'axis'               , 'X'        )
-setattr(ncvar,'valid_min'          , -180.      )
-setattr(ncvar,'valid_max'          , +180.      )
-setattr(ncvar,'_CoordinateAxisType', 'longitude'      )
-ncvar[:]=lon_u_out[:,:]
-
 ncvar=ncgridOUT.createVariable("lat_u", 'f', ('eta_u', 'xi_u',))
 setattr(ncvar,'units'              , 'degrees_north')
 setattr(ncvar,'long_name'          , 'lat_u')
 setattr(ncvar,'standard_name'      , 'lat_u')
-setattr(ncvar,'axis'               , 'Y'        )
+#setattr(ncvar,'axis'               , 'Y'        )
 setattr(ncvar,'valid_min'          , -90.      )
 setattr(ncvar,'valid_max'          , +90.      )
 setattr(ncvar,'_CoordinateAxisType', 'latitude'      )
 ncvar[:]=lat_u_out[:,:]
 
+ncvar=ncgridOUT.createVariable("lon_u", 'f', ('eta_u', 'xi_u',))
+setattr(ncvar,'units'              , 'degrees_east')
+setattr(ncvar,'long_name'          , 'lon_u')
+setattr(ncvar,'standard_name'      , 'lon_u')
+#setattr(ncvar,'axis'               , 'X'        )
+setattr(ncvar,'valid_min'          , -180.      )
+setattr(ncvar,'valid_max'          , +180.      )
+setattr(ncvar,'_CoordinateAxisType', 'longitude'      )
+ncvar[:]=lon_u_out[:,:]
+
 ncvar=ncgridOUT.createVariable("mask_u", 'f', ('Z', 'eta_u', 'xi_u',))
 setattr(ncvar,'units'              , 'binary 0-1')
 setattr(ncvar,'long_name'          , 'mask_u')
 setattr(ncvar,'standard_name'      , 'mask_u')
-setattr(ncvar,'axis'               , 'Y'        )
 setattr(ncvar,'valid_min'          , 0.      )
 setattr(ncvar,'valid_max'          , +1.      )
 ncvar[:]=smasku_out[nzrho_in-nzrho_in_cut:nzrho_in,:,:]
-
-ncvar=ncgridOUT.createVariable("lon_v", 'f', ('eta_v', 'xi_v',))
-setattr(ncvar,'units'              , 'degrees_east')
-setattr(ncvar,'long_name'          , 'lon_v')
-setattr(ncvar,'standard_name'      , 'lon_v')
-setattr(ncvar,'axis'               , 'X'        )
-setattr(ncvar,'valid_min'          , -180.      )
-setattr(ncvar,'valid_max'          , +180.      )
-setattr(ncvar,'_CoordinateAxisType', 'longitude'      )
-ncvar[:]=lon_v_out[:,:]
 
 ncvar=ncgridOUT.createVariable("lat_v", 'f', ('eta_v', 'xi_v',))
 setattr(ncvar,'units'              , 'degrees_north')
 setattr(ncvar,'long_name'          , 'lat_v')
 setattr(ncvar,'standard_name'      , 'lat_v')
-setattr(ncvar,'axis'               , 'Y'        )
+#setattr(ncvar,'axis'               , 'Y'        )
 setattr(ncvar,'valid_min'          , -90.      )
 setattr(ncvar,'valid_max'          , +90.      )
 setattr(ncvar,'_CoordinateAxisType', 'latitude'      )
 ncvar[:]=lat_v_out[:,:]
 
+ncvar=ncgridOUT.createVariable("lon_v", 'f', ('eta_v', 'xi_v',))
+setattr(ncvar,'units'              , 'degrees_east')
+setattr(ncvar,'long_name'          , 'lon_v')
+setattr(ncvar,'standard_name'      , 'lon_v')
+#setattr(ncvar,'axis'               , 'X'        )
+setattr(ncvar,'valid_min'          , -180.      )
+setattr(ncvar,'valid_max'          , +180.      )
+setattr(ncvar,'_CoordinateAxisType', 'longitude'      )
+ncvar[:]=lon_v_out[:,:]
+
 ncvar=ncgridOUT.createVariable("mask_v", 'f', ('Z', 'eta_v', 'xi_v',))
 setattr(ncvar,'units'              , 'binary 0-1')
 setattr(ncvar,'long_name'          , 'mask_v')
 setattr(ncvar,'standard_name'      , 'mask_v')
-setattr(ncvar,'axis'               , 'Y'        )
 setattr(ncvar,'valid_min'          , 0.      )
 setattr(ncvar,'valid_max'          , +1.      )
 ncvar[:]=smaskv_out[nzrho_in-nzrho_in_cut:nzrho_in,:,:]
-
-ncvar=ncgridOUT.createVariable("h"      , 'f', ('eta_rho', 'xi_rho',))
-setattr(ncvar,'units'              , 'meters' )
-setattr(ncvar,'long_name'          , 'depth'  )
-setattr(ncvar,'standard_name'      , 'depth'  )
-setattr(ncvar,'axis'               , 'Z'      )
-setattr(ncvar,'valid_min'          , 0.       )
-setattr(ncvar,'positive'           , 'down'   )
-setattr(ncvar,'_CoordinateAxisType', 'heigth' )
-setattr(ncvar,'_CoordinateAxiszisPositive', 'down')
-ncvar[:]=np.minimum(h[:,:],-np.min(Zp1[nzrho_in-nzrho_in_cut:nzrho_in_w]))
 
 ncvar=ncgridOUT.createVariable("KBottomRUV", 'i', ('RUV', 'eta_rho', 'xi_rho',))
 setattr(ncvar,'units'              , 'integer')
@@ -683,6 +751,37 @@ setattr(ncvar,'standard_name'      , 'Bottom cell index (partial cell)')
 setattr(ncvar,'valid_min'          , 0       )
 setattr(ncvar,'valid_max'          , nzrho_in_cut+1      )
 ncvar[:]=KBottomRUV[:,:,:]
+
+projected_coordinate_system = ncgridOUT.createVariable('projected_coordinate_system','i4')
+projected_coordinate_system.epsg="4326"
+projected_coordinate_system.EPSG_code="EPSG:4326"
+projected_coordinate_system.long_name="Spatial reference"
+
+WGS84 = ncgridOUT.createVariable('WGS84','c')
+WGS84.grid_mapping_name='latitude_longitude'
+WGS84.long_name='latitude longitude'
+WGS84.longitude_of_prime_meridian=0.0
+WGS84.semi_major_axis=6378137.0
+WGS84.inverse_flattening=298.257223563
+WGS84.spatial_ref = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
+WGS84.crs_wkt = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]'
+latmax = np.max(lat_rho_out)
+latmin = np.min(lat_rho_out)
+lonmax = np.max(lon_rho_out)
+lonmin = np.min(lon_rho_out)
+#filenc.f.creator_name="Celia Laurent"
+ncgridOUT.Institution="OGS National Institute of Oceanography and Applied Geophysics https://www.inogs.it/"
+ncgridOUT.geospatial_bounds_crs="EPSG:4326"
+ncgridOUT.geospatial_lon_units="degrees_east"
+ncgridOUT.geospatial_lat_units="degrees_north"
+ncgridOUT.geospatial_lat_max = latmax ;
+ncgridOUT.geospatial_lat_min = latmin ;
+ncgridOUT.geospatial_lat_units = "degrees_north" ;
+ncgridOUT.geospatial_lon_max = lonmax ;
+ncgridOUT.geospatial_lon_min = lonmin ;
+ncgridOUT.geospatial_lon_units = "degrees_east" ;
+ncgridOUT.geospatial_bounds = "POLYGON (("+str(lonmin)+" "+str(latmax)+", "+str(latmin)+" "+str(latmax)+", "+str(latmin)+" "+str(latmin)+", "+str(lonmin)+" "+str(latmin)+", "+str(lonmin)+" "+str(latmax)+"))" 
+ncgridOUT.Conventions = "CF-1.6"
 
 
 ncgridOUT.close()
