@@ -550,6 +550,7 @@ $behavparam
                              !  998 : Keep constant depth under zero
                              !  999 : Keep constant depth under zeta
                              !  1000: Oil Spill  
+  BottomRelease = .FALSE.    ! Set to .true. to release particles 0.1m above the bottom
   OpenOceanBoundary = .TRUE. ! Note: If you want to allow particles to "escape" via 
                              !  open ocean boundaries, set this to TRUE; Escape means  
                              !  that the particle will stick to the boundary and 
@@ -754,17 +755,17 @@ $hydromodeloutput
   dirin='[...]/LTRANS_Zlev/MITgcm_outputs/'
   !Filename = prefix + filenum + suffix
   !First indicate the NetCDF Input Filename prefix (keep same order and leave names of the missing file):               
-  prefix_Zeta = 'Eta.'      
-  prefix_Salt = 'S.'      
-  prefix_Temp = 'T.'      
-  prefix_Uvel = 'U.'      
-  prefix_Vvel = 'V.'      
-  prefix_Wvel = 'W.'      
-  prefix_Aks  = 'KPPdiffS.'      
-  prefix_Dens = 'RHOAnoma.'      
-  prefix_Uwind= 'EXFuwind.'      
-  prefix_Vwind= 'EXFvwind.'      
-  prefix_Iwind= 'EXFiwind.'      
+  prefix_Zeta = 'Eta'      
+  prefix_Salt = 'S'      
+  prefix_Temp = 'T'      
+  prefix_Uvel = 'U'      
+  prefix_Vvel = 'V'      
+  prefix_Wvel = 'W'      
+  prefix_Aks  = 'KPPdiffS'      
+  prefix_Dens = 'RHOAnoma'      
+  prefix_Uwind= 'EXFuwind'      
+  prefix_Vwind= 'EXFvwind'      
+  prefix_Iwind= 'EXFiwind'      
   numdigits = 0                 ! Number of digits in number portion of file name 
   	                            ! (with leading zeros)
   suffix='.dat'                 ! NetCDF Input Filename suffix
