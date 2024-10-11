@@ -782,8 +782,8 @@ CONTAINS
     ENDIF
 
 
-    IF(P_age .GE. 1 .AND. BottomRelease)THEN
-      ZBehav=(P_depth-P_zc+0.1)/float(idt)    ! Release at 1m from bottom
+    IF(P_age .LE. 1 .AND. BottomRelease)THEN
+      ZBehav=(P_depth-P_zc+0.1)/float(idt)    ! Release at 0.1m from bottom
     ENDIF
 ! ******************* End Particle Behavior ******************************
   END SUBROUTINE behave
