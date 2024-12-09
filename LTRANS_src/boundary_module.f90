@@ -3032,10 +3032,11 @@ SUBROUTINE output_llBounds()
 
   !get the x/y locations of the U and V grid nodes
   CALL getUVxy(x_u,y_u,x_v,y_v)
-
-  open(1,FILE='llbounds.bln',STATUS='REPLACE')
   
-  DO klev=1,us_tridim
+  open(1,FILE='llbounds.bln',STATUS='REPLACE')
+  open(110,FILE='lonlatbounds.wkt',STATUS='REPLACE')
+  write(110,*)'klev , WKT '
+  DO klev=us_tridim,1,-1
     if(bnum(klev)>0)then
       numpoly = bnds(bnum(klev),klev)%poly       !numpoly = # of polygons
     
@@ -3053,20 +3054,19 @@ SUBROUTINE output_llBounds()
     
       pstart = 1
     
+      write(110,'(i4,a)',advance='no')klev,' , POLYGON ('
       do m=1,numpoly                      !iterate through the polygons
-        if(m<=num_mbnd(klev))then
-          write(1,*) polysizes(m)+1,',',1,',',polynestdeg(m,klev)   !write polysize,1,1 for first row of land bnd
-        else                                  
-          write(1,*) polysizes(m)+1,',',0,',',polynestdeg(m,klev)   !write polysize,1,1 for first row of island
-        endif
+        write(110,'(a)',advance='no')'('
         pend = pstart + polysizes(m) - 1  !calculate polygon last bnds location
         do bnd=pstart,pend                  !iterate through polygon bnds
           i = bnds(bnd,klev)%ii                  !i position
           j = bnds(bnd,klev)%jj                  !j position
           if( bnds(bnd,klev)%onU ) then          !if on U Grid write lon & lat of U node
             write(1,*) x2lon(x_u(i,j),y_u(i,j)),',',y2lat(y_u(i,j)),',',klev
+            write(110,'(2f10.6,",")',advance='no')x2lon(x_u(i,j),y_u(i,j)),y2lat(y_u(i,j))
           else                            !else write lon & lat of V node
             write(1,*) x2lon(x_v(i,j),y_v(i,j)),',',y2lat(y_v(i,j)),',',klev
+            write(110,'(2f10.6,",")',advance='no')x2lon(x_v(i,j),y_v(i,j)),y2lat(y_v(i,j))
           endif
         enddo
         bnd = pstart                        !go back to polygon's first bnd
@@ -3074,18 +3074,22 @@ SUBROUTINE output_llBounds()
         j = bnds(bnd,klev)%jj
         if( bnds(bnd,klev)%onU ) then
           write(1,*) x2lon(x_u(i,j),y_u(i,j)),',',y2lat(y_u(i,j)),',',klev
+          write(110,'(2f10.6,",")',advance='no')x2lon(x_u(i,j),y_u(i,j)),y2lat(y_u(i,j))
         else
           write(1,*) x2lon(x_v(i,j),y_v(i,j)),',',y2lat(y_v(i,j)),',',klev
+          write(110,'(2f10.6,",")',advance='no')x2lon(x_v(i,j),y_v(i,j)),y2lat(y_v(i,j))
         endif
     
         pstart = pstart + polysizes(m)    !calculate start of next polygon
-    
+        write(110,'(a)',advance='no') '),'
       enddo
+      write(110,'(a)') ')'
       deallocate(polysizes)
     else 
       write(*,*)'warning : output_llbounds: no bounds found for level',klev
     endif
   enddo ! klev=1,us_tridim
+  close(110)
   close(1)
 
   DEALLOCATE(x_u,y_u,x_v,y_v)
