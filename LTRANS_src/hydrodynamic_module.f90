@@ -6190,6 +6190,7 @@ CONTAINS
    INTEGER :: i,j,k,cR,cU!,occurences
    DOUBLE PRECISION :: dptR1,dptR2,dptR3,dptR4,dptUa,dptUb,dptVa,dptVb
    DOUBLE PRECISION :: factor(4)
+    INTEGER :: count,countU                                              !--- CL-OGS 
 
    ALLOCATE(depthR(rho_nodes))    ! number of elements (both land and water)
   
