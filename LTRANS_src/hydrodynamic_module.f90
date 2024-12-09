@@ -3543,7 +3543,7 @@ CONTAINS
 
       !Find rho element in which particle is located
       oP_ele = oP_ele_old(1) ! P_r_element(n-1)
-      if (maxval(r_Adjacent(oP_ele,:,k)).EQ.0)then
+      if (maxval(r_Adjacent(oP_ele,:,k)).EQ.0 .AND. kprevious.EQ.k)then
         write(*,*)'ERROR in setEle_all : r_Adjacent is null for element oP_ele=',oP_ele
         stop
       endif
@@ -3580,7 +3580,7 @@ CONTAINS
 
       !Find u element in which particle is located
       oP_ele = oP_ele_old(2) ! P_u_element(n-1)
-      if (maxval(u_Adjacent(oP_ele,:,k)).EQ.0)then
+      if (maxval(u_Adjacent(oP_ele,:,k)).EQ.0 .AND. kprevious.EQ.k)then
         write(*,*)'ERROR in setEle_all : u_Adjacent is null for element oP_ele=',oP_ele
         stop
       endif
@@ -3616,7 +3616,7 @@ CONTAINS
 
       !Find v element in which particle is located
       oP_ele = oP_ele_old(3)  ! P_v_element(n-1)
-      if (maxval(v_Adjacent(oP_ele,:,k)).EQ.0)then
+      if (maxval(v_Adjacent(oP_ele,:,k)).EQ.0 .AND. kprevious.EQ.k)then
         write(*,*)'ERROR in setEle_all : v_Adjacent is null for element oP_ele=',oP_ele
         stop
       endif

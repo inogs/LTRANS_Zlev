@@ -501,63 +501,6 @@ contains
                  write(*,*)'done'
       ENDIF
 
-  
-    ! *******************************************************************
-    ! *                    Initialize NetCDF Output                     *
-    ! *******************************************************************
-
-    !Create NetCDF Output File if Needed
-    IF(writeNC) then
-      CALL initNetCDF()
-      CALL createNetCDF(par(:,pDOB))
-    ENDIF
-
-    prcount = 1
-    if(writeNC)then !Write to NetCDF Output File
-      CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-                      SALT=P_Salt,TEMP=P_Temp,GrSize=P_GrainSize,SizeP=P_Size,   &
-                 HITB=hitBottom,HITL=hitLand,CoDi=P_coastdist,POLY=P_MainPoly)
-     !if (SaltTempOn) then
-     !  if(TrackCollisions)then
-     !    !--- CL-OGS: Ext0 contains time in seconds at the beginning of the simulation
-     !    !--- CL-OGS: (at the first external timestep). To be given in LTRANSinputfile.data
-     !    if((Behavior.ge.8.and.Behavior.le.10))THEN
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    SALT=P_Salt,TEMP=P_Temp,GrSize=P_GrainSize,PSize=P_Size,   &
-     !                    HITB=hitBottom,HITL=hitLand)
-     !    else
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    SALT=P_Salt,TEMP=P_Temp,HITB=hitBottom,HITL=hitLand)
-     !    endif
-     !  else
-     !    if((Behavior.ge.8.and.Behavior.le.10))THEN
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    SALT=P_Salt,TEMP=P_Temp,GrSize=P_GrainSize,PSize=P_Size)
-     !    else
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    SALT=P_Salt,TEMP=P_Temp)
-     !    endif
-     !  endif
-     !else
-     !  if(TrackCollisions)then
-     !    if((Behavior.ge.8.and.Behavior.le.10))THEN
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    GrSize=P_GrainSize,PSize=P_Size,HITB=hitBottom,HITL=hitLand)
-     !    else
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    HITB=hitBottom,HITL=hitLand)
-     !    endif
-     !  else
-     !    if((Behavior.ge.8.and.Behavior.le.10))THEN
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
-     !                    GrSize=P_GrainSize,PSize=P_Size)
-     !    else
-     !    CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus))
-     !    endif
-     !  endif
-     !endif
-    endif
-
    
     ! *************************************************************************
     ! *                                                                       *
@@ -755,6 +698,23 @@ contains
         CLOSE(210)
       endif
     ENDIF
+  
+    ! *******************************************************************
+    ! *                    Initialize NetCDF Output                     *
+    ! *******************************************************************
+
+    !Create NetCDF Output File if Needed
+    IF(writeNC) then
+      CALL initNetCDF()
+      CALL createNetCDF(par(:,pDOB))
+    ENDIF
+
+    prcount = 1
+    if(writeNC)then !Write to NetCDF Output File
+      CALL writeNetCDF(Ext0,par(:,pAge),pLon,pLat,par(:,pZ),par(:,pStatus),   &
+                      SALT=P_Salt,TEMP=P_Temp,GrSize=P_GrainSize,SizeP=P_Size,   &
+                 HITB=hitBottom,HITL=hitLand,CoDi=P_coastdist,POLY=P_MainPoly)
+    endif
 
 
     !Read in initial hydrodynamic model data
