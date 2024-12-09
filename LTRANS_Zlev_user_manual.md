@@ -550,7 +550,6 @@ $behavparam
                              !  998 : Keep constant depth under zero
                              !  999 : Keep constant depth under zeta
                              !  1000: Oil Spill  
-  BottomRelease = .FALSE.    ! Set to .true. to release particles 0.1m above the bottom
   OpenOceanBoundary = .TRUE. ! Note: If you want to allow particles to "escape" via 
                              !  open ocean boundaries, set this to TRUE; Escape means  
                              !  that the particle will stick to the boundary and 

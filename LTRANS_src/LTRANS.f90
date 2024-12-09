@@ -233,7 +233,7 @@ contains
     ! *                           Initialize Model                            *
     ! *                                                                       *
     ! *************************************************************************
-    use behavior_mod, only: initBehave,setOut,die
+    use behavior_mod, only: initBehave,setOut,die,isOut,isDead
     use boundary_mod, only: createBounds,mbounds,ibounds,Get_coastdist
     use convert_mod,  only: lon2x,lat2y,x2lon,y2lat                                  !--- CL-OGS   
 
@@ -241,7 +241,7 @@ contains
     use hydro_mod,    only: initGrid,initHydro,setEle_all,initNetCDF,       &
                       createNetCDF,writeNetCDF,                             &
                       getKRlevel,setnodesdepth, &                 !--- CL-OGS: for coupling with MITgcm'Z-grid bathymetry and fields
-                      setInterp,getInterp,getDepth
+                      setInterp,getInterp,getDepth,getP_klev
     use param_mod,    only: numpar,days,dt,idt,seed,parfile,settlementon,   &
                       Behavior,TrackCollisions,SaltTempOn,writeNC,          &
                       WriteHeaders,WriteModelTiming,ErrorFlag,getParams,    & 
@@ -252,6 +252,7 @@ contains
                       constTemp,constUwind,constVwind,                &
                       SeabedRelease,SeabedRelease_meters,             &
                       Write_coastdist,stranding_on,us,Write_Poly_Presence, &
+                      OpenOceanBoundary, mortality,                & !--- CL-OGS 
 !        *****   IMIOM        *****
                       OilOn,WindWeatherFac
     use oil_mod, only: InitOilModel,OilModel
@@ -675,6 +676,41 @@ contains
     write(*,*)'setEle_all'
     CALL setEle_all(par(:,pX),par(:,pY),par(:,pZ),ele_err,n)
 
+   if(SeabedRelease)then
+    write(*,*)'SeabedRelease'
+    do m = 1, numpar
+        if(mortality)then
+          if ( isDead(m) ) cycle
+        endif
+        if(OpenOceanBoundary)then
+          if(isOut(m)) cycle
+        endif
+      if(Zgrid)then 
+        klev=getKRlevel(par(m,pZ))
+      else
+        klev=1
+      endif     
+      !Set Interpolation Values for the current particle
+      CALL setInterp(par(m,pX),par(m,pY),m)
+      !Find depth, angle, and sea surface height at particle location
+      conflict=1
+      if(.not. Zgrid)then ! (ROMS sigma-level-grid :)
+       P_depth = DBLE(-1.0)* getInterp(par(m,pX),par(m,pY),VAR_ID_depth,klev)
+      else !             (Zgrid :)      
+        call getDepth(par(m,pX),par(m,pY),m,it,P_depth,Fstlev,conflict)  
+      endif
+      parIniDepth(m)=P_depth+SeabedRelease_meters
+      par(m,pZ) =parIniDepth(m)
+      par(m,pnZ) = par(m,pZ)
+      if(m.eq.1)then
+      write(*,*)' Releasing particles at ',SeabedRelease_meters,' above seabed'
+      write(*,*)' Example part 1: depth=',P_depth,' Zpart=',par(m,pZ)
+      endif
+     enddo
+     write(*,*)'setEle_all'
+     CALL setEle_all(par(:,pX),par(:,pY),par(:,pZ),ele_err,n)
+    endif !if(SeabedRelease)
+
     !If the particle was not found to be within an element,
     ! write a message to the screen and discontinue the program
     IF(ele_err .ne. 0)THEN
@@ -719,32 +755,6 @@ contains
         CLOSE(210)
       endif
     ENDIF
-
-   if(SeabedRelease)then
-    do m = 1, numpar
-      if(Zgrid)then 
-        klev=getKRlevel(par(m,pZ))
-      else
-        klev=1
-      endif     
-      !Set Interpolation Values for the current particle
-      CALL setInterp(par(m,pX),par(m,pY),m)
-      !Find depth, angle, and sea surface height at particle location
-      conflict=1
-      if(.not. Zgrid)then ! (ROMS sigma-level-grid :)
-       P_depth = DBLE(-1.0)* getInterp(par(m,pX),par(m,pY),VAR_ID_depth,klev)
-      else !             (Zgrid :)      
-        call getDepth(par(m,pX),par(m,pY),m,it,P_depth,Fstlev,conflict)  
-      endif
-      parIniDepth(m)=P_depth+SeabedRelease_meters
-      par(m,pZ) =parIniDepth(m)
-      par(m,pnZ) = par(m,pZ)
-      if(m.eq.1)then
-      write(*,*)' Releasing particles at ',SeabedRelease_meters,' above seabed'
-      write(*,*)' Example part 1: depth=',P_depth,' Zpart=',par(m,pZ)
-      endif
-     enddo
-    endif !if(SeabedRelease)
 
 
     !Read in initial hydrodynamic model data

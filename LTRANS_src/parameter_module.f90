@@ -62,7 +62,6 @@ CONTAINS
     StrandingDist=1e-5
     strandingMaxDistFromBott=99999999
     strandingMaxDistFromSurf=99999999
-    BottomRelease=.False.
     OPEN(1,file=trim(inputdatafile))                  !--- read control variables:
       IF(err == 0) THEN
         READ(1,nml=numparticles ,IOSTAT=istat)  !--- number of particles

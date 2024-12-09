@@ -102,7 +102,6 @@ $behavparam
                              !     9 : Solea,  10 : Mullus Barbatus, 11 : Parametrizable larvae
                              !     998 : Keep constant depth under zero, 999 : Keep constant depth under zetasink      = 0.0            ! Sinking velocity for behavior type 6 and 8 to 11
                              !     1000: Oil Spill  
-  BottomRelease = .FALSE.    ! Set to .true. to release particles 1m above the bottom, .False. by default
   OpenOceanBoundary = .TRUE. ! Note: If you want to allow particles to "escape" via open ocean 
                              !   boundaries, set this to TRUE; Escape means that the particle 
                              !   will stick to the boundary and stop moving

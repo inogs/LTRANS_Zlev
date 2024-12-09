@@ -1,0 +1,8 @@
+*.pyo
+*.o
+*.mod
+*.tmp
+*.i90
+*.optrpt
+*.exe
+*.debug

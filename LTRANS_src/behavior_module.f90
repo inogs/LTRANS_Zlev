@@ -272,7 +272,7 @@ CONTAINS
                     surflayer_lowerdepth_night,surflayer_upperdepth_night,     &
                     Behavior,Zgrid_depthinterp,BottomLayerThickness,  &
                     swdown_dt,swdown_thresh,Seabed_layerheight, &
-                    swdown_ASCII,swdown_t0,Ext0,BottomRelease!,readNetCdfSwdown
+                    swdown_ASCII,swdown_t0,Ext0!,readNetCdfSwdown
 
     USE HYDRO_MOD, ONLY: WCTS_ITPI
     USE RANDOM_MOD, ONLY: genrand_real1
@@ -782,9 +782,6 @@ CONTAINS
     ENDIF
 
 
-    IF(P_age .LE. 1 .AND. BottomRelease)THEN
-      ZBehav=(P_depth-P_zc+0.1)/float(idt)    ! Release at 0.1m from bottom
-    ENDIF
 ! ******************* End Particle Behavior ******************************
   END SUBROUTINE behave
 
