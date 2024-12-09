@@ -2026,8 +2026,7 @@ CONTAINS
                   stop
                 endif
 
-                STATUS = NF90_GET_VAR(NCID,VID,swanHs(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),   &
-                              t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swanHs(:,:,nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read SwanHs array'
@@ -2051,8 +2050,7 @@ CONTAINS
                   stop
                 endif
 
-                STATUS = NF90_GET_VAR(NCID,VID,swantm01(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE), &
-                           t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swantm01(:,:,nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swantm01 array'
@@ -2076,8 +2074,7 @@ CONTAINS
                   stop
                 endif
 
-                STATUS=NF90_GET_VAR(NCID,VID,modelUwind(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE), &
-                               t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),nfn:nfnn),STARTz,COUNTz)
+                STATUS=NF90_GET_VAR(NCID,VID,modelUwind(:,:,nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanU array'
@@ -2101,8 +2098,7 @@ CONTAINS
                   stop
                 endif
 
-                STATUS=NF90_GET_VAR(NCID,VID,modelVwind(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),&
-                       t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),nfn:nfnn),STARTz,COUNTz)
+                STATUS=NF90_GET_VAR(NCID,VID,modelVwind(:,:,nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanV array'
@@ -2126,8 +2122,7 @@ CONTAINS
                   stop
                 endif
 
-                STATUS=NF90_GET_VAR(NCID,VID,swanpd(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),     &
-                             t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
+                STATUS=NF90_GET_VAR(NCID,VID,swanpd(:,:,nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanpd array'
@@ -2151,8 +2146,7 @@ CONTAINS
                   stop
                 endif
 
-                STATUS = NF90_GET_VAR(NCID,VID,swanwl(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),   &
-                                 t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swanwl(:,:,nfn:nfnn),STARTz,COUNTz)
 
                 if (STATUS .NE. NF90_NOERR) then
                   write(*,*) 'Problem read swanwl array'
@@ -2839,8 +2833,7 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swanHsf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),    &
-                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,swanHsf(:,:,:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read SwanHs array'
@@ -2864,8 +2857,7 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swantm01f(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),  &
-                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
+                STATUS = NF90_GET_VAR(NCID,VID,swantm01f(:,:,:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swantm01 array'
@@ -2889,8 +2881,7 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,modelUwindf(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE),&
-                                    t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,modelUwindf(:,:,:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanU array'
@@ -2914,8 +2905,7 @@ CONTAINS
                 stop
               endif
 
-              STATUS=NF90_GET_VAR(NCID,VID,modelVwindf(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE), &
-                                    t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),:),STARTz,COUNTz)
+              STATUS=NF90_GET_VAR(NCID,VID,modelVwindf(:,:,:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanV array'
@@ -2939,8 +2929,7 @@ CONTAINS
                 stop
               endif
 
-              STATUS = NF90_GET_VAR(NCID,VID,swanpdf(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),    &
-                                    t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),:),STARTz,COUNTz)
+              STATUS = NF90_GET_VAR(NCID,VID,swanpdf(:,:,:),STARTz,COUNTz)
 
               if (STATUS .NE. NF90_NOERR) then
                 write(*,*) 'Problem read swanpd array'
@@ -7162,8 +7151,7 @@ CONTAINS
          write(*,*) NF90_STRERROR(STATUS)
          stop
        endif
-         STATUS = NF90_GET_VAR(NCID,VID,field(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod), &
-                         t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod),1:nk,tf1:tff),     &
+         STATUS = NF90_GET_VAR(NCID,VID,field(:,:,1:nk,tf1:tff),     &
                          start_index,count_index )
        if (STATUS .NE. NF90_NOERR) then
          write(*,*) 'Problem reading ',varname
