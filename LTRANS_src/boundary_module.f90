@@ -2583,7 +2583,7 @@ END SUBROUTINE getNext
     endif
 
     if(island>0)then
-     nestdeg=polynestdeg(island,klev)+num_mbnd(klev)-1000
+     nestdeg=polynestdeg(island+num_mbnd(klev)-1000,klev)
     else
      nestdeg=-1
     endif
