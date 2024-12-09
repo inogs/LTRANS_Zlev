@@ -205,6 +205,7 @@ CONTAINS
     INTEGER :: old_i,old_j,old_count                                              !--- CL-OGS 
     DOUBLE PRECISION :: summask 
     DOUBLE PRECISION,DIMENSION(4) :: tmpcoef,oldtmpcoef
+    character(len=1024) :: filename
     !ALLOCATE MODULE VARIABLES
     !--- CL-OGS :
     ! CL-OGS: Added for OMP
@@ -1117,21 +1118,22 @@ CONTAINS
     enddo
 
     if(BoundaryBLNs) then  !--- CL-OGS: write rho_kwele and rho bottom level and mask in csv file
-      OPEN(110,FILE='rho_kwele.csv',POSITION='APPEND',status='replace')
       do k=1,us_tridim
+          write (filename, "(A,I0.3,A)") 'rho_kwele_',k,'.csv'
+          OPEN(110,FILE=trim(filename),POSITION='APPEND',status='replace')
+          write(110,*) 'k, lon, lat,ele,rho_node_1,rho_node_2,rho_node_3,rho_node_4'
           do j=1,rho_kwele(k)
-            write(110,"(2(F10.5,','),2(i7,','))") &
+            write(110,"(i4,',',2(F10.5,','),5(i7,','))") k,                    &
                           x2lon(0.25*(r_kwele_x(1,j,k)+r_kwele_x(2,j,k)        &
                                   +r_kwele_x(3,j,k)+r_kwele_x(4,j,k)),         &
                           0.25*(r_kwele_y(1,j,k)+r_kwele_y(2,j,k)+             &
                                   r_kwele_y(3,j,k)+r_kwele_y(4,j,k))),         &
                           y2lat(0.25*(r_kwele_y(1,j,k)+r_kwele_y(2,j,k)+       &
-                            r_kwele_y(3,j,k)+r_kwele_y(4,j,k))),k,RE(1,j,k)
+                            r_kwele_y(3,j,k)+r_kwele_y(4,j,k))),j,RE(1,j,k),   &
+                            RE(2,j,k),RE(3,j,k),RE(4,j,k)
           enddo
+          CLOSE(110)
       enddo
-      CLOSE(110)
-      OPEN(110,FILE='water_rho_nodes.csv',POSITION='APPEND',status='replace')
-      CLOSE(110)
     endif
 
     u_kwele_x=0.0
@@ -1146,18 +1148,22 @@ CONTAINS
     enddo
  
     if(BoundaryBLNs) then  !--- CL-OGS: write u_kwele and u bottom level and mask in csv file
-      k=us_tridim
-      OPEN(110,FILE='u_kwele.csv',POSITION='APPEND',status='replace')
+      do k=1,us_tridim
+          write (filename, "(a,i0.3,a)") 'u_kwele_',k,'.csv'
+          open(110,file=trim(filename),position='append',status='replace')
+          write(110,*) 'k, lon, lat,ele,u_node_1,u_node_2,u_node_3,u_node_4'
           do j=1,u_kwele(k)
-            write(110,"(2(F10.5,','))") &
+            write(110,"(i4,',',2(F10.5,','),5(i7,','))") k,                    &
                           x2lon(0.25*(u_kwele_x(1,j,k)+u_kwele_x(2,j,k)+       &
                                    u_kwele_x(3,j,k)+u_kwele_x(4,j,k)),         &
                           0.25*(u_kwele_y(1,j,k)+u_kwele_y(2,j,k)+             &
-                                   u_kwele_y(3,j,k)+u_kwele_y(4,j,k))), &
+                                   u_kwele_y(3,j,k)+u_kwele_y(4,j,k))),        &
                           y2lat(0.25*(u_kwele_y(1,j,k)+u_kwele_y(2,j,k)+       &
-                                   u_kwele_y(3,j,k)+u_kwele_y(4,j,k)))
+                                   u_kwele_y(3,j,k)+u_kwele_y(4,j,k))),        &
+                                   j,UE(1,j,k),UE(2,j,k),UE(3,j,k),UE(4,j,k)
           enddo
-      CLOSE(110)  
+          CLOSE(110)  
+      enddo
     endif 
     v_kwele_x=0.0
     v_kwele_y=0.0
@@ -1171,18 +1177,22 @@ CONTAINS
     enddo
  
     if(BoundaryBLNs) then  !--- CL-OGS: write v_kwele and v bottom level and mask in csv file
-      k=us_tridim
-      OPEN(110,FILE='v_kwele.csv',POSITION='APPEND',status='replace')
+      do k=1,us_tridim
+          write (filename, "(a,i0.3,a)") 'v_kwele_',k,'.csv'
+          open(110,file=trim(filename),position='append',status='replace')
+          write(110,*) 'k, lon, lat,ele,v_node_1,v_node_2,v_node_3,v_node_4'
           do j=1,v_kwele(k)
-            write(110,"(2(F10.5,','))") &
+            write(110,"(i4,',',2(F10.5,','),5(i7,','))") k,                    &
                           x2lon(0.25*(v_kwele_x(1,j,k)+v_kwele_x(2,j,k)+       &
                                    v_kwele_x(3,j,k)+v_kwele_x(4,j,k)),         &
                           0.25*(v_kwele_y(1,j,k)+v_kwele_y(2,j,k)+             &
                                     v_kwele_y(3,j,k)+v_kwele_y(4,j,k))),       &
                           y2lat(0.25*(v_kwele_y(1,j,k)+v_kwele_y(2,j,k)+       &
-                                    v_kwele_y(3,j,k)+v_kwele_y(4,j,k)))
+                                    v_kwele_y(3,j,k)+v_kwele_y(4,j,k))),       &
+                                   j,VE(1,j,k),VE(2,j,k),VE(3,j,k),VE(4,j,k)
           enddo
-      CLOSE(110)   
+          CLOSE(110)   
+      enddo
     endif
 
     ! ************************ FIND ADJACENT ELEMENTS *************************
@@ -3678,9 +3688,6 @@ CONTAINS
     DOUBLE PRECISION, INTENT(IN) :: xp,yp
     double precision x1,x2,x3,x4,y1,y2,y3,y4
     double precision Dis1,Dis2,Dis3,Dis4,TDis
-    !NTEGER :: rnode1,rnode2,rnode3,rnode4, &
-    !          unode1,unode2,unode3,unode4, &
-    !          vnode1,vnode2,vnode3,vnode4
     Integer :: RUV,i
     INTEGER :: tOK
     DOUBLE PRECISION :: t,u,Wgt1,Wgt2,Wgt3,Wgt4,masksum
@@ -6188,7 +6195,7 @@ CONTAINS
 
   SUBROUTINE setnodesdepth()
    USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid_depthinterp, &
-               rho_nodes,u_nodes,v_nodes,BndOut
+               rho_nodes,u_nodes,v_nodes,BndOut,BoundaryBLNs
     USE CONVERT_MOD, ONLY: x2lon,y2lat  !--- CL-OGS
    IMPLICIT NONE
    INTEGER :: i,j,k,cR,cU!,occurences
@@ -6608,6 +6615,73 @@ CONTAINS
     call setbndeleform()
     if(BndOut)call createNodesDepthNetCDF()
    write(*,*)'---------------------------------------------------------'
+    if(BoundaryBLNs) then  !--- CL-OGS: write rho_kwele and rho bottom level and mask in csv file
+      OPEN(110,FILE='rho_nodes.csv',POSITION='APPEND',status='replace')
+       write(110,*) 'lon, lat, depth, count, i, j'
+       count = 0
+       do j=1,uj-1                         !z2v3.2
+       do i=1,vi-1
+        count = count + 1
+       !r_ele(1,count) = i + (j-1)*vi
+       !r_ele(2,count) = i + 1 + (j-1)*vi
+       !r_ele(3,count) = i + 1 + j*vi
+       !r_ele(4,count) = i + j*vi
+            write(110,"(3(F10.5,','),3(i7,','))") &
+                          x2lon(rx(count),ry(count)),         &
+                          y2lat(ry(count)),                   &
+                          depthR(count),                      &
+                            count,i,j
+       enddo
+       enddo
+      CLOSE(110)
+      OPEN(110,FILE='u_nodes.csv',POSITION='APPEND',status='replace')
+       write(110,*) 'lon, lat, depth, count, i, j'
+        count = 0
+        do j=1,uj-1                         !z2v3.2
+          do i=1,ui-1
+            count = count + 1
+            write(110,"(3(F10.5,','),3(i7,','))") &
+                          x2lon(ux(count),uy(count)),         &
+                          y2lat(uy(count)),                   &
+                          depthU(count),                      &
+                            count,i,j
+          enddo
+        enddo
+      CLOSE(110)
+      OPEN(110,FILE='v_nodes.csv',POSITION='APPEND',status='replace')
+       write(110,*) 'lon, lat, depth, count, i, j'
+        count = 0
+        do j=1,vj-1                         !z2v3.2
+          do i=1,vi-1
+            count = count + 1
+            write(110,"(3(F10.5,','),3(i7,','))") &
+                          x2lon(vx(count),vy(count)),         &
+                          y2lat(vy(count)),                   &
+                          depthV(count),                      &
+                            count,i,j
+          enddo
+        enddo
+      CLOSE(110)
+      OPEN(110,FILE='e_nodes.csv',POSITION='APPEND',status='replace')
+      write(110,*) 'lon, lat, depth, count, i, j'
+      count=0
+      countU=0
+      do j=1,uj
+       do i=1,vi
+         count = count+1
+         if(i<vi .and. j<uj)then                     
+            countU=countU+1                       
+            write(110,"(3(F10.5,','),3(i7,','))") &
+                      x2lon(0.5*(ux(countU)+ux(countU+ui)), &
+                            0.5*(vy(count )+vy(count +1 )) ) , & 
+                      y2lat(0.5*(vy(count )+vy(count +1 )) ) , &
+                          depthE(countU),                      &
+                            countU,i,j
+         endif
+        enddo
+      enddo
+      CLOSE(110)
+    endif
   END SUBROUTINE setnodesdepth
 
 
