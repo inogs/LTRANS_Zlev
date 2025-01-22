@@ -135,14 +135,13 @@
                     & readIwind,constIwind,WindIntensity,WindWeatherFac,         &  !--- CL-OGS
                     & Wind_hc, Wind_ke, &
                     & Stokes                                                        !--- CL-OGS
+
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
   LOGICAL          :: VTurbOn       ! Vertical   Turbulence on (.TRUE.) or off (.FALSE.)
   DOUBLE PRECISION :: ConstantHTurb ! Constant value of horizontal turbulence (m2/s)
 
   namelist/turbparam/HTurbOn,VTurbOn,ConstantHTurb
-
-
 
 !*** BEHAVIOR MODULE PARAMETERS ***
   INTEGER :: Behavior               ! Behavior type (specify a number)
@@ -314,6 +313,17 @@
   CHARACTER(LEN=200) :: prefix_Uwind      ! NetCDF Input Filename prefix Uwind (Wind in X direction)
   CHARACTER(LEN=200) :: prefix_Vwind      ! NetCDF Input Filename prefix Vwind (Wind in y direction)
   CHARACTER(LEN=200) :: prefix_Iwind      ! NetCDF Input Filename prefix Iwind (Wind intensity)
+  CHARACTER(LEN=200) :: namevar_Zeta       ! NetCDF Input Filename prefix Zeta (Sea level height) 
+  CHARACTER(LEN=200) :: namevar_Salt       ! NetCDF Input Filename prefix Salt  
+  CHARACTER(LEN=200) :: namevar_Temp       ! name of var Temp  
+  CHARACTER(LEN=200) :: namevar_Uvel       ! name of var Uvel  in NetCDF input file (Current velocity in X direction)
+  CHARACTER(LEN=200) :: namevar_Vvel       ! name of var Vvel  in NetCDF input file (Current velocity in X direction) 
+  CHARACTER(LEN=200) :: namevar_Wvel       ! name of var Wvel  in NetCDF input file (Current velocity in X direction)
+  CHARACTER(LEN=200) :: namevar_Aks        ! name of var Aks   in NetCDF input file (salinity vertical diffusion coefficient) 
+  CHARACTER(LEN=200) :: namevar_Dens       ! name of var Dens  in NetCDF input file (Sea water density)
+  CHARACTER(LEN=200) :: namevar_Uwind      ! name of var Uwind in NetCDF input file (Wind in X direction)
+  CHARACTER(LEN=200) :: namevar_Vwind      ! name of var Vwind in NetCDF input file (Wind in y direction)
+  CHARACTER(LEN=200) :: namevar_Iwind      ! name of var Iwind in NetCDF input file (Wind intensity)
   CHARACTER(LEN=200) :: suffix      ! NetCDF Input Filename suffix
   INTEGER :: filenum                ! Number in First NetCDF Input Filename
   INTEGER :: filestep               !--- CL-OGS : Number between successive NetCDF input filename needed for MITgcm files 
@@ -321,6 +331,9 @@
   INTEGER :: numdigits              ! Number of digits in number portion of file name (with leading zeros) 
   INTEGER :: hydrobytes             ! Number of bytes of float variables: single =4 bytes, double = 8 bytes
   LOGICAL :: startfile              ! .TRUE. means the first file has an additional time step
+  LOGICAL :: Hydro_NetCDF           ! .TRUE. means the Hydro model prediction Input files are in NetCDF format
+  LOGICAL :: First_vertical_layer_is_surface ! .TRUE.  means that in the netcdfs hydro files the first vertical layer is surface (for MITgcm netcdfs)
+                                             ! .FALSE. means that in the netcdfs hydro files the first vertical layer is bottom (for ROMS netcdfs)  
   !Note: the path to the file is necessary if the file is not in the same folder as the code
   !Note: if .nc file in separate folder in Windows, then include path in prefix. For example:
   !      CHARACTER(LEN=15), PARAMETER :: prefix='D:\ROMS\y95hdr_'   
@@ -329,7 +342,10 @@
 
   namelist/hydromodeloutput/prefix_Zeta,prefix_Salt,prefix_Temp,prefix_Uvel,prefix_Vvel, &
                             prefix_Wvel,prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind, &
-                            prefix_Iwind,suffix,filenum,numdigits,startfile, &
+                            prefix_Iwind,suffix,filenum,numdigits,startfile,              &
+                            namevar_Zeta,namevar_Salt,namevar_Temp,namevar_Uvel,namevar_Vvel,  &
+                            namevar_Wvel,namevar_Aks,namevar_Dens,namevar_Uwind,namevar_Vwind, &
+                            namevar_Iwind,Hydro_NetCDF,First_vertical_layer_is_surface,       &
                             filestep,dirin,hydrobytes  !--- CL-OGS additional parameters
 
 
