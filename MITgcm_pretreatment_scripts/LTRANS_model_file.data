@@ -247,6 +247,20 @@ $hydromodeloutput
   filestep =  FILESTEP                   ! Number between NetCDF input filename
   hydrobytes = HYDROBYTES                ! Number of bytes of float variables: single =4 bytes, double = 8 bytes
   startfile = .TRUE.                     ! Is it the first file, i.e. does the file have an additional time step?
+  Hydro_NetCDF = .TRUE.                    ! .TRUE. means the Hydro model prediction Input files are in NetCDF format
+  First_vertical_layer_is_surface = .TRUE. ! .TRUE.  means that in the netcdfs hydro files the first vertical layer is surface (for MITgcm netcdfs)
+                                           ! .FALSE. means that in the netcdfs hydro files the first vertical layer is bottom (for ROMS netcdfs)  
+  namevar_Zeta = 'ETAN' ! 'Eta.'      
+  namevar_Salt = 'S'      
+  namevar_Temp = 'THETA'      
+  namevar_Uvel = 'UVEL'      
+  namevar_Vvel = 'VVEL'      
+  namevar_Wvel = 'WVEL' !'W.'      
+  namevar_Aks  = 'KppDiffS'      
+  namevar_Dens = 'RHOAnoma' !'RHOAnoma.'      
+  namevar_Uwind= 'EXFuwind' !'EXFuwind.'      
+  namevar_Vwind= 'EXFvwind' !'EXFvwind.'      
+  namevar_Iwind= ''      
 $end
 
 
@@ -301,10 +315,10 @@ $other
                              ! Note: Options 1-3 will output information to ErrorLog.txt
                              ! Note: This is only for particles that travel out of bounds illegally
   BndOut  =  .FALSE.         ! Write on stdout  and in python files detail of the boundary computations
-  BoundaryBLNs = .TRUE.      ! Create Surfer Blanking Files of boundaries? .TRUE.=yes, .FALSE.=no
-  SaltTempOn   = .TRUE.      ! Calculate salinity and temperature at particle 
+  BoundaryBLNs = .FALSE.      ! Create Surfer Blanking Files of boundaries? .TRUE.=yes, .FALSE.=no
+  SaltTempOn   = .FALSE.      ! Calculate salinity and temperature at particle 
         	                  ! location: yes (.TRUE.) or no (.FALSE.)
-  TrackCollisions  = .TRUE.  ! Write Bottom and Land Hit Files? .TRUE.=yes, .FALSE.=no
+  TrackCollisions  = .FALSE.  ! Write Bottom and Land Hit Files? .TRUE.=yes, .FALSE.=no
   WriteHeaders     = .FALSE. ! Write .txt files with column headers? .TRUE.=yes, .FALSE.=no
   WriteModelTiming = .FALSE. ! Write .csv file with model timing data? .TRUE.=yes, .FALSE.=no
   WriteParfile = .FALSE.     ! Write .csv file with particle locations for each external timestep ? .TRUE.=yes, .FALSE.=no
