@@ -106,6 +106,8 @@
   DOUBLE PRECISION :: constAks      ! Constant value for Aks if readAks is .FALSE.
   LOGICAL          :: readDens
   DOUBLE PRECISION :: constDens
+  LOGICAL          :: readChl         ! If .TRUE. read in Chlorophyl from NetCDF file, else use constChl
+  DOUBLE PRECISION :: constChl        ! Constant value for Chl if readU is .FALSE.
 !--- CL-OGS: added reading of wind in hydrodynamic_module
   LOGICAL          :: readUwind     ! If .TRUE. read in Uwind from NetCDF file, else use constUwind
   DOUBLE PRECISION :: constUwind    ! Constant value for Uwind if readUwind is .FALSE.
@@ -127,7 +129,7 @@
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice
                     & constV,readW,constW,readAks,constAks,readDens,constDens,   &
-                    & readUwind,constUwind,readVwind,constVwind,& !--- CL-OGS: additional variables
+                    & readUwind,constUwind,readVwind,constVwind,readChl,ConstChl, & !--- CL-OGS: additional variables
                     & recordnum,Wind,WindDriftFac,WindDriftDev,StokDriftFac,     &  !--- CL-OGS: moved here from oilprocs
                     & VInterpUVinSurfWater,LinearVInterp,             &  !--- CL-OGS
                     & BottomLayerThickness,PercentVelinBottomLayer,              &   !--- CL-OGS
@@ -310,6 +312,7 @@
   CHARACTER(LEN=200) :: prefix_Wvel       ! NetCDF Input Filename prefix Wvel (Current velocity in X direction)
   CHARACTER(LEN=200) :: prefix_Aks        ! NetCDF Input Filename prefix Aks  (salinity vertical diffusion coefficient) 
   CHARACTER(LEN=200) :: prefix_Dens       ! NetCDF Input Filename prefix Dens (Sea water density)
+  CHARACTER(LEN=200) :: prefix_Chl        ! NetCDF Input Filename prefix Chl  (chlorophyl) 
   CHARACTER(LEN=200) :: prefix_Uwind      ! NetCDF Input Filename prefix Uwind (Wind in X direction)
   CHARACTER(LEN=200) :: prefix_Vwind      ! NetCDF Input Filename prefix Vwind (Wind in y direction)
   CHARACTER(LEN=200) :: prefix_Iwind      ! NetCDF Input Filename prefix Iwind (Wind intensity)
@@ -321,6 +324,7 @@
   CHARACTER(LEN=200) :: namevar_Wvel       ! name of var Wvel  in NetCDF input file (Current velocity in X direction)
   CHARACTER(LEN=200) :: namevar_Aks        ! name of var Aks   in NetCDF input file (salinity vertical diffusion coefficient) 
   CHARACTER(LEN=200) :: namevar_Dens       ! name of var Dens  in NetCDF input file (Sea water density)
+  CHARACTER(LEN=200) :: namevar_Chl        ! name of var Chl   in NetCDF input file (Chlorophyl)
   CHARACTER(LEN=200) :: namevar_Uwind      ! name of var Uwind in NetCDF input file (Wind in X direction)
   CHARACTER(LEN=200) :: namevar_Vwind      ! name of var Vwind in NetCDF input file (Wind in y direction)
   CHARACTER(LEN=200) :: namevar_Iwind      ! name of var Iwind in NetCDF input file (Wind intensity)
@@ -342,10 +346,10 @@
 
   namelist/hydromodeloutput/prefix_Zeta,prefix_Salt,prefix_Temp,prefix_Uvel,prefix_Vvel, &
                             prefix_Wvel,prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind, &
-                            prefix_Iwind,suffix,filenum,numdigits,startfile,              &
+                            prefix_Iwind,prefix_Chl,suffix,filenum,numdigits,startfile,              &
                             namevar_Zeta,namevar_Salt,namevar_Temp,namevar_Uvel,namevar_Vvel,  &
                             namevar_Wvel,namevar_Aks,namevar_Dens,namevar_Uwind,namevar_Vwind, &
-                            namevar_Iwind,Hydro_NetCDF,First_vertical_layer_is_surface,       &
+                            namevar_Iwind,namevar_Chl,Hydro_NetCDF,First_vertical_layer_is_surface,       &
                             filestep,dirin,hydrobytes  !--- CL-OGS additional parameters
 
 

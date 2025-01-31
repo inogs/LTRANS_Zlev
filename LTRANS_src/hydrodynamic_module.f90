@@ -92,6 +92,7 @@ MODULE HYDRO_MOD
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_uwind, t_vwind,t_iwind                       ! 10m wind components and intensity
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_pdir                                          ! principle wave direction
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_wlen                                          ! mean wave length
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_chl                                          ! chlorophyl
   CHARACTER(len=200) :: swannm
 !      ***** END IMIOM *****
 
@@ -178,7 +179,7 @@ CONTAINS
         filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
         OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum,         &                !--- CL-OGS
         readZeta,readSalt,readTemp,readDens,readU,readV,readW, &
-        readAks,readIwind,readUwind,readVwind                      !--- CL-OGS
+        readAks,readIwind,readUwind,readVwind,readChl                      !--- CL-OGS
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
     USE netcdf
@@ -416,6 +417,8 @@ CONTAINS
          call set_filename(VAR_ID_uwind,filenum,filenm)
       elseif(readVwind)then
          call set_filename(VAR_ID_vwind,filenum,filenm)
+      elseif(readChl)then
+         call set_filename(VAR_ID_chl,filenum,filenm)
       else
          write(*,*) 'ERROR, At least one input netcdf file must be provided'
          stop 'Aborting'
@@ -1347,7 +1350,7 @@ CONTAINS
         readZeta,constZeta,readSalt,constSalt, &
         !readNetcdfSwdown,                &
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
-        constW,readAks,constAks,WindIntensity,readIwind,constIwind,            &
+        constW,readAks,constAks,WindIntensity,readIwind,constIwind,readChl,constChl, &
         readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       & 
         suffix,Hydro_NetCDF,                                                   &
 !      *****   IMIOM      *****
@@ -1372,7 +1375,7 @@ CONTAINS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:,:) :: romW,romKH,romS,romT, &
                                                 romD,romU, romV
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUwind,modelVwind,&
-                                                         modelIwind  !--- CL-OGS
+                                                         modelIwind,modelChl  !--- CL-OGS
     !--- CL-OGS: following variables added to handle MITgcm-files
     !--- CL-OGS  (using a different file for every field variable )
     INTEGER :: ios,nvarf,ktlev,waiting,rand15
@@ -1449,6 +1452,11 @@ CONTAINS
       ALLOCATE(modelVwind(vi,vj,3))  
     !endif
       ALLOCATE(modelIwind(vi,uj,3))
+    if(readChl)then
+      ALLOCATE(modelChl(vi,uj,3))
+      ALLOCATE(t_chl(3,  rho_nodes))
+      t_chl = 0
+    endif
     if(WindIntensity .and. Zgrid)then
       ALLOCATE(t_iwind(3,  rho_nodes))
       t_iwind = 0
@@ -1630,11 +1638,17 @@ CONTAINS
       else
         modelVwind = constVwind
       endif
-      !------------------------------------
+      !---------------------------------
       if(readIwind)then  
         call read_data_from_file(VAR_ID_iwind,vi,uj,1,3,nf,nfn,nfnn,modelIwind,RNODE,recordnum,incrstepf,do_not_interpolate)
       else
         modelIwind = constIwind
+      endif
+      !---------------------------------
+      if(readChl)then  
+        call read_data_from_file(VAR_ID_chl,vi,uj,1,3,nf,nfn,nfnn,modelChl,RNODE,recordnum,incrstepf,do_not_interpolate)
+      else
+        modelChl = constChl
       endif
       !------------------------------------
 
@@ -1972,6 +1986,14 @@ CONTAINS
         enddo
        enddo
       endif
+      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+       do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+         count = (j-1)*vi + i
+         t_chl(1,count) =    modelChl(i,j,1) *    m_r(i,j,us_tridim)
+         t_chl(2,count) =    modelChl(i,j,2) *    m_r(i,j,us_tridim)
+         t_chl(3,count) =    modelChl(i,j,3) *    m_r(i,j,us_tridim)
+       enddo
+      enddo
       !  ***    IMIOM *****
       ! WIND WAVE MODEL DATA  ------------------------------------
       IF(OilOn)then
@@ -2218,6 +2240,7 @@ CONTAINS
     !DEALLOCATE SUBROUTINE VARIABLES
     DEALLOCATE(romZ,romW,romD,romKH,romS,romT,romU,romV,&
                  modelUwind,modelVwind,modelIwind)
+    if(readChl) DEALLOCATE(modelChl)
     !DEALLOCATE(romSwdown)
 
     write(*,*)'counter at end of inithydro=',counter
@@ -2232,7 +2255,7 @@ CONTAINS
         !readNetcdfSwdown,                                    &
         startfile,filestep,                                              &
         readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       &  !--- CL-OGS:
-        WindIntensity,readIwind,constIwind,                                    &
+        WindIntensity,readIwind,constIwind,readChl,constChl,                   &
 !      *****   IMIOM      *****
           swan_prefix, swan_suffix,swan_filenum,WindWaveModel,SigWaveHeight,   &
           MeanWavePeriod,PeakDirection,PeakWaveLength,OilOn
@@ -2253,6 +2276,7 @@ CONTAINS
                                 romUf,romVf,romWf,romKHf
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelUwindf,modelVwindf    !--- CL-OGS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelIwindf    !--- CL-OGS
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelChlf    !--- CL-OGS
     INTEGER :: ios,nvarf,ktlev,waiting,rand15
     INTEGER :: searchnode,nodestocopy, k1, k2
     REAL, ALLOCATABLE, DIMENSION(:) :: tmpvec
@@ -2277,6 +2301,7 @@ CONTAINS
     ALLOCATE(modelUwindf(ui,uj,1))
     ALLOCATE(modelVwindf(vi,vj,1))
     ALLOCATE(modelIwindf(vi,uj,1)) 
+    if(readChl)ALLOCATE(modelChlf(vi,uj,1)) 
     ALLOCATE(tmpvec(vi))
     ALLOCATE(dbltmpvec(vi))
     if(OilOn)then! .and. WindWaveModel)then
@@ -2788,6 +2813,28 @@ CONTAINS
 
       !------------------------------------
 
+      if(readChl)then  
+       if(Zgrid)then
+         call read_data_from_file(VAR_ID_chl,vi,uj,1,1,1,1,1,modelChlf,RNODE,stepf,1,do_not_interpolate)
+       else
+          write(*,*) ' ERROR Wind intensity not present in Roms files'
+          write(*,*) ' setting modelChlf = constChl=',constChl
+          modelChlf = constChl
+       endif
+      else
+       modelChlf = constChl
+      endif
+      if(WindIntensity .and. Zgrid)then
+       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+          count = (j-1)*vi + i
+          t_chl(t_f,count) =    modelChlf(i,j,1) *    m_r(i,j,us_tridim)
+        enddo
+       enddo
+      endif
+
+      !------------------------------------
+
  
       ! Store the ranges of nodes that were updated
       updatenodesbuffer=0
@@ -3023,7 +3070,7 @@ CONTAINS
     !DEALLOCATE SUBROUTINE VARIABLES
     DEALLOCATE(romZf,romSf,romTf,romUf,romVf,romWf,romKHf)
     DEALLOCATE(modelUwindf,modelVwindf,modelIwindf)
-
+    if(readChl) DEALLOCATE(modelChlf)
   END SUBROUTINE updateHydro
 
 
@@ -4304,6 +4351,21 @@ CONTAINS
          v2 = t_iwind(t_f,rnode2)
          v3 = t_iwind(t_f,rnode3)
          v4 = t_iwind(t_f,rnode4)
+       CASE(VAR_ID_chlb)
+         v1 = t_chl(t_b,rnode1)
+         v2 = t_chl(t_b,rnode2)
+         v3 = t_chl(t_b,rnode3)
+         v4 = t_chl(t_b,rnode4)
+       CASE(VAR_ID_chlc)
+         v1 = t_chl(t_c,rnode1)
+         v2 = t_chl(t_c,rnode2)
+         v3 = t_chl(t_c,rnode3)
+         v4 = t_chl(t_c,rnode4)
+       CASE(VAR_ID_chlf)
+         v1 = t_chl(t_f,rnode1)
+         v2 = t_chl(t_f,rnode2)
+         v3 = t_chl(t_f,rnode3)
+         v4 = t_chl(t_f,rnode4)
        CASE DEFAULT
          write(*,*) 'Problem interpolating ',var
          write(*,*) ' '
@@ -5182,7 +5244,7 @@ CONTAINS
 
   SUBROUTINE finHydro()
     USE PARAM_MOD, ONLY:Zgrid,read_GrainSize,OutDir,NCOutFile,&
-           Zgrid_depthinterp,WindIntensity
+           Zgrid_depthinterp,WindIntensity,readChl
     !This subroutine closes all the module's allocatable variables
     IMPLICIT NONE
 
@@ -5222,6 +5284,7 @@ CONTAINS
     DEALLOCATE(t_uwind)
     DEALLOCATE(t_vwind)
     if(WindIntensity .and. Zgrid)DEALLOCATE(t_iwind)
+    if(readChl) DEALLOCATE(t_chl)
     DEALLOCATE(rho_mask,u_mask,v_mask)
     DEALLOCATE(m_r) 
     DEALLOCATE(m_u) 
@@ -6856,7 +6919,7 @@ CONTAINS
   SUBROUTINE set_filename(var_id,counter,filename)
    USE PARAM_MOD, ONLY: numdigits,dirin, &
         prefix_Zeta,prefix_Salt,prefix_Temp,prefix_Uvel,prefix_Vvel,prefix_Wvel, & 
-        prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind,prefix_Iwind,suffix
+        prefix_Aks,prefix_Dens,prefix_Uwind,prefix_Vwind,prefix_Iwind,prefix_Chl,suffix
    IMPLICIT NONE
 #include "VAR_IDs.h"
    integer, intent(in):: var_id,counter
@@ -6886,6 +6949,8 @@ CONTAINS
                              prefix_var=prefix_Vwind
           CASE(VAR_ID_iwind) 
                              prefix_var=prefix_Iwind
+          CASE(VAR_ID_chl) 
+                             prefix_var=prefix_Chl
           CASE DEFAULT
            WRITE(*,*)'Model presently does not support var id ',var_id
            STOP
@@ -6937,7 +7002,7 @@ CONTAINS
 #include "VAR_IDs.h"
    USE PARAM_MOD, ONLY: namevar_Zeta,namevar_Salt,namevar_Temp,namevar_Uvel,namevar_Vvel,  &
         namevar_Wvel,namevar_Aks,namevar_Dens,namevar_Uwind,namevar_Vwind, &
-        namevar_Iwind
+        namevar_Iwind,namevar_Chl
    IMPLICIT NONE
    integer, intent(in):: var_id
 
@@ -6975,6 +7040,9 @@ CONTAINS
           CASE(VAR_ID_iwind) 
                              var_name_in_netcdf='wind_intensity'
                              if(len(trim(namevar_Iwind))>0) var_name_in_netcdf=trim(namevar_Iwind)
+          CASE(VAR_ID_chl) 
+                             var_name_in_netcdf='chl'
+                             if(len(trim(namevar_Chl))>0) var_name_in_netcdf=trim(namevar_Chl)
           CASE DEFAULT
            WRITE(*,*)'Model presently does not support var id ',var_id
            STOP
@@ -7009,6 +7077,8 @@ CONTAINS
                              roms_netcdf_var_name='svstr'
           CASE(VAR_ID_iwind) 
                              roms_netcdf_var_name='wind_intensity'
+          CASE(VAR_ID_chl) 
+                             roms_netcdf_var_name='chl'
           CASE DEFAULT
            WRITE(*,*)'Model presently does not support var id ',var_id
            STOP
@@ -7043,6 +7113,8 @@ CONTAINS
                              explicit_var_name='v_wind'
           CASE(VAR_ID_iwind) 
                              explicit_var_name='wind_intensity'
+          CASE(VAR_ID_chl) 
+                             explicit_var_name='chl'
           CASE DEFAULT
            WRITE(*,*)'Model presently does not support var id ',var_id
            STOP

@@ -59,4 +59,9 @@
 #define VAR_ID_iwindc 67
 #define VAR_ID_iwindf 68
 
+#define VAR_ID_chl 70
+#define VAR_ID_chlb 71
+#define VAR_ID_chlc 72
+#define VAR_ID_chlf 73
+
 #define VAR_ID_swan 500
