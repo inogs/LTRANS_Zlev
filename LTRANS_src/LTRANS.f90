@@ -1964,7 +1964,7 @@ contains
      
       IF (Behavior.NE.0 .AND. Behavior.LE.1000) CALL behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,      &
            P_zb,P_zc,P_zf,P_zetac,par(n,pAge),P_depth,P_U,P_V,P_angle,PTemptmp,   &
-           n,it,ex,ix,ix(3)/DBLE(86400),p,bott,XBehav,YBehav,ZBehav,LarvSize)!,P_swdown)
+           n,it,ex,ix,ix(3)/DBLE(86400),p,bott,XBehav,YBehav,ZBehav,LarvSize,Fstlev)!,P_swdown)
            IF(Behavior.ge.8.and.Behavior.le.11) P_Size(n)=LarvSize
 
       !--- CL-OGS: implemented then cancelled by OILTRANS RK scheme
@@ -3255,6 +3255,8 @@ contains
       write(*,*) ' Behavior:        = Mullus Barbatus larvae'
       CASE(11)
       write(*,*) ' Behavior:        = Parameterizable larvae behavior'
+      CASE(12)
+      write(*,*) ' Behavior:        = Ostrea Edulis oyster'
       CASE(997)
       write(*,*) ' Behavior:        = Die when reaching surface'
       CASE(998)
