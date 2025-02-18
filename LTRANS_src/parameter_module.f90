@@ -31,10 +31,11 @@ CONTAINS
   !Subroutine to read all input parameters from LTRANS.data 
 
     character(len=120) :: header
-    integer :: istat,err,count
+    integer :: istat,err
     !--- CL-OGS: modified to allow running LTRANS using the data file which name is given in argument
     !--- CL-OGS: use  "$ LTRANS.exe LTRANS_inputdatafile.data"
-    CHARACTER(len=100), INTENT(in) :: inputdatafile     
+    CHARACTER(len=100), INTENT(in) :: inputdatafile    
+    logical :: file_found 
     write(*,*)'Reading parameters from file ',trim(inputdatafile)
     err = 0
     prefix_Salt  = '' 
@@ -47,11 +48,22 @@ CONTAINS
     prefix_Uwind = '' 
     prefix_Vwind = '' 
     prefix_Iwind = '' 
+    namevar_Salt  = '' 
+    namevar_Temp  = '' 
+    namevar_Uvel  = '' 
+    namevar_Vvel  = '' 
+    namevar_Wvel  = '' 
+    namevar_Aks   = '' 
+    namevar_Dens  = '' 
+    namevar_Uwind = '' 
+    namevar_Vwind = '' 
+    namevar_Iwind = '' 
     Adjele_fname='Adjacentelements.data'
     ADJele_file= .FALSE.
     habitatfile='NONE'
     holefile='NONE'
     swdown_ASCIIfname='NONE'
+    Hydro_Netcdf=.True.
     Wind_hc=0.1  ! hc=0.1 creates vertical profile with 100% wind drift in depth range [0,-0.1] m,
     Wind_ke=15.0 ! bellow hc, with ke=15.0 the exponential decay goes from 100% of the wind at 
                   ! depth hc and then decays up to only 5% of the wind drift at -0.3m depth
@@ -62,6 +74,22 @@ CONTAINS
     StrandingDist=1e-5
     strandingMaxDistFromBott=99999999
     strandingMaxDistFromSurf=99999999
+
+    ! Check if an input file was provided
+    if(len(trim(inputdatafile)).eq.0)then
+      write(*,*)'ERROR a ".data" input file must be provided in command line after the executable'
+      write(*,*)'PROGRAM STOP'
+      stop
+    endif
+
+    ! Check if the file exists
+    inquire(file=trim(inputdatafile), exist=file_found)
+    if(.not. file_found)then
+      write(*,*)'ERROR file "',trim(inputdatafile),'" not found'
+      write(*,*)'PROGRAM STOP'
+      stop
+    endif
+
     OPEN(1,file=trim(inputdatafile))                  !--- read control variables:
       IF(err == 0) THEN
         READ(1,nml=numparticles ,IOSTAT=istat)  !--- number of particles
@@ -170,41 +198,41 @@ CONTAINS
       CASE(0)
         header='No Errors'
       CASE(10)
-        header='Error when reading numparticles, pls check LTRANS.data'
+        header='ERROR please check '//trim(inputdatafile)//' - could not read numparticles'
       CASE(20)
-        header='Error when reading timeparam, pls check LTRANS.data'
+        header='Error when reading timeparam, pls check '//trim(inputdatafile)
       CASE(30)
-        header='Error when reading hydroparam, pls check LTRANS.data'
+        header='Error when reading hydroparam, pls check '//trim(inputdatafile)
       CASE(40)
-        header='Error when reading turbparam, pls check LTRANS.data'
+        header='Error when reading turbparam, pls check '//trim(inputdatafile)
       CASE(50)
-        header='Error when reading behavparam, pls check LTRANS.data'
+        header='Error when reading behavparam, pls check '//trim(inputdatafile)
       CASE(60)
-        header='Error when reading behavdvm, pls check LTRANS.data'
+        header='Error when reading behavdvm, pls check '//trim(inputdatafile)
       CASE(70)
-        header='Error when reading settleparam, pls check LTRANS.data'
+        header='Error when reading settleparam, pls check '//trim(inputdatafile)
       CASE(75)
-        header='Error when reading strandingparam, pls check LTRANS.data'
+        header='Error when reading strandingparam, pls check '//trim(inputdatafile)
       CASE(80)
-        header='Error when reading convparam, pls check LTRANS.data'
+        header='Error when reading convparam, pls check '//trim(inputdatafile)
       CASE(90)
-        header='Error when reading hydromodelgrid, pls check LTRANS.data'
+        header='Error when reading hydromodelgrid, pls check '//trim(inputdatafile)
       CASE(100)
-        header='Error when reading hydromodeloutput, pls check LTRANS.data'
+        header='Error when reading hydromodeloutput, pls check '//trim(inputdatafile)
       CASE(110)
-        header='Error when reading parloc, pls check LTRANS.data'
+        header='Error when reading parloc, pls check '//trim(inputdatafile)
       CASE(120)
-        header='Error when reading HabPolLoc, pls check LTRANS.data'
+        header='Error when reading HabPolLoc, pls check '//trim(inputdatafile)
       CASE(130)
-        header='Error when reading output, pls check LTRANS.data'
+        header='Error when reading output, pls check '//trim(inputdatafile)
       CASE(140)
-        header='Error when reading other, pls check LTRANS.data'
+        header='Error when reading other, pls check '//trim(inputdatafile)
       CASE(150)
         header='Error when reading gridinfo, pls check GRID.data'
       CASE(180)
-        header='Error when reading oil process, pls check LTRANS.data'
+        header='Error when reading oil process, pls check '//trim(inputdatafile)
       CASE(190)
-        header='Error when reading wave properties, pls check LTRANS.data'
+        header='Error when reading wave properties, pls check '//trim(inputdatafile)
       CASE DEFAULT
         header='Error: unexpected err number'
     END SELECT

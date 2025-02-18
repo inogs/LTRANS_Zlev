@@ -89,7 +89,7 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
            f_Eta='Eta.',f_RHOA='RHOAnoma.',
            f_U='U.',f_V='V.',f_W='W.',f_S='S.',f_T='T.',
            f_KPPdiffS='KPPdiffS.',f_EXFuwind='EXFuwind.',f_EXFvwind='EXFvwind.',f_EXFIwind='EXFiwind.',plotdir='./',fileextension=''):
-
+        extension=fileextension
         FilesNamesContain=[f_Eta,f_RHOA,f_U,f_V,f_W,f_S,f_T,f_KPPdiffS,f_EXFuwind,f_EXFvwind,f_EXFIwind]
         Freqcy_List=np.zeros((1000),dtype=float)
         VarNam_List=np.empty((1000),dtype="S15")
@@ -304,7 +304,11 @@ def getgridparamsfromSTDOUT(directory,identifier,dirout='',
           count=0
           found=0
           print(FilesNamesContain)
-
+          FILENUM='FILENUM'
+          NUMDIGITS='NUMDIGITS'
+          TDIM='TDIM'
+          NUMDAYS='NUMDAYS'
+          FILESTEP='FILESTEP'
           for numf,name in enumerate(FilesNamesContain):
             LIST = glob.glob(directory+name+'*')
             LIST.sort()

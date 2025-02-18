@@ -2076,16 +2076,16 @@ contains
         endif
 
         reflects = reflects + 1
-        if(BndOut)then
-          write(*,*)'p',p,' it',it,' part ',n,                     &
-        ' got reflected at lower level',      &
-        ' while going from pos ',x2lon(Xpos,Ypos),',',y2lat(Ypos),             &
-        ' to pos ',x2lon(nXpos,nYpos),',',y2lat(nYpos)
-          length=sqrt((x2lon(nXpos,nYpos)-x2lon(Xpos,Ypos))**2+                &
-                      (y2lat(nYpos)-y2lat(Ypos))**2)
-         write(annotate,'(a,i6)')'I',it+p*int(dt/idt)
-         call writeErrortopython(annotate,'c',Xpos,Ypos,nXpos,nYpos) 
-        endif
+       !if(BndOut)then
+       !  write(*,*)'p',p,' it',it,' part ',n,                     &
+       !' got reflected at lower level',      &
+       !' while going from pos ',x2lon(Xpos,Ypos),',',y2lat(Ypos),             &
+       !' to pos ',x2lon(nXpos,nYpos),',',y2lat(nYpos)
+       !  length=sqrt((x2lon(nXpos,nYpos)-x2lon(Xpos,Ypos))**2+                &
+       !              (y2lat(nYpos)-y2lat(Ypos))**2)
+       ! write(annotate,'(a,i6)')'I',it+p*int(dt/idt)
+       ! call writeErrortopython(annotate,'c',Xpos,Ypos,nXpos,nYpos) 
+       !endif
         if(reflects > 3) then
           call handleERROR('intersect ',1,reflects,n,     &
                       Xpos,Ypos,par(n,pZ), &

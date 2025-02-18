@@ -774,6 +774,20 @@ $hydromodeloutput
                                 ! double = 8 bytes
   startfile = .TRUE.            ! Is it the first file, i.e. does the file have
                                 ! an additional time step?
+  Hydro_NetCDF = .TRUE.                    ! .TRUE. means the Hydro model prediction Input files are in NetCDF format
+  First_vertical_layer_is_surface = .TRUE. ! .TRUE.  means that in the netcdfs hydro files the first vertical layer is surface (for MITgcm netcdfs)
+                                           ! .FALSE. means that in the netcdfs hydro files the first vertical layer is bottom (for ROMS netcdfs)  
+  namevar_Zeta = 'ETAN'      
+  namevar_Salt = 'S'      
+  namevar_Temp = 'THETA'      
+  namevar_Uvel = 'UVEL'      
+  namevar_Vvel = 'VVEL'      
+  namevar_Wvel = 'WVEL'      
+  namevar_Aks  = 'KppDiffS'      
+  namevar_Dens = 'RHOAnoma' 
+  namevar_Uwind= 'EXFuwind' 
+  namevar_Vwind= 'EXFvwind' 
+  namevar_Iwind= ''      
 $end
 ```
 
@@ -783,6 +797,11 @@ Note that `filestep` should be set to a negative value to enable backtracking.
 
 For Z-level simulations reading MITgcm binary files the prefix of the different variables contain different file names.
 Instead when ROMs netcdf are read all variables are stored in the same file so that every prefix can contain the same file name.
+
+`Hydro_NetCDF` must be set to `.TRUE.` if the Hydro model prediction Input files are in NetCDF format
+
+`First_vertical_layer_is_surface` is used to indicate whether the direction of the vertical layer numbering is from surface to bottom or bottom to surface, per example it must be set to `.TRUE.` if in the netcdfs hydro files the first vertical layer is surface (for MITgcm netcdfs). 
+On the opposite, it must be set to `.FALSE.` if in the netcdfs hydro files the first vertical layer is bottom (for ROMS netcdfs)  
 
 ##### 6.11 Particle location input file
 
