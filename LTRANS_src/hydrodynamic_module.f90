@@ -2294,7 +2294,7 @@ CONTAINS
 
     !if the current input file is not yet finished, just increment stepf to 
     !  the next time step
-    IF (((startfile .AND. (iint==0) .AND. (stepf==tdim)) .OR.   &
+    IF (( &! (startfile .AND. (iint==0) .AND. (stepf==tdim)) .OR.   &
          (stepf .LT. tdim) )      .OR. filestep==0              ) THEN
 
       stepf=stepf+1
