@@ -391,7 +391,7 @@ MODULE OIL_MOD
 
         !Local variables
         DOUBLE PRECISION:: ran        !holder for random number
-        DOUBLE PRECISION:: ang        !randomly generated angle (0 < ang < 2pi)
+        DOUBLE PRECISION:: ang        !randomly/Det generated angle (0 < ang < 2pi)
         DOUBLE PRECISION:: dist        !randomly generated distance (0 < dist < Radius)
 
         CALL random_number(ran)
@@ -632,7 +632,13 @@ MODULE OIL_MOD
         else
            WaterTempInst =TempInst 
         endif
-
+        if(WaterTempInst<0)then
+            write(*,*)'error water temperature',WaterTempInst
+            write(*,*)'Either put SaltTempOn to .True. '
+            write(*,*)'in namelist $other of LTRANS.data, or set'
+            write(*,*)'constTemp>0 in namelist $hydroparams'
+            stop
+        endif
         !Determine initial oil density
         IF (Oil_Dens > 0.0) THEN
             RhoOil      = Oil_Dens * (1.0 - CDensT * ((WaterTempInst+273.15) - Oil_Dens_RefT))    !actual density of spilled oil at ocean temperature (kg/m3)
@@ -1404,7 +1410,7 @@ MODULE OIL_MOD
             !SWAN model output
     else
             waveheight = 0.243 * (0.71*WindSpeed**1.23)**2.0 / Gravity                                                        !ADIOS formulation (NOAA 1994)
-            waveperiod = 8.13 * WindSpeed / gravity
+            waveperiod = max(1e-10,8.13 * WindSpeed / gravity)
     end if       
 
     !Calculate breaking wave height based on deep / shallow water wave conditions
