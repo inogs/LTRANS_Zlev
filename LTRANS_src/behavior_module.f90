@@ -345,7 +345,7 @@ CONTAINS
      ws_speed=(0.07 * LarvSize(n) + 0.00009 * (P_T+273.15) + 0.0006 * LarvSize(n)* (P_T*273.15) + 0.0017) /1000.0  ! m/s  ! CHECK THAT FORMULATION IS IN mm/s
      P_size=LarvSize(n)
 
-!    targetlayerLOWERdepth=(P_zetac-abs(surflayer_lowerdepth))
+     targetlayerLOWERdepth=(P_zetac-abs(surflayer_lowerdepth))
 !    targetlayerUPPERdepth=(P_zetac-abs(surflayer_upperdepth))
 
 !    if(P_behave(n).lt.3)then ! Determine targetlayerLOWERdepth and targetlayerUPPERdepth

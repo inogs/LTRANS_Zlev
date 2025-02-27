@@ -92,7 +92,7 @@ MODULE HYDRO_MOD
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_uwind, t_vwind,t_iwind                       ! 10m wind components and intensity
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_pdir                                          ! principle wave direction
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_wlen                                          ! mean wave length
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: t_chl                                          ! chlorophyl
+  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: t_chl                                          ! chlorophyl
   CHARACTER(len=200) :: swannm
 !      ***** END IMIOM *****
 
@@ -1373,9 +1373,9 @@ CONTAINS
     DOUBLE PRECISION :: fac                !--- CL-OGS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: romZ !,romSwdown
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:,:) :: romW,romKH,romS,romT, &
-                                                romD,romU, romV
+                                                romD,romU, romV, modelChl 
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUwind,modelVwind,&
-                                                         modelIwind,modelChl  !--- CL-OGS
+                                                         modelIwind !--- CL-OGS
     !--- CL-OGS: following variables added to handle MITgcm-files
     !--- CL-OGS  (using a different file for every field variable )
     INTEGER :: ios,nvarf,ktlev,waiting,rand15
@@ -1453,9 +1453,10 @@ CONTAINS
     !endif
       ALLOCATE(modelIwind(vi,uj,3))
     if(readChl)then
-      ALLOCATE(modelChl(vi,uj,3))
-      ALLOCATE(t_chl(3,  rho_nodes))
-      t_chl = 0
+      ALLOCATE(modelChl(vi,uj,us,3))
+      modelChl = constChl
+      ALLOCATE(t_chl(3,  rho_nodes, us))
+      t_chl = constChl
     endif
     if(WindIntensity .and. Zgrid)then
       ALLOCATE(t_iwind(3,  rho_nodes))
@@ -1646,7 +1647,7 @@ CONTAINS
       endif
       !---------------------------------
       if(readChl)then  
-        call read_data_from_file(VAR_ID_chl,vi,uj,1,3,nf,nfn,nfnn,modelChl,RNODE,recordnum,incrstepf,do_not_interpolate)
+        call read_data_from_file(VAR_ID_chl,vi,uj,us,3,nf,nfn,nfnn,modelChl,RNODE,recordnum,incrstepf,do_not_interpolate)
       else
         modelChl = constChl
       endif
@@ -1746,6 +1747,19 @@ CONTAINS
           !t_Swdown(3,count) =    romSwdown(i,j,3) 
         enddo
       enddo
+      if(readChl)then
+      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+          count = (j-1)*vi + i
+          do k=1,us
+            kmask=min(k,us_tridim) 
+            t_chl(1,count,k) = modelChl(i,j,k,1) * m_r(i,j,kmask)
+            t_chl(2,count,k) = modelChl(i,j,k,2) * m_r(i,j,kmask)
+            t_chl(3,count,k) = modelChl(i,j,k,3) * m_r(i,j,kmask)
+          enddo                                         
+        enddo
+      enddo
+      endif
 
       do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
         do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
@@ -1844,6 +1858,42 @@ CONTAINS
           enddo    
           if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
         enddo
+        if(readChl)then
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+            count = (j-1)*vi + i
+            kbot=BottomK(i,j,1)
+            if(kbot>1)then
+             if(kbot<ws)then
+              t_chl(:,count,kbot-1) = t_chl(:,count,kbot)
+             endif
+             do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+               if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+               if(Node_COPNOD(RNODE,searchnode).ge.count)exit
+             enddo
+             do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+               k1=klev_COPNOD(RNODE,nodestocopy,2)
+               k2=klev_COPNOD(RNODE,nodestocopy,1)
+               do tcopy=1,3
+                 t_chl(tcopy,count,k1:k2)=(                        &
+                 t_chl(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
+                 t_chl(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
+                 t_chl(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
+                 t_chl(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
+               enddo
+               nodestocopy = nodestocopy +1
+               if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
+             enddo !while
+            endif
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
+          enddo    
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
+        enddo
+        endif
 
         nodestocopy=1
         do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
@@ -1986,14 +2036,6 @@ CONTAINS
         enddo
        enddo
       endif
-      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-       do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-         count = (j-1)*vi + i
-         t_chl(1,count) =    modelChl(i,j,1) *    m_r(i,j,us_tridim)
-         t_chl(2,count) =    modelChl(i,j,2) *    m_r(i,j,us_tridim)
-         t_chl(3,count) =    modelChl(i,j,3) *    m_r(i,j,us_tridim)
-       enddo
-      enddo
       !  ***    IMIOM *****
       ! WIND WAVE MODEL DATA  ------------------------------------
       IF(OilOn)then
@@ -2276,7 +2318,7 @@ CONTAINS
                                 romUf,romVf,romWf,romKHf
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelUwindf,modelVwindf    !--- CL-OGS
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelIwindf    !--- CL-OGS
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) ::modelChlf    !--- CL-OGS
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,:,: ) ::modelChlf    !--- CL-OGS
     INTEGER :: ios,nvarf,ktlev,waiting,rand15
     INTEGER :: searchnode,nodestocopy, k1, k2
     REAL, ALLOCATABLE, DIMENSION(:) :: tmpvec
@@ -2301,7 +2343,10 @@ CONTAINS
     ALLOCATE(modelUwindf(ui,uj,1))
     ALLOCATE(modelVwindf(vi,vj,1))
     ALLOCATE(modelIwindf(vi,uj,1)) 
-    if(readChl)ALLOCATE(modelChlf(vi,uj,1)) 
+    if(readChl)then
+      ALLOCATE(modelChlf(vi,uj,us,1)) 
+        modelChlf = constChl
+    endif
     ALLOCATE(tmpvec(vi))
     ALLOCATE(dbltmpvec(vi))
     if(OilOn)then! .and. WindWaveModel)then
@@ -2815,7 +2860,7 @@ CONTAINS
 
       if(readChl)then  
        if(Zgrid)then
-         call read_data_from_file(VAR_ID_chl,vi,uj,1,1,1,1,1,modelChlf,RNODE,stepf,1,do_not_interpolate)
+         call read_data_from_file(VAR_ID_chl,vi,uj,us,1,1,1,1,modelChlf,RNODE,stepf,1,do_not_interpolate)
        else
           write(*,*) ' ERROR Wind intensity not present in Roms files'
           write(*,*) ' setting modelChlf = constChl=',constChl
@@ -2824,13 +2869,56 @@ CONTAINS
       else
        modelChlf = constChl
       endif
-      if(WindIntensity .and. Zgrid)then
+      
+      if(readChl)then
+       !Reshape input to fit node numbers assigned to elements
        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-          count = (j-1)*vi + i
-          t_chl(t_f,count) =    modelChlf(i,j,1) *    m_r(i,j,us_tridim)
-        enddo
+         do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+           count = (j-1)*vi + i
+           do k=1,us    
+             kmask=min(k,us_tridim)
+             t_chl(t_f,count,k)  = (modelChlf(i,j,k,1) + DBLE(1000.0)) * m_r(i,j,kmask)
+          enddo
+         enddo
        enddo
+
+
+       ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
+       if(Zgrid)then
+        nodestocopy=1
+        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
+            count = (j-1)*vi + i
+            kbot=BottomK(i,j,1)
+            if(kbot>1)then
+              if(kbot<ws )then
+               t_chl(t_f,count,kbot-1) =  t_chl(t_f,count,kbot)
+              endif
+              do searchnode=nodestocopy,NUM_COPNOD(RNODE)
+                if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
+                if(Node_COPNOD(RNODE,searchnode).ge.count)exit
+              enddo
+              do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
+                k1=klev_COPNOD(RNODE,nodestocopy,2)
+                k2=klev_COPNOD(RNODE,nodestocopy,1)
+                t_chl(t_f,count,k1:k2)=(                       &
+                  t_chl(t_f,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,1) +    &
+                  t_chl(t_f,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,2) +    &
+                  t_chl(t_f,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,3) +    &
+                  t_chl(t_f,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
+                           *Coef_COPNOD(RNODE,nodestocopy,4) ) 
+                nodestocopy = nodestocopy +1
+                if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
+              enddo
+            endif
+            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
+          enddo    
+          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
+        enddo
+       endif
       endif
 
       !------------------------------------
@@ -4352,20 +4440,41 @@ CONTAINS
          v3 = t_iwind(t_f,rnode3)
          v4 = t_iwind(t_f,rnode4)
        CASE(VAR_ID_chlb)
-         v1 = t_chl(t_b,rnode1)
-         v2 = t_chl(t_b,rnode2)
-         v3 = t_chl(t_b,rnode3)
-         v4 = t_chl(t_b,rnode4)
+         if(.not. present(i))then
+           write(*,*) 'Problem interpolating ',var
+           write(*,*) 'Optional Argument (i) Required for this Variable'
+           write(*,*) ' '
+           write(*,*) 'The Program Cannot Continue and Will Terminate'
+           stop
+         endif
+         v1 = t_chl(t_b,rnode1,i)
+         v2 = t_chl(t_b,rnode2,i)
+         v3 = t_chl(t_b,rnode3,i)
+         v4 = t_chl(t_b,rnode4,i)
        CASE(VAR_ID_chlc)
-         v1 = t_chl(t_c,rnode1)
-         v2 = t_chl(t_c,rnode2)
-         v3 = t_chl(t_c,rnode3)
-         v4 = t_chl(t_c,rnode4)
+         if(.not. present(i))then
+           write(*,*) 'Problem interpolating ',var
+           write(*,*) 'Optional Argument (i) Required for this Variable'
+           write(*,*) ' '
+           write(*,*) 'The Program Cannot Continue and Will Terminate'
+           stop
+         endif
+         v1 = t_chl(t_c,rnode1,i)
+         v2 = t_chl(t_c,rnode2,i)
+         v3 = t_chl(t_c,rnode3,i)
+         v4 = t_chl(t_c,rnode4,i)
        CASE(VAR_ID_chlf)
-         v1 = t_chl(t_f,rnode1)
-         v2 = t_chl(t_f,rnode2)
-         v3 = t_chl(t_f,rnode3)
-         v4 = t_chl(t_f,rnode4)
+         if(.not. present(i))then
+           write(*,*) 'Problem interpolating ',var
+           write(*,*) 'Optional Argument (i) Required for this Variable'
+           write(*,*) ' '
+           write(*,*) 'The Program Cannot Continue and Will Terminate'
+           stop
+         endif
+         v1 = t_chl(t_f,rnode1,i)
+         v2 = t_chl(t_f,rnode2,i)
+         v3 = t_chl(t_f,rnode3,i)
+         v4 = t_chl(t_f,rnode4,i)
        CASE DEFAULT
          write(*,*) 'Problem interpolating ',var
          write(*,*) ' '
@@ -4454,6 +4563,9 @@ CONTAINS
     P_vb=0.0
     SigErr=0
     IF(nN>=3)then
+      if(abb_vb(1)>0)then
+        continue
+      endif
       CALL TSPSI (nN,abb_zb,abb_vb,YP,SIGM,IER,SigErr)
       IF (SigErr.EQ.0) THEN
         P_vb = HVAL (P_zb,nN,abb_zb,abb_vb,YP,SIGM,IER)
