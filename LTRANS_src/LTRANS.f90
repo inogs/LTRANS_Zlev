@@ -352,7 +352,7 @@ contains
       ENDIF
     ENDIF
 
-    IF(Behavior.GE.8 .and. Behavior.LE.11) THEN
+    IF(Behavior.GE.8 .and. Behavior.LE.12) THEN
       ALLOCATE(P_Size(numpar))
       P_Size = 0.0
     ENDIF 
@@ -1964,8 +1964,8 @@ contains
      
       IF (Behavior.NE.0 .AND. Behavior.LE.1000) CALL behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,      &
            P_zb,P_zc,P_zf,P_zetac,par(n,pAge),P_depth,P_U,P_V,P_angle,PTemptmp,   &
-           n,it,ex,ix,ix(3)/DBLE(86400),p,bott,XBehav,YBehav,ZBehav,LarvSize,Fstlev)!,P_swdown)
-           IF(Behavior.ge.8.and.Behavior.le.11) P_Size(n)=LarvSize
+           n,it,ex,ix,ix(3)/DBLE(86400),p,bott,XBehav,YBehav,ZBehav,LarvSize,Fstlev,klev)!,P_swdown)
+           IF(Behavior.ge.8.and.Behavior.le.12) P_Size(n)=LarvSize
 
       !--- CL-OGS: implemented then cancelled by OILTRANS RK scheme
 !     IF(Wind)then

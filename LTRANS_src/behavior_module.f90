@@ -210,14 +210,17 @@ CONTAINS
            maxsizeatsurf=9999
       ELSEIF(Behavior.eq.11) then ! Parameterizable larvae
            P_behave(n) = 0
-      ELSEIF(Behavior.eq.12) then  ! Ostrea Edulis Oyster
-           call Ostrea_Edulis_initialize()
       ENDIF
       if(n==0)&
         write(*,*)'Behavior ',Behavior,' intial larvae size=',LarvSize(n),&
         ' maxtimeatsurf=',maxtimeatsurf,' maxsizeatsurf=',maxsizeatsurf
       !Note: P_swim(n,3) is updated at each time step in Subroutine behave
     enddo
+
+    IF(Behavior.eq.12) then  ! Ostrea Edulis Oyster
+     call Ostrea_Edulis_initialize()
+    ENDIF
+
     if(maxtimeatsurf==0 )maxtimeatsurf=999999999
     !The following variables are used by the C. virginica and C. ariakensis 
     !  behavior routines
@@ -274,7 +277,7 @@ CONTAINS
   SUBROUTINE Ostrea_Edulis_behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,P_zb,P_zc,P_zf,  &
                     P_zetac,P_age,P_depth,P_U,P_V,P_angle,P_T,                         &
                     n,it,ex,ix,                                                        &
-                    daytime,p,bott,XBehav,YBehav,ZBehav,P_size,Fstlev                  )
+                    daytime,p,bott,XBehav,YBehav,ZBehav,P_size,Fstlev,klev            )
     USE PARAM_MOD, ONLY: us,dt,idt,twistart,twiend,Em,pi,daylength,Kd,thresh,  &
                     Sgradient,swimfast,swimstart,sink,Hswimspeed,              &
                     Swimdepth,rise,surflayer_upperdepth,surflayer_lowerdepth,  &
@@ -293,11 +296,11 @@ CONTAINS
                                     Pwc_zf(:),P_zb,P_zc,P_zf,P_zetac,P_age,    &
                                     P_depth,P_U,P_V,P_angle,ex(3),ix(3) !,       &
                                     !P_grainsize ,P_swdown
-    INTEGER, INTENT(IN) :: n,it,p,Fstlev
+    INTEGER, INTENT(IN) :: n,it,p,Fstlev,klev
     LOGICAL, INTENT(OUT) :: bott
     DOUBLE PRECISION, INTENT(OUT) :: XBehav,YBehav,ZBehav,P_size
     
-    INTEGER :: btest,i,deplvl,NumInterpLvl
+    INTEGER :: btest,i,deplvl_minus2,NumInterpLvl,kdown,kup
     INTEGER :: swdown_r1,swdown_r2                                  ! for swdown dvm
     DOUBLE PRECISION :: swdown_alpha,swdown_interp                  ! for swdown dvm
     DOUBLE PRECISION :: targetlayerUPPERdepth,targetlayerLOWERdepth ! for Behavior 8 and 9
@@ -306,45 +309,68 @@ CONTAINS
     DOUBLE PRECISION :: P_T !not needed unless temperature code below is enabled
     DOUBLE PRECISION :: dtime,tst,E0,P_light
     DOUBLE PRECISION :: currentspeed,Hdistance,theta,X,Y,Growth,P_chl_gradient
-    DOUBLE PRECISION :: ws_speed
+    DOUBLE PRECISION :: ws_speed, Chl_up,Chl_down,dZ
      P_size=0.0
      XBehav = 0.0
      YBehav = 0.0
      ZBehav = 0.0
      parBehav = 0.0
-    
      do i=Fstlev+2,us-2
        if ((Zpar .LT. Pwc_zb(i)) .OR.    &
            (Zpar .LT. Pwc_zc(i)) .OR.    &
            (Zpar .LT. Pwc_zf(i))         ) exit
      enddo
-     deplvl = i-2
-     if(Zgrid .and. deplvl+3>us)then
+     deplvl_minus2 = i-2
+     if(Zgrid .and. deplvl_minus2+3>us)then
          NumInterpLvl=us-Fstlev+1
-         deplvl=Fstlev
+         deplvl_minus2=Fstlev
      else
          NumInterpLvl=4
      endif  
     
     ! Get Chlorophyl at particle position
 
-     P_chl = WCTS_ITPI(VAR_ID_chl,Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,us,P_zb,    &
+     P_chl = WCTS_ITPI(VAR_ID_chl,Xpar,Ypar,deplvl_minus2,Pwc_zb,Pwc_zc,Pwc_zf,us,P_zb,    &
                      P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)
-     P_chl_gradient = ( getInterp(Xpar,Ypar,VAR_ID_chlc,deplvl  )  &
-                       -getInterp(Xpar,Ypar,VAR_ID_chlc,deplvl+1)  &
-                      ) / (Pwc_zc(deplvl)-Pwc_zc(deplvl+1)) 
+     if(Zpar<Pwc_zc(klev))then
+      kup=min(us,klev)
+      kdown=max(Fstlev,klev-1)
+      if(kdown.eq.kup) kup=kdown+1
+     else
+      kup=min(us,klev+1)
+      kdown=max(Fstlev,klev)
+      if(kdown.eq.kup) kdown=kup-1
+     endif
+     
+     Chl_down=getInterp(Xpar,Ypar,VAR_ID_chlc,kdown)
+     i=0
+     do i=0,us-kup,1
+       Chl_up  = getInterp(Xpar,Ypar,VAR_ID_chlc,kup+i)
+       if(abs(Chl_up-Chl_down) > 1e-8) exit
+     enddo
+     if(kup+i>us)then
+       Chl_up  = getInterp(Xpar,Ypar,VAR_ID_chlc,kup)
+       do i=0,kdown-Fstlev
+         Chl_down  = getInterp(Xpar,Ypar,VAR_ID_chlc,kdown-i)
+         if(abs(Chl_up-Chl_down) > 1e-8) exit
+       enddo
+       kdown=max(Fstlev,kdown-i)
+     else 
+       kup=kup+i
+     endif
+     dZ=(Pwc_zc(kup)-Pwc_zc(kdown))
+     P_chl_gradient = ( Chl_up-Chl_down ) / dZ ! positive means chlorphyl greater upward respect to downward
  
      !Temperature at particle location 
-     P_T = WCTS_ITPI(VAR_ID_temp,Xpar,Ypar,deplvl,Pwc_zb,Pwc_zc,Pwc_zf,us,     &
+     P_T = WCTS_ITPI(VAR_ID_temp,Xpar,Ypar,deplvl_minus2,Pwc_zb,Pwc_zc,Pwc_zf,us,     &
                      P_zb,P_zc,P_zf,ex,ix,p,4,n,NumInterpLvl)
 
 
      ! Compute Growth and increment larval size
      Growth = exp( -8354.9/(P_T+273.15) + 30.7) / 1000.0 ! mm/day
      LarvSize(n)=LarvSize(n)+ Growth * DBLE(idt)/DBLE(86400.0)
-     ws_speed=(0.07 * LarvSize(n) + 0.00009 * (P_T+273.15) + 0.0006 * LarvSize(n)* (P_T*273.15) + 0.0017) /1000.0  ! m/s  ! CHECK THAT FORMULATION IS IN mm/s
+     ws_speed=(0.07 * LarvSize(n) + 0.00009 * (P_T+273.15) + 0.0006 * LarvSize(n)* (P_T+273.15) + 0.0017) /1000.0  ! m/s  ! CHECK THAT FORMULATION IS IN mm/s
      P_size=LarvSize(n)
-
      targetlayerLOWERdepth=(P_zetac-abs(surflayer_lowerdepth))
 !    targetlayerUPPERdepth=(P_zetac-abs(surflayer_upperdepth))
 
@@ -377,15 +403,15 @@ CONTAINS
 
      IF(P_behave(n).eq.0)THEN !TYPE 0. First instant of life
          parBehav=(P_depth-P_zc+1.0)/float(idt)    ! Release at 1m from bottom
-         P_behave(n)=1   
+         P_behave(n)=2   
 
-     ELSEIF(P_behave(n).eq.1)THEN !TYPE 1. Surface oriented. Particle swims up
-         parBehav=ws_speed
-         if(P_zc .GT. targetlayerLOWERdepth) then
-            P_behave(n)=2  
-         endif
+   ! ELSEIF(P_behave(n).eq.1)THEN !TYPE 1. Surface oriented. Particle swims up
+   !     parBehav=ws_speed
+   !     if(P_zc .GT. targetlayerLOWERdepth) then
+   !        P_behave(n)=2  
+   !     endif
 
-      ELSEIF(P_behave(n).eq.2)THEN !TYPE 2. Stay within the Surface Layer
+      ELSEIF(P_behave(n).eq.2)THEN !TYPE 2. Follow chlorophyl gradient
          timer(n) =  timer(n)+DBLE(idt) 
          if((timer(n)>maxtimeatsurf) .or.    &   !IF((Behavior.EQ.9.and.timer(n)>30*86400) .or. &   
             (LarvSize(n)>maxsizeatsurf) )then   !   (Behavior.EQ.10.and.LarvSize(n)>8.0) )THEN    ! P_size>14.0 for nephrops
@@ -399,10 +425,14 @@ CONTAINS
 !              else
                    !swim up or down according to Chl gradient 
                    negpos = 1.0
-                   if(P_chl_gradient<0) negpos = -1.0
+                   if(abs(P_chl_gradient)>1e-8) then
+                     if(P_chl_gradient<0) negpos = -1.0
                    !P_Weight= 4.0 * PI * LarvSize(n)**3 / 3.0
                    !L = 0.0541 * log(P_Weight) + 0.6154
-                   parBehav= negpos * ws_speed ! m/s 
+                     parBehav= negpos * ws_speed ! m/s 
+                   else
+                     parBehav=0.0
+                   endif
 !              endif
          endif
 
@@ -471,7 +501,7 @@ CONTAINS
   SUBROUTINE behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,P_zb,P_zc,P_zf,        &
                     P_zetac,P_age,P_depth,P_U,P_V,P_angle,P_T,     &
                     n,it,ex,ix,          &
-                    daytime,p,bott,XBehav,YBehav,ZBehav,P_size,Fstlev)!,P_swdown)
+                    daytime,p,bott,XBehav,YBehav,ZBehav,P_size,Fstlev,klev)!,P_swdown)
     USE PARAM_MOD, ONLY: us,dt,idt,twistart,twiend,Em,pi,daylength,Kd,thresh,  &
                     Sgradient,swimfast,swimstart,sink,Hswimspeed,              &
                     Swimdepth,rise,surflayer_upperdepth,surflayer_lowerdepth,  &
@@ -490,7 +520,7 @@ CONTAINS
                                     Pwc_zf(:),P_zb,P_zc,P_zf,P_zetac,P_age,    &
                                     P_depth,P_U,P_V,P_angle,ex(3),ix(3) !,       &
                                     !P_grainsize ,P_swdown
-    INTEGER, INTENT(IN) :: n,it,p,Fstlev
+    INTEGER, INTENT(IN) :: n,it,p,Fstlev,klev
     LOGICAL, INTENT(OUT) :: bott
     DOUBLE PRECISION, INTENT(OUT) :: XBehav,YBehav,ZBehav,P_size
     
@@ -503,12 +533,6 @@ CONTAINS
     DOUBLE PRECISION :: P_T !not needed unless temperature code below is enabled
     DOUBLE PRECISION :: dtime,tst,E0,P_light
     DOUBLE PRECISION :: currentspeed,Hdistance,theta,X,Y
-    IF(Behavior.eq.12)THEN
-      call Ostrea_Edulis_behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,P_zb,P_zc,P_zf,        &
-                    P_zetac,P_age,P_depth,P_U,P_V,P_angle,P_T,     &
-                    n,it,ex,ix,          &
-                    daytime,p,bott,XBehav,YBehav,ZBehav,P_size,Fstlev)
-    ENDIF
 
     P_size=0.0
     !   ***************** Initialize Return Values
@@ -993,6 +1017,13 @@ CONTAINS
           end if
        end if
        bott = bottom(n)
+    ENDIF
+
+    IF(Behavior.eq.12)THEN
+      call Ostrea_Edulis_behave(Xpar,Ypar,Zpar,Pwc_zb,Pwc_zc,Pwc_zf,P_zb,P_zc,P_zf,        &
+                    P_zetac,P_age,P_depth,P_U,P_V,P_angle,P_T,     &
+                    n,it,ex,ix,          &
+                    daytime,p,bott,XBehav,YBehav,ZBehav,P_size,Fstlev,klev)
     ENDIF
 
 ! ******************* End Particle Behavior ******************************

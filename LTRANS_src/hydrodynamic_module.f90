@@ -5808,13 +5808,16 @@ CONTAINS
           IF(STATUS /= NF90_NOERR) WRITE(*,*) 'Problem createNetCDF: ',        &
                                               'GrainSize var'
           IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
+        ENDIF        
 
+        IF(Behavior.ge.8 .and. Behavior.le. 12)THEN
           STATUS = NF90_DEF_VAR(NCID,'Size',NF_FLOAT,                         &
                                 (/numparID,timeID/),psizeID)
           IF(STATUS /= NF90_NOERR) WRITE(*,*) 'Problem createNetCDF: ',        &
                                               'Size var'
           IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
-        ENDIF        
+        ENDIF       
+
         if(Write_coastdist)then
           STATUS = NF90_DEF_VAR(NCID,'CoastDist',NF_FLOAT,(/numparID,timeID/), &
                                 CoDiID)
@@ -5981,8 +5984,10 @@ CONTAINS
 
           STATUS=NF90_PUT_ATT(NCID,grsizeID, "field","GrainSize, scalar, series")
           IF(STATUS /= NF90_NOERR) WRITE(*,*) NF_STRERROR(STATUS)
+        ENDIF
 
 
+        IF(Behavior.ge.8 .and. Behavior.le.12)THEN
           !size
           write(*,*)'Output includes Part Size values'
           STATUS = NF90_PUT_ATT(NCID, psizeID, "long_name",                     &
