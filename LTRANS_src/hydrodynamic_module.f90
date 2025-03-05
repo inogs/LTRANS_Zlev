@@ -202,7 +202,7 @@ CONTAINS
     INTEGER, ALLOCATABLE, DIMENSION(:,:) :: r_ele,u_ele,v_ele
     !INTEGER, ALLOCATABLE, DIMENSION( : ) :: rho_mask,u_mask,v_mask  !ewn.v.2
     INTEGER :: k,nf,ios,waiting,nodestocopy,kbot,kmax,maxnodestocopy     !--- CL-OGS 
-    INTEGER :: old_i,old_j,old_count                                              !--- CL-OGS 
+    INTEGER :: old_i,old_j,old_count                                             !--- CL-OGS 
     DOUBLE PRECISION :: summask 
     DOUBLE PRECISION,DIMENSION(4) :: tmpcoef,oldtmpcoef
     character(len=1024) :: filename
@@ -348,7 +348,6 @@ CONTAINS
 
       ! mask on rho grid
       call netcdf_get_integer(NCID,vi,uj,us_tridim,1,mask_rho,'mask_rho')
-
       ! mask on u grid
       call netcdf_get_integer(NCID,ui,uj,us_tridim,1,mask_u,'mask_u')
 
@@ -7114,29 +7113,29 @@ CONTAINS
         interpol_uv=RUVnod
      endif
 
-    ELSE
+   ELSE
      one_if_MITgcm_Unodes=0    
      one_if_MITgcm_Vnodes=0     
-
+     nk_MITfile=nk
      if(nk==1)then
        start_index(3)=recordnum
        count_index(3)=incrstepf
      else
        start_index(3)=1
        start_index(4)=recordnum
-       count_index(3)=nk
+       count_index(3)=nk_MITfile
        count_index(4)=incrstepf
      endif
 
-    ENDIF
+   ENDIF
 
    if(Hydro_NetCDF)then
      varname=trim(var_name_in_netcdf(var_id))
      write(*,'(4a,3(a,i8))',advance='no')'read in NetCDF file var ',trim(varname),' from file',TRIM(filenm), &
-          ' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk
+          ' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk_MITfile
    else
      write(*,'(4a,3(a,i8))',advance='no')'read in MITgcm native binary file for var ',trim(explicit_var_name(var_id)),' from file',TRIM(filenm), &
-          ' for time record num=',start_index(4),':',start_index(4)+count_index(4)-1,' nk=',nk
+          ' for time record num=',start_index(4),':',start_index(4)+count_index(4)-1,' nk=',nk_MITfile
    endif
 
    if(interpol_uv.eq.0)then
@@ -7250,13 +7249,14 @@ CONTAINS
          stop
        endif
          STATUS = NF90_GET_VAR(NCID,VID,field(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod), &
-                         t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod),1:nk,tf1:tff),     &
+                         t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod),1:nk_MITfile,tf1:tff),     &
                          start_index,count_index )
        if (STATUS .NE. NF90_NOERR) then
          write(*,*) 'Problem reading ',varname
          write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
          write(*,*) ' j=',start_index(2),':',start_index(2)+count_index(2)-1
-         write(*,*) ' k=',1,':',nk
+         write(*,*) ' k=',start_index(3),':',start_index(3)+count_index(2)-1, &
+         'ie:',1,':',nk_MITfile
          write(*,*) ' t=',recordnum,':',recordnum+incrstepf-1
          write(*,*) NF90_STRERROR(STATUS)
          stop
