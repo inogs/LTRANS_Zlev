@@ -2877,7 +2877,7 @@ CONTAINS
            count = (j-1)*vi + i
            do k=1,us    
              kmask=min(k,us_tridim)
-             t_chl(t_f,count,k)  = (modelChlf(i,j,k,1) + DBLE(1000.0)) * m_r(i,j,kmask)
+             t_chl(t_f,count,k)  = (modelChlf(i,j,k,1)) * m_r(i,j,kmask)
           enddo
          enddo
        enddo
