@@ -116,13 +116,19 @@
   LOGICAL :: Wind            ! Include wind drift effects (T/F)
   LOGICAL :: WindIntensity   ! For Oil weathering use input Iwind intensity instead of calculating it from Uwind,Vwind
   DOUBLE PRECISION :: WindWeatherFac ! Wind Reduction Factor (between 0.0 and 1.0) applied to Oil Spill WEATHERING only 
-  DOUBLE PRECISION :: WindDriftFac ! Wind Drift factor, initially 0.035 in OILTRANS 
-  DOUBLE PRECISION :: WindDriftDev ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS
-  DOUBLE PRECISION :: Wind_hc      ! Wind_hc and Wind_ke used to create a vertical profile of wind drift with 100% wind drift in depth range [-hc, 0] m,
-  DOUBLE PRECISION :: Wind_ke      ! while bellow hc the exponential decay is ruled by Wind_ke following WindDrift = WindDrift0 * exp( |Wind_ke| * min( 0 , |Wind_hc|-Z) ) 
+  DOUBLE PRECISION :: WindDriftFac   ! Wind Drift factor, initially 0.035 in OILTRANS 
+  DOUBLE PRECISION :: WindDriftDev   ! Wind Drift deviation in degrees (offset to RHS of wind vector), initially 5.0 in OILTRANS
+  DOUBLE PRECISION :: Wind_hc        ! Wind_hc and Wind_ke used to create a vertical profile of wind drift with 100% wind drift in depth range [-hc, 0] m,
+  DOUBLE PRECISION :: Wind_ke        ! while bellow hc the exponential decay is ruled by Wind_ke following WindDrift = WindDrift0 * exp( |Wind_ke| * min( 0 , |Wind_hc|-Z) ) 
   LOGICAL          :: LinearVInterp  ! if True uses linear interpolation scheme on the vertical direction instead of the tension spline fitting.
-  DOUBLE PRECISION :: StokDriftFac ! Stokes Drift factor, initially 0.016 in OILTRANS 
-  LOGICAL :: Stokes             ! Include Stokes drift effects (T/F)
+  DOUBLE PRECISION :: StokDriftFac   ! Stokes Drift factor, initially 0.016 in OILTRANS 
+  LOGICAL :: Stokes                  ! Include Stokes drift effects (T/F)
+  CHARACTER(LEN=25):: Uvel_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25):: Vvel_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25):: Wvel_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25):: Uwind_location ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25):: VWind_location ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  LOGICAL :: read_wind_as_sustress_svstress ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
 !
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice
@@ -134,7 +140,9 @@
                     & PercentVel_under_z0,  &  !--- CL-OGS
                     & readIwind,constIwind,WindIntensity,WindWeatherFac,         &  !--- CL-OGS
                     & Wind_hc, Wind_ke, &
-                    & Stokes                                                        !--- CL-OGS
+                    & Stokes, &
+                    & Uvel_location,Vvel_location,Wvel_location, &
+                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress 
 
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)

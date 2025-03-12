@@ -58,6 +58,12 @@ CONTAINS
     namevar_Uwind = '' 
     namevar_Vwind = '' 
     namevar_Iwind = '' 
+    Uvel_location='undefined'
+    Vvel_location='undefined'
+    Wvel_location='undefined'
+    Uwind_location='undefined'
+    VWind_location='undefined'
+    read_wind_as_sustress_svstress=.False. 
     Adjele_fname='Adjacentelements.data'
     ADJele_file= .FALSE.
     habitatfile='NONE'
