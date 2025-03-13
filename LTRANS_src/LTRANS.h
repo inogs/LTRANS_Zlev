@@ -297,14 +297,24 @@
 !--- CL-OGS :               instead of re-computing them in the boundary module
   CHARACTER(LEN=200) :: ADJele_fname
   LOGICAL            :: ADJele_file  
-
-
+  CHARACTER(LEN=200) :: namevar_depth         ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_lon_rho       ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_lat_rho       ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_lon_u         ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_lat_u         ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_lon_v         ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_lat_v         ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_mask_rho      ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_mask_u        ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_mask_v        ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_Zcellcenter   ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=200) :: namevar_Zinterfaces   ! name of variable in NetCDF Input File  
 
   namelist/hydromodelgrid/NCgridfile, &
-           Zgrid,Zgrid_depthinterp,ADJele_fname,ADJele_file              !--- CL-OGS additional parameters
-
-
-
+           Zgrid,Zgrid_depthinterp,ADJele_fname,ADJele_file,&              !--- CL-OGS additional parameters
+           namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
+           namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
+           namevar_Zcellcenter,namevar_Zinterfaces   
 
 !  ** Hydro Model Predictions NetCDF Input File **
 !  Filename = dirin + prefix + filenum + suffix

@@ -746,6 +746,18 @@ $hydromodelgrid
                                     ! smoother (for Zgrid bathymetry only) 
   ADJele_fname= '[...]/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj256-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.               ! set to True if file already exists
+  namevar_depth       ='h'         ! Name of variable in input grid file 
+  namevar_lon_rho     ='lon_rho'   ! Name of variable in input grid file 
+  namevar_lat_rho     ='lat_rho'   ! Name of variable in input grid file 
+  namevar_lon_u       ='lon_u'     ! Name of variable in input grid file
+  namevar_lat_u       ='lat_u'     ! Name of variable in input grid file
+  namevar_lon_v       ='lon_v'     ! Name of variable in input grid file
+  namevar_lat_v       ='lat_v'     ! Name of variable in input grid file
+  namevar_mask_rho    ='mask_rho'  ! Name of variable in input grid file 
+  namevar_mask_u      ='mask_u'    ! Name of variable in input grid file 
+  namevar_mask_v      ='mask_v'    ! Name of variable in input grid file 
+  namevar_Zcellcenter ='Z'         ! Name of variable in input grid file 
+  namevar_Zinterfaces ='Zp1'       ! Name of variable in input grid file
 $end
 
 ```
