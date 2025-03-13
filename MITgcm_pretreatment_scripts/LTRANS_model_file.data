@@ -79,6 +79,12 @@ $hydroparam
   Stokes             = .FALSE.  ! if .TRUE. and Wind is .TRUE. then apply Stokes Drift
   LinearVInterp=.False.         ! if .TRUE. then TSPACK is disabled and a linear interpolation is performed 
                                 ! along the vertical direction instead of the tension spline fitting
+  Uvel_location='cell_interface_lower'                 ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Vvel_location='cell_interface_lower'                 ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Wvel_location='cell_interface_upper'                 ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Uwind_location='undefined'                ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  VWind_location='undefined'                ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  read_wind_as_sustress_svstress=.False.    ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
 $end
 
 

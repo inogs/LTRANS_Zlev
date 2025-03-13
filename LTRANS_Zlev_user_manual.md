@@ -503,6 +503,12 @@ $hydroparam
                                 ! linear interpolation is performed 
                                 ! along the vertical direction instead of the  
                                 ! tension spline fitting
+  Uvel_location='cell_interface_lower'    ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Vvel_location='cell_interface_lower'    ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Wvel_location='cell_interface_upper'    ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Uwind_location='undefined'              ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  VWind_location='undefined'              ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  read_wind_as_sustress_svstress=.False.  ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
 $end
 ```
 
@@ -518,8 +524,12 @@ New parameters specific to the Zlev version of LTRANS are
 - `WindDriftFac`, `WindDriftDev` and `StokDriftFac` allow to customize the wind drift factor and deviation (in degrees) to the right hand side of the wind vector, as well as the Stokes Drift Factor. 
 - `Wind_hc` and `Wind_ke` are used to create a vertical profile with 100% wind drift in depth range `[-|Wind_hc|,0] m`, while bellow `Wind_hc` an exponential decay ruled by the parameter `Wind_ke` is applied according to `WindDrift = WindDrift0 * exp( |Wind_ke| * min( 0 , Wind_hc-Z ) )` 
 - `LinearVInterp` flag, when set to `.True.`, enables the linear interpolation of the hydrodynamic fields in the vertical direction, instead of using the TSPACK tension spine fitting.
-
-
+- `Uvel_location` indicates the location of the current velocities Uvel that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
+- `Vvel_location` indicates the location of the current velocities Vvel that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
+- `Wvel_location` indicates the location of the current velocities Wvel that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
+- `Uwind_location` indicates the location of the wind velocities Uwind that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
+- `VWind_location` indicates the location of the wind velocities Vwind that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
+- `read_wind_as_sustress_svstress`, indicates if input wind is wind stress (`.True.` for ROMS wind files containing sustress,svstress), otherwise set to `.FALSE.`
 
 ##### 6.4 Turbulence parameters
 
