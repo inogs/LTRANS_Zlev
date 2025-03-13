@@ -746,18 +746,23 @@ $hydromodelgrid
                                     ! smoother (for Zgrid bathymetry only) 
   ADJele_fname= '[...]/LTRANS_Zlev/SIM/input/Adjacentelements-boxes_NiNj256-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.               ! set to True if file already exists
-  namevar_depth       ='h'         ! Name of variable in input grid file 
-  namevar_lon_rho     ='lon_rho'   ! Name of variable in input grid file 
-  namevar_lat_rho     ='lat_rho'   ! Name of variable in input grid file 
-  namevar_lon_u       ='lon_u'     ! Name of variable in input grid file
-  namevar_lat_u       ='lat_u'     ! Name of variable in input grid file
-  namevar_lon_v       ='lon_v'     ! Name of variable in input grid file
-  namevar_lat_v       ='lat_v'     ! Name of variable in input grid file
-  namevar_mask_rho    ='mask_rho'  ! Name of variable in input grid file 
-  namevar_mask_u      ='mask_u'    ! Name of variable in input grid file 
-  namevar_mask_v      ='mask_v'    ! Name of variable in input grid file 
-  namevar_Zcellcenter ='Z'         ! Name of variable in input grid file 
-  namevar_Zinterfaces ='Zp1'       ! Name of variable in input grid file
+  GridFile_depth       ='[...]/LTRANS_Zlev/SIM/input/bathymetry.nc'  ! name of Input File (optional, NCgridfile is read first)
+  GridFile_lon_rho     ='[...]/LTRANS_Zlev/SIM/input/coordinates.nc' ! name of Input File  (optional, NCgridfile is read first)
+  GridFile_lat_rho     ='[...]/LTRANS_Zlev/SIM/input/coordinates.nc' ! name of Input File (optional, NCgridfile is read first) 
+  GridFile_mask_rho    ='[...]/LTRANS_Zlev/SIM/input/mask.nc'        ! name of Input File (optional, NCgridfile is read first) 
+  GridFile_Zinterfaces ='[...]/LTRANS_Zlev/SIM/input/Zi.nc'          ! name of Input File (optional, NCgridfile is read first) 
+  namevar_depth       ='h'         ! Name of variable in input grid file, default is :'h'        
+  namevar_lon_rho     ='lon_rho'   ! Name of variable in input grid file, default is :'lon_rho'  
+  namevar_lat_rho     ='lat_rho'   ! Name of variable in input grid file, default is :'lat_rho'  
+  namevar_lon_u       ='lon_u'     ! Name of variable in input grid file, default is :'lon_u'   
+  namevar_lat_u       ='lat_u'     ! Name of variable in input grid file, default is :'lat_u'   
+  namevar_lon_v       ='lon_v'     ! Name of variable in input grid file, default is :'lon_v'   
+  namevar_lat_v       ='lat_v'     ! Name of variable in input grid file, default is :'lat_v'   
+  namevar_mask_rho    ='mask_rho'  ! Name of variable in input grid file, default is :'mask_rho' 
+  namevar_mask_u      ='mask_u'    ! Name of variable in input grid file, default is :'mask_u'   
+  namevar_mask_v      ='mask_v'    ! Name of variable in input grid file, default is :'mask_v'   
+  namevar_Zcellcenter ='Z'         ! Name of variable in input grid file, default is :'Z'        
+  namevar_Zinterfaces ='Zp1'       ! Name of variable in input grid file, default is :'Zp1'     
 $end
 
 ```
@@ -768,6 +773,19 @@ In the `hydromodelgrid` list, the parameters:
 
 - `Zgrid_depthinterp` enables the setup of a *smooth-interpolated* bathymetry instead of the sharp non-interpolated boundary for a Z grid.
 - `ADJele_fname` and `ADJele_file` were developed in the Zlev version to store the lists of adjacent elements and enable a quicker restart without recomputing this list at every new simulation.
+- `GridFile_depth`       : name of file containing variable `depth`, when it is not in NCgridfile
+- `GridFile_lon_rho`     : name of file containing variable `lon_rho`    , when it is not in NCgridfile  
+- `GridFile_lat_rho`     : name of file containing variable `lat_rho`    , when it is not in NCgridfile 
+- `GridFile_mask_rho`    : name of file containing variable `mask_rho`   , when it is not in NCgridfile 
+- `GridFile_Zinterfaces` : name of file containing variable `Zinterfaces`, when it is not in NCgridfile 
+- `GridFile_lon_u`       : name of file containing variable `lon_u`      , when it is not in NCgridfile 
+- `GridFile_lat_u`       : name of file containing variable `lat_u`      , when it is not in NCgridfile 
+- `GridFile_lon_v`       : name of file containing variable `lon_v`      , when it is not in NCgridfile 
+- `GridFile_lat_v`       : name of file containing variable `lat_v`      , when it is not in NCgridfile 
+- `GridFile_mask_u`      : name of file containing variable `mask_u`     , when it is not in NCgridfile 
+- `GridFile_mask_v`      : name of file containing variable `mask_v`     , when it is not in NCgridfile 
+- `GridFile_Zcellcenter` : name of file containing variable `Zcellcenter`, when it is not in NCgridfile 
+Note that the input of variables `lon_u`, `lat_u`, `lon_v`, `lat_v`, `mask_u`, `mask_v`, `Zcellcenter` is not compulsory, if not provided they will be reconstructed from the compulsory variables (`depth`, `lon=rho`, `lat_rho`, `mask_rho`, `Zcellinterface`)
 
 ##### 6.10 Hydrodynamic fields
 

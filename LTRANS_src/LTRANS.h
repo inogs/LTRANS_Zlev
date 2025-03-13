@@ -297,6 +297,18 @@
 !--- CL-OGS :               instead of re-computing them in the boundary module
   CHARACTER(LEN=200) :: ADJele_fname
   LOGICAL            :: ADJele_file  
+  CHARACTER(LEN=200) :: GridFile_depth        ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_lon_rho      ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_lat_rho      ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_lon_u        ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_lat_u        ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_lon_v        ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_lat_v        ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_mask_rho     ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_mask_u       ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_mask_v       ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_Zcellcenter  ! name of Input File  
+  CHARACTER(LEN=200) :: GridFile_Zinterfaces  ! name of Input File  
   CHARACTER(LEN=200) :: namevar_depth         ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_lon_rho       ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_lat_rho       ! name of variable in NetCDF Input File  
@@ -312,6 +324,9 @@
 
   namelist/hydromodelgrid/NCgridfile, &
            Zgrid,Zgrid_depthinterp,ADJele_fname,ADJele_file,&              !--- CL-OGS additional parameters
+           GridFile_depth,GridFile_lon_rho,GridFile_lat_rho,GridFile_lon_u,GridFile_lat_u,   & 
+           GridFile_lon_v,GridFile_lat_v,GridFile_mask_rho,GridFile_mask_u,GridFile_mask_v,   &
+           GridFile_Zcellcenter,GridFile_Zinterfaces,                                      &   
            namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
            namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
            namevar_Zcellcenter,namevar_Zinterfaces   

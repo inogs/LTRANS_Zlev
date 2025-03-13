@@ -229,6 +229,30 @@ $hydromodelgrid
                                                               !       smoother (for Zgrid bathymetry only) 
   ADJele_fname= 'INPUTDIRECTORY/Adjacentelements-IDENTIFIER-c1.data' ! Binary file of adjacent element matrix
   ADJele_file= .FALSE.                                        ! set to True if file already exists
+ !GridFile_depth       =''
+ !GridFile_lon_rho     =''
+ !GridFile_lat_rho     =''
+ !GridFile_lon_u       =''
+ !GridFile_lat_u       =''
+ !GridFile_lon_v       =''
+ !GridFile_lat_v       =''
+ !GridFile_mask_rho    =''
+ !GridFile_mask_u      =''
+ !GridFile_mask_v      =''
+ !GridFile_Zcellcenter =''
+ !GridFile_Zinterfaces ='' 
+ !namevar_depth       ='h' 
+ !namevar_lon_rho     ='lon_rho' 
+ !namevar_lat_rho     ='lat_rho' 
+ !namevar_lon_u       ='lon_u' 
+ !namevar_lat_u       ='lat_u' 
+ !namevar_lon_v       ='lon_v' 
+ !namevar_lat_v       ='lat_v' 
+ !namevar_mask_rho    ='mask_rho' 
+ !namevar_mask_u      ='mask_u' 
+ !namevar_mask_v      ='mask_v' 
+ !namevar_Zcellcenter ='Z' 
+ !namevar_Zinterfaces ='Zp1' 
 $end
 
 

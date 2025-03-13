@@ -182,6 +182,9 @@ CONTAINS
         OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum,         &                !--- CL-OGS
         readZeta,readSalt,readTemp,readDens,readU,readV,readW, &
         readAks,readIwind,readUwind,readVwind,                              &       !--- CL-OGS
+        GridFile_depth,GridFile_lon_rho,GridFile_lat_rho,GridFile_lon_u,GridFile_lat_u,   & 
+        GridFile_lon_v,GridFile_lat_v,GridFile_mask_rho,GridFile_mask_u,GridFile_mask_v,   &
+        GridFile_Zcellcenter,GridFile_Zinterfaces,                                      &   
         namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
         namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
         namevar_Zcellcenter,namevar_Zinterfaces   
@@ -212,7 +215,7 @@ CONTAINS
     DOUBLE PRECISION :: summask 
     DOUBLE PRECISION,DIMENSION(4) :: tmpcoef,oldtmpcoef
     character(len=1024) :: filename
-    integer :: ierr
+    integer :: ierr,NCIDvar
     !ALLOCATE MODULE VARIABLES
     !--- CL-OGS :
     ! CL-OGS: Added for OMP
@@ -330,19 +333,17 @@ CONTAINS
 
     ! *************************** READ IN GRID INFO **************************
 
-    call netcdf_open(NCgridfile,NCID)
-
       ! Depth (m)
-      call netcdf_get_double(NCID,vi,uj,1,1,euleriandepth,namevar_depth)
+      call netcdf_get_double(vi,uj,1,1,euleriandepth,namevar_depth,NCgridfile,alternative_filename=GridFile_depth)
 
       ! longitude at rho (°)
-      call netcdf_get_double(NCID,vi,uj,1,1,lon_rho,namevar_lon_rho)
+      call netcdf_get_double(vi,uj,1,1,lon_rho,namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho)
 
       ! latitude at rho (°)
-      call netcdf_get_double(NCID,vi,uj,1,1,lat_rho,namevar_lat_rho)
+      call netcdf_get_double(vi,uj,1,1,lat_rho,namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho)
 
       ! longitude at u (°)
-      call netcdf_get_double(NCID,ui,uj,1,1,lon_u,namevar_lon_u,return_error=ierr)
+      call netcdf_get_double(ui,uj,1,1,lon_u,namevar_lon_u,NCgridfile,alternative_filename=GridFile_lon_u,return_error=ierr)
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
         write(*,*)'lon_u computed from lon_rho'
        do j=1,uj
@@ -353,7 +354,7 @@ CONTAINS
       endif
 
       ! latitude at u (°)
-      call netcdf_get_double(NCID,ui,uj,1,1,lat_u,namevar_lat_u,return_error=ierr)
+      call netcdf_get_double(ui,uj,1,1,lat_u,namevar_lat_u,NCgridfile,alternative_filename=GridFile_lat_u,return_error=ierr)
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
         write(*,*)'lat_u computed from lon_rho'
        do j=1,uj
@@ -364,7 +365,7 @@ CONTAINS
       endif
 
       ! longitude at v (°)
-      call netcdf_get_double(NCID,vi,vj,1,1,lon_v,namevar_lon_v,return_error=ierr)
+      call netcdf_get_double(vi,vj,1,1,lon_v,namevar_lon_v,NCgridfile,alternative_filename=GridFile_lon_v,return_error=ierr)
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
         write(*,*)'lon_v computed from lon_rho'
        do j=1,vj
@@ -375,7 +376,7 @@ CONTAINS
       endif
 
       ! latitude at v (°)
-      call netcdf_get_double(NCID,vi,vj,1,1,lat_v,namevar_lat_v,return_error=ierr)
+      call netcdf_get_double(vi,vj,1,1,lat_v,namevar_lat_v,NCgridfile,alternative_filename=GridFile_lat_v,return_error=ierr)
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
         write(*,*)'lat_v computed from lon_rho'
        do j=1,vj
@@ -386,10 +387,10 @@ CONTAINS
       endif
 
       ! mask on rho grid
-      call netcdf_get_integer(NCID,vi,uj,us_tridim,1,mask_rho,namevar_mask_rho)
+      call netcdf_get_integer(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
       
       ! mask on u grid
-      call netcdf_get_integer(NCID,ui,uj,us_tridim,1,mask_u,namevar_mask_u,return_error=ierr)
+      call netcdf_get_integer(ui,uj,us_tridim,1,mask_u,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
        write(*,*)'mask_u computed from lon_rho'
        do j=1,uj
@@ -402,7 +403,7 @@ CONTAINS
       endif
       
       ! mask on v grid
-      call netcdf_get_integer(NCID,vi,vj,us_tridim,1,mask_v,namevar_mask_v,return_error=ierr)
+      call netcdf_get_integer(vi,vj,us_tridim,1,mask_v,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
        write(*,*)'mask_v computed from lon_rho'
        do j=1,vj
@@ -421,13 +422,19 @@ CONTAINS
           stop
         endif
 
-        ! Z-coordinate on rho grid (Z) : cell-centered coordinates
-        call netcdf_get_double(NCID,us,1,1,1,ZC(1:us),namevar_Zcellcenter)
-
         ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-        call netcdf_get_double(NCID,ws,1,1,1,ZW(1:ws),namevar_Zinterfaces)
+        call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces)
 
-        !call netcdf_get_integer(NCID,vi,uj,3,1,BottomK,'KBottomRUV')
+        ! Z-coordinate on rho grid (Z) : cell-centered coordinates
+        call netcdf_get_double(us,1,1,1,ZC(1:us),namevar_Zcellcenter,NCgridfile,alternative_filename=GridFile_Zcellcenter,return_error=ierr)
+        if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+          write(*,*)'Zcellcenter computed from Zinterfaces'
+          do k=1,us_tridim
+           ZC(k)=0.5*(ZW(k)+ZW(k+1))
+          enddo
+        endif
+
+        !call netcdf_get_integer(vi,uj,3,1,BottomK,'KBottomRUV')
         BottomK(:,:,:) = ws
         do j=1,uj
         do i=1,vi
@@ -468,16 +475,13 @@ CONTAINS
           stop
         endif
         ! angle between x-coordinate and true east direction (radian)
-        call netcdf_get_double(NCID,vi,uj,1,1,angle,'angle')
+        call netcdf_get_double(vi,uj,1,1,angle,'angle',NCgridfile)
       endif
 
-    call netcdf_close(NCID)
 
     ! *************************** READ IN GRAIN SIZE FILE ********************
     if(read_GrainSize)then
-      call netcdf_open(GrainSize_fname,NCID)
-      call netcdf_get_double(NCID,vi,uj,1,1,GrainSize_tmp,'GrainSize')
-      call netcdf_close(NCID)
+      call netcdf_get_double(vi,uj,1,1,GrainSize_tmp,'GrainSize',NCgridfile)
     endif
 
 
@@ -512,22 +516,19 @@ CONTAINS
          stop 'Aborting'
       endif
 
-      call netcdf_open(filenm,NCID)
-
       ! s-coordinate on rho grid (sc_r)
-      call netcdf_get_double(NCID,us,1,1,1,SC,'s_rho','sc_r')
+      call netcdf_get_double(us,1,1,1,SC,'s_rho',filenm,alternative_varname='sc_r')
 
       ! Cs value on rho grid (Cs_r)
-      call netcdf_get_double(NCID,us,1,1,1,CS,'Cs_r')
+      call netcdf_get_double(us,1,1,1,CS,'Cs_r',filenm)
 
       ! s-coordinate on w grid (sc_w)
-      call netcdf_get_double(NCID,ws,1,1,1,SCW,'s_w','sc_w')
+      call netcdf_get_double(ws,1,1,1,SCW,'s_w',filenm,alternative_varname='sc_w')
 
       ! Cs value on w grid (Cs_w)
-      call netcdf_get_double(NCID,ws,1,1,1,CSW,'Cs_w')
+      call netcdf_get_double(ws,1,1,1,CSW,'Cs_w',filenm)
 
       !close the dataset and reassign the NCID
-      call netcdf_close(NCID)
     endif
 
     ! *************************** CREATE ELEMENTS *****************************
@@ -7519,18 +7520,19 @@ CONTAINS
     endif
   END SUBROUTINE
 
-  SUBROUTINE netcdf_get_double(NCID,n1,n2,n3,n4,field,varname,alternative_varname,return_error)
+  SUBROUTINE netcdf_get_double(n1,n2,n3,n4,field,varname,filename,alternative_filename,alternative_varname,return_error)
     USE netcdf
     IMPLICIT NONE
     INCLUDE 'netcdf.inc'
 
-    integer, intent(in) :: NCID 
     integer, intent(in):: n1,n2,n3,n4
     double precision, intent(inout):: field(n1,n2,n3,n4)
     character(*),intent(in) :: varname
+    character(*),intent(in) :: filename
+    character(*),intent(in),optional :: alternative_filename
     character(*),intent(in),optional :: alternative_varname
     integer,intent(inout),optional :: return_error
-    integer :: STATUS,VID
+    integer :: STATUS,VID,NCID
      ! check that the field shape was correctly announced 
       if( ( n1==1 .and. n2>1 ) .or. &
           ( n2==1 .and. n3>1 ) .or. &
@@ -7540,17 +7542,29 @@ CONTAINS
              stop
       endif
       if(present(return_error))return_error=0
+      call netcdf_open(filename,NCID)
       STATUS = NF90_INQ_VARID(NCID,varname,VID)
       if (STATUS .NE. NF90_NOERR) then
           if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
           if (STATUS .NE. NF90_NOERR) then
-            write(*,*) 'Problem find ',varname
-            write(*,*) NF90_STRERROR(STATUS)
-            if(present(return_error))then
-              return_error=VAR_NOT_FOUND
-              return
-            else
-              stop
+            call netcdf_close(NCID)
+            if(PRESENT(alternative_filename))then
+              call netcdf_open(alternative_filename,NCID)
+              STATUS = NF90_INQ_VARID(NCID,varname,VID)
+              if (STATUS .NE. NF90_NOERR) then
+                if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
+                if (STATUS .NE. NF90_NOERR) then
+                  call netcdf_close(NCID)
+                  write(*,*) 'Problem find ',varname
+                  write(*,*) NF90_STRERROR(STATUS)
+                  if(present(return_error))then
+                    return_error=VAR_NOT_FOUND
+                    return
+                  else
+                    stop
+                  endif
+                endif
+              endif
             endif
           endif
       endif
@@ -7565,20 +7579,22 @@ CONTAINS
               stop
             endif
       endif
+      call netcdf_close(NCID)
   END SUBROUTINE
 
-  SUBROUTINE netcdf_get_integer(NCID,n1,n2,n3,n4,field,varname,alternative_varname,return_error)
+  SUBROUTINE netcdf_get_integer(n1,n2,n3,n4,field,varname,filename,alternative_filename,alternative_varname,return_error)
     USE netcdf
     IMPLICIT NONE
     INCLUDE 'netcdf.inc'
 
-    integer, intent(in) :: NCID 
     integer, intent(in):: n1,n2,n3,n4
     integer, intent(inout):: field(n1,n2,n3,n4)
     character(*),intent(in) :: varname
+    character(*),intent(in) :: filename
+    character(*),intent(in),optional :: alternative_filename
     character(*),intent(in),optional :: alternative_varname
     integer,intent(inout),optional :: return_error
-    integer :: STATUS,VID
+    integer :: STATUS,VID,NCID
      ! check that the field shape was correctly announced 
       if( ( n1==1 .and. n2>1 ) .or. &
           ( n2==1 .and. n3>1 ) .or. &
@@ -7588,17 +7604,29 @@ CONTAINS
              stop
       endif
       if(present(return_error))return_error=0
+      call netcdf_open(filename,NCID)
       STATUS = NF90_INQ_VARID(NCID,varname,VID)
       if (STATUS .NE. NF90_NOERR) then
           if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
           if (STATUS .NE. NF90_NOERR) then
-            write(*,*) 'Problem find ',varname
-            write(*,*) NF90_STRERROR(STATUS)
-            if(present(return_error))then
-              return_error=VAR_NOT_FOUND
-              return
-            else
-              stop
+            call netcdf_close(NCID)
+            if(PRESENT(alternative_filename))then
+              call netcdf_open(alternative_filename,NCID)
+              STATUS = NF90_INQ_VARID(NCID,varname,VID)
+              if (STATUS .NE. NF90_NOERR) then
+                if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
+                if (STATUS .NE. NF90_NOERR) then
+                  call netcdf_close(NCID)
+                  write(*,*) 'Problem find ',varname
+                  write(*,*) NF90_STRERROR(STATUS)
+                  if(present(return_error))then
+                    return_error=VAR_NOT_FOUND
+                    return
+                  else
+                    stop
+                  endif
+                endif
+              endif
             endif
           endif
       endif
@@ -7613,6 +7641,7 @@ CONTAINS
             stop
           endif
       endif
+      call netcdf_close(NCID)
   END SUBROUTINE
 
   SUBROUTINE netcdf_close(NCID)
