@@ -368,7 +368,39 @@ CONTAINS
         ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
         call netcdf_get_double(NCID,ws,1,1,1,ZW(1:ws),'Zp1')
 
-        call netcdf_get_integer(NCID,vi,uj,3,1,BottomK,'KBottomRUV')
+        !call netcdf_get_integer(NCID,vi,uj,3,1,BottomK,'KBottomRUV')
+        BottomK(:,:,:) = ws
+        do j=1,uj
+        do i=1,vi
+          do k=1,us_tridim
+            if(mask_rho(i,j,k)>0.5)then
+              BottomK(i,j,1)=k   
+              exit
+            endif            
+          enddo
+        enddo
+        enddo
+        do j=1,uj
+        do i=1,ui
+          do k=1,us_tridim
+            if(mask_u(i,j,k)>0.5)then
+              BottomK(i,j,2)=k   
+              exit
+            endif            
+          enddo
+        enddo
+        enddo
+   
+        do j=1,vj
+        do i=1,vi
+          do k=1,us_tridim
+            if(mask_v(i,j,k)>0.5)then
+              BottomK(i,j,3)=k   
+              exit
+            endif            
+          enddo
+        enddo
+        enddo
 
       else          !--- CL-OGS: angle read only for ROMS files  
         if(Vtransform.eq.0)then
