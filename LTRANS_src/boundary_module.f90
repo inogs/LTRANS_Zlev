@@ -2341,7 +2341,7 @@ END SUBROUTINE getNext
     start = 0              !initialize start to 0
 
     coastdist=9999999.
-    do
+    do while(i .le. max_mbnd_pts-2)   
       i = i + 1            !iterate through main boundary points
       endMbnd = .FALSE.
       if(i == tot_mbnd_pts(klev))then
