@@ -88,6 +88,7 @@ CONTAINS
     namevar_mask_v      ='mask_v' 
     namevar_Zcellcenter ='Z' 
     namevar_Zinterfaces ='Zp1' 
+    input_masks_format='integer'
     Adjele_fname='Adjacentelements.data'
     ADJele_file= .FALSE.
     habitatfile='NONE'

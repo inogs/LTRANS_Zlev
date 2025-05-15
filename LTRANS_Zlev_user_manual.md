@@ -509,6 +509,7 @@ $hydroparam
   Uwind_location='undefined'              ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   VWind_location='undefined'              ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   read_wind_as_sustress_svstress=.False.  ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
+  input_masks_format='integer' ! format of the grid masks read in the netcdf, must be either 'integer' or 'dble_prec'
 $end
 ```
 
@@ -530,6 +531,7 @@ New parameters specific to the Zlev version of LTRANS are
 - `Uwind_location` indicates the location of the wind velocities Uwind that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
 - `VWind_location` indicates the location of the wind velocities Vwind that are read in input, can be: `cell_center`, `cell_interface_all`, `cell_interface_lower` or `cell_interface_upper`
 - `read_wind_as_sustress_svstress`, indicates if input wind is wind stress (`.True.` for ROMS wind files containing sustress,svstress), otherwise set to `.FALSE.`
+- `input_masks_format='integer'` indicates the format of the grid masks read in the netcdf, must be either 'integer' or 'dble_prec'
 
 ##### 6.4 Turbulence parameters
 

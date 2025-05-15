@@ -110,13 +110,13 @@ ifdef INTEL_g100
    F90C = ifort
    CC = icc
    ifdef Debug
-     DEBUGFLAGS= -g -check all -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB -assume byterecl
+     DEBUGFLAGS= -g -check all  -O0  -init=snan,arrays -traceback -debug all -check uninit -check bounds -check pointer -trace -qopt-report=5 -qopt-report-phase=all -fp-stack-check -fpe0 -ftrapuv -CB -assume byterecl
    endif
    ifdef DebugOptimized
      DEBUGFLAGS= -g -traceback -trace -fpe0 -ftrapuv   -ggdb -g3  -check all -debug all -assume byterecl
    endif
    ifdef DebugO0
-     DEBUGFLAGS= -g -trace -traceback -fpe0 -fp-stack-check -ftrapuv -CB -qopt-report=5 -qopt-report-phase=all  -assume byterecl
+     DEBUGFLAGS= -g -trace  -O0  -init=snan,arrays -traceback -fpe0 -fp-stack-check -ftrapuv -CB -qopt-report=5 -qopt-report-phase=all  -assume byterecl
    endif
   else
    FC = gfortran

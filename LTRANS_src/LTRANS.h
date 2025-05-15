@@ -129,6 +129,7 @@
   CHARACTER(LEN=25):: Uwind_location ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   CHARACTER(LEN=25):: VWind_location ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   LOGICAL :: read_wind_as_sustress_svstress ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
+   CHARACTER(LEN=20) :: input_masks_format !--- CL-OGS: 'integer' or 'dble_prec'
 !
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice
@@ -142,8 +143,8 @@
                     & Wind_hc, Wind_ke, &
                     & Stokes, &
                     & Uvel_location,Vvel_location,Wvel_location, &
-                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress 
-
+                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress, 
+                    & input_masks_format
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
   LOGICAL          :: VTurbOn       ! Vertical   Turbulence on (.TRUE.) or off (.FALSE.)

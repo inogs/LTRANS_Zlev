@@ -187,7 +187,7 @@ CONTAINS
         GridFile_Zcellcenter,GridFile_Zinterfaces,                                      &   
         namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
         namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
-        namevar_Zcellcenter,namevar_Zinterfaces   
+        namevar_Zcellcenter,namevar_Zinterfaces,input_masks_format   
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
     USE netcdf
@@ -206,6 +206,7 @@ CONTAINS
 !--- CL-OGS:  extension to third dimension of the masks
 !    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask_u, mask_v
     INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask_u, mask_v
+    DOUBLE PRECISION,ALLOCATABLE, DIMENSION(:,:,:) :: mask_rho_dble,mask_u_dble, mask_v_dble
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: lon_rho,lat_rho,lon_u,    &
                                                      lat_u,lon_v,lat_v
     INTEGER, ALLOCATABLE, DIMENSION(:,:) :: r_ele,u_ele,v_ele
@@ -300,6 +301,9 @@ CONTAINS
     ALLOCATE(euleriandepth(vi,uj))
     ALLOCATE(mask_u(ui,uj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
     ALLOCATE(mask_v(vi,vj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
+    ALLOCATE(mask_rho_dble(vi,uj,us_tridim))                  !--- CL-OGS:  extension to third dimension    
+    ALLOCATE(mask_u_dble(ui,uj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
+    ALLOCATE(mask_v_dble(vi,vj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
     ALLOCATE(x_rho(vi,uj))
     ALLOCATE(y_rho(vi,uj))
     ALLOCATE(lon_rho(vi,uj))
@@ -387,10 +391,24 @@ CONTAINS
       endif
 
       ! mask on rho grid
-      call netcdf_get_integer(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
+      select case(input_masks_format)
+        case('integer')
+          call netcdf_get_integer(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
+        case('dble_prec')
+          call netcdf_get_double(vi,uj,us_tridim,1,mask_rho_dble,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
+          mask_rho(:,:,:)=mask_rho_dble(:,:,:)
+        case default
+          write(*,*)'ERROR input_masks_format must be either integer or dble_prec'
+      end select
       
       ! mask on u grid
-      call netcdf_get_integer(ui,uj,us_tridim,1,mask_u,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
+      select case(input_masks_format)
+        case('integer')
+          call netcdf_get_integer(ui,uj,us_tridim,1,mask_u,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
+        case('dble_prec')
+          call netcdf_get_double(ui,uj,us_tridim,1,mask_u_dble,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
+          mask_u(:,:,:)=mask_u_dble(:,:,:)
+      end select
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
        write(*,*)'mask_u computed from lon_rho'
        do j=1,uj
@@ -403,7 +421,13 @@ CONTAINS
       endif
       
       ! mask on v grid
-      call netcdf_get_integer(vi,vj,us_tridim,1,mask_v,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
+      select case(input_masks_format)
+        case('integer')
+          call netcdf_get_integer(vi,vj,us_tridim,1,mask_v,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
+        case('dble_prec')
+          call netcdf_get_double(vi,vj,us_tridim,1,mask_v_dble,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
+          mask_v(:,:,:)=mask_v_dble(:,:,:)
+      end select
       if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
        write(*,*)'mask_v computed from lon_rho'
        do j=1,vj
@@ -422,20 +446,32 @@ CONTAINS
           stop
         endif
 
-        ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-        call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces)
-
         ! Z-coordinate on rho grid (Z) : cell-centered coordinates
         call netcdf_get_double(us,1,1,1,ZC(1:us),namevar_Zcellcenter,NCgridfile,alternative_filename=GridFile_Zcellcenter,return_error=ierr)
         if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+          ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
+          call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+          if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+            stop 'could not read neither Z nor ZW array'
+          endif
           write(*,*)'Zcellcenter computed from Zinterfaces'
           do k=1,us_tridim
            ZC(k)=0.5*(ZW(k)+ZW(k+1))
           enddo
         endif
 
+        ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
+        call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+        if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+          write(*,*)'Zinterface computed from Zcell-center'
+          stop 'not yet implemented'
+          !do k=2,us_tridim
+          ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
+          !enddo
+        endif
+
         !call netcdf_get_integer(vi,uj,3,1,BottomK,'KBottomRUV')
-        BottomK(:,:,:) = ws
+        BottomK(:,:,:) = ws_tridim
         do j=1,uj
         do i=1,vi
           do k=1,us_tridim
@@ -1209,10 +1245,14 @@ CONTAINS
     r_kwele_y=0.0
     do k=1,us_tridim                      !--- CL-OGS: extention to 3d
     do j=1,rho_kwele(k)                   !--- CL-OGS: extention to 3d
-      do i=1,4                                          !z2v3.3
-        r_kwele_x(i,j,k) = rx(RE(i,j,k))  !--- CL-OGS: extention to 3d
-        r_kwele_y(i,j,k) = ry(RE(i,j,k))  !--- CL-OGS: extention to 3d
-      enddo
+        r_kwele_x(1,j,k) = rx(RE(1,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_x(2,j,k) = rx(RE(2,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_x(3,j,k) = rx(RE(3,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_x(4,j,k) = rx(RE(4,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_y(1,j,k) = ry(RE(1,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_y(2,j,k) = ry(RE(2,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_y(3,j,k) = ry(RE(3,j,k))  !--- CL-OGS: extention to 3d
+        r_kwele_y(4,j,k) = ry(RE(4,j,k))  !--- CL-OGS: extention to 3d
     enddo
     enddo
 
@@ -1239,10 +1279,14 @@ CONTAINS
     u_kwele_y=0.0
     do k=1,us_tridim                     !--- CL-OGS: extention to 3d
     do j=1,u_kwele(k)                    !--- CL-OGS: extention to 3d
-      do i=1,4                                          !z2v3.3
-        u_kwele_x(i,j,k) = ux(UE(i,j,k)) !--- CL-OGS: extention to 3d
-        u_kwele_y(i,j,k) = uy(UE(i,j,k)) !--- CL-OGS: extention to 3d
-      enddo
+        u_kwele_x(1,j,k) = ux(UE(1,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_x(2,j,k) = ux(UE(2,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_x(3,j,k) = ux(UE(3,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_x(4,j,k) = ux(UE(4,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_y(1,j,k) = uy(UE(1,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_y(2,j,k) = uy(UE(2,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_y(3,j,k) = uy(UE(3,j,k)) !--- CL-OGS: extention to 3d
+        u_kwele_y(4,j,k) = uy(UE(4,j,k)) !--- CL-OGS: extention to 3d
     enddo
     enddo
  
@@ -1268,10 +1312,14 @@ CONTAINS
     v_kwele_y=0.0
     do k=1,us_tridim                     !--- CL-OGS: extention to 3d
     do j=1,v_kwele(k)                    !--- CL-OGS: extention to 3d
-      do i=1,4                                          !z2v3.3
-        v_kwele_x(i,j,k) = vx(VE(i,j,k)) !--- CL-OGS: extention to 3d
-        v_kwele_y(i,j,k) = vy(VE(i,j,k)) !--- CL-OGS: extention to 3d
-      enddo
+        v_kwele_x(1,j,k) = vx(VE(1,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_x(2,j,k) = vx(VE(2,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_x(3,j,k) = vx(VE(3,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_x(4,j,k) = vx(VE(4,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_y(1,j,k) = vy(VE(1,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_y(2,j,k) = vy(VE(2,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_y(3,j,k) = vy(VE(3,j,k)) !--- CL-OGS: extention to 3d
+        v_kwele_y(4,j,k) = vy(VE(4,j,k)) !--- CL-OGS: extention to 3d
     enddo
     enddo
  
@@ -1279,16 +1327,17 @@ CONTAINS
       do k=1,us_tridim
           write (filename, "(a,i0.3,a)") 'v_kwele_',k,'.csv'
           open(110,file=trim(filename),position='append',status='replace')
-          write(110,*) 'k, lon, lat,ele,v_node_1,v_node_2,v_node_3,v_node_4'
+          write(110,*) 'k, lon, lat,ele,v_node_1,v_node_2,v_node_3,v_node_4,x1,x2,x3,x4,y1,y2,y3,y4'
           do j=1,v_kwele(k)
-            write(110,"(i4,',',2(F10.5,','),5(i7,','))") k,                    &
+            write(110,"(i4,2(',',F10.5),5(',',i7),8(',',F10.2))") k,    &
                           x2lon(0.25*(v_kwele_x(1,j,k)+v_kwele_x(2,j,k)+       &
                                    v_kwele_x(3,j,k)+v_kwele_x(4,j,k)),         &
                           0.25*(v_kwele_y(1,j,k)+v_kwele_y(2,j,k)+             &
                                     v_kwele_y(3,j,k)+v_kwele_y(4,j,k))),       &
                           y2lat(0.25*(v_kwele_y(1,j,k)+v_kwele_y(2,j,k)+       &
                                     v_kwele_y(3,j,k)+v_kwele_y(4,j,k))),       &
-                                   j,VE(1,j,k),VE(2,j,k),VE(3,j,k),VE(4,j,k)
+                                   j,VE(1,j,k),VE(2,j,k),VE(3,j,k),VE(4,j,k),  &
+                                   v_kwele_x(:,j,k),v_kwele_y(:,j,k)
           enddo
           CLOSE(110)   
       enddo
@@ -1427,6 +1476,7 @@ CONTAINS
     !ff=123456
     !open (unit = ff, file = 'part_not_in_ele.py')
     !write(ff,'(a)')'import matplotlib.pyplot as plt'
+    deallocate(mask_rho_dble,mask_u_dble, mask_v_dble)
   END SUBROUTINE initGrid
 
 
@@ -1528,6 +1578,14 @@ CONTAINS
     ALLOCATE(romU(ui,uj,us,3))
     ALLOCATE(romV(vi,vj,us,3))
     ALLOCATE(romKH(vi,uj,ws,3))
+    romZ=0
+    romW=0
+    romS=0
+    romT=0
+    romD=0
+    romU=0
+    romV=0
+    romKH=0
     ALLOCATE(tmpvec(vi)) !--- CL-OGS 
     ALLOCATE(dbltmpvec(vi)) !--- CL-OGS 
 
@@ -1538,6 +1596,8 @@ CONTAINS
       t_vwind = 0 
       ALLOCATE(modelUwind(ui,uj,3))  
       ALLOCATE(modelVwind(vi,vj,3))  
+      modelUwind =0
+      modelVwind =0
     !endif
       ALLOCATE(modelIwind(vi,uj,3))
     if(WindIntensity .and. Zgrid)then
@@ -2365,6 +2425,17 @@ CONTAINS
     ALLOCATE(modelUwindf(ui,uj,1))
     ALLOCATE(modelVwindf(vi,vj,1))
     ALLOCATE(modelIwindf(vi,uj,1)) 
+    romZf=0
+    romSf=0
+    romTf=0
+    romDf=0
+    romUf=0
+    romVf=0
+    romWf=0
+    romKHf=0
+    modelUwindf=0
+    modelVwindf=0
+    modelIwindf=0
     ALLOCATE(tmpvec(vi))
     ALLOCATE(dbltmpvec(vi))
     if(OilOn)then! .and. WindWaveModel)then
@@ -4479,8 +4550,11 @@ CONTAINS
     !  of U,V,W velocities at particle x-y location and find value at particle
     P_vb=0.0
     SigErr=0
-    IF(nN>=3)then
-      CALL TSPSI (nN,abb_zb,abb_vb,YP,SIGM,IER,SigErr)
+    IF(nN>=3)then  
+     !if(abb_vb(1)>0)then
+     !  continue
+     !endif
+     CALL TSPSI (nN,abb_zb,abb_vb,YP,SIGM,IER,SigErr)
       IF (SigErr.EQ.0) THEN
         P_vb = HVAL (P_zb,nN,abb_zb,abb_vb,YP,SIGM,IER)
       ENDIF
@@ -6709,8 +6783,8 @@ CONTAINS
       OPEN(110,FILE='rho_nodes.csv',POSITION='APPEND',status='replace')
        write(110,*) 'lon, lat, depth, count, i, j'
        count = 0
-       do j=1,uj-1                         !z2v3.2
-       do i=1,vi-1
+       do j=1,uj                         !z2v3.2
+       do i=1,vi
         count = count + 1
        !r_ele(1,count) = i + (j-1)*vi
        !r_ele(2,count) = i + 1 + (j-1)*vi
@@ -6727,8 +6801,8 @@ CONTAINS
       OPEN(110,FILE='u_nodes.csv',POSITION='APPEND',status='replace')
        write(110,*) 'lon, lat, depth, count, i, j'
         count = 0
-        do j=1,uj-1                         !z2v3.2
-          do i=1,ui-1
+        do j=1,uj                        !z2v3.2
+          do i=1,ui
             count = count + 1
             write(110,"(3(F10.5,','),3(i7,','))") &
                           x2lon(ux(count),uy(count)),         &
@@ -6739,16 +6813,16 @@ CONTAINS
         enddo
       CLOSE(110)
       OPEN(110,FILE='v_nodes.csv',POSITION='APPEND',status='replace')
-       write(110,*) 'lon, lat, depth, count, i, j'
+       write(110,*) 'lon, lat, depth, count, i, j, x, y'
         count = 0
-        do j=1,vj-1                         !z2v3.2
-          do i=1,vi-1
+        do j=1,vj                         !z2v3.2
+          do i=1,vi
             count = count + 1
-            write(110,"(3(F10.5,','),3(i7,','))") &
+            write(110,"(3(F12.5,','),3(i7,','),F10.2,',',F10.2)") &
                           x2lon(vx(count),vy(count)),         &
                           y2lat(vy(count)),                   &
                           depthV(count),                      &
-                            count,i,j
+                            count,i,j,vx(count),vy(count)
           enddo
         enddo
       CLOSE(110)
