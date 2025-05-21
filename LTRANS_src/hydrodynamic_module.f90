@@ -187,7 +187,7 @@ CONTAINS
         GridFile_Zcellcenter,GridFile_Zinterfaces,                                      &   
         namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
         namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
-        namevar_Zcellcenter,namevar_Zinterfaces,input_masks_format   
+        namevar_Zcellcenter,namevar_Zinterfaces,input_masks_format, Zinterfaces_location 
 !    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
     USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
     USE netcdf
@@ -450,7 +450,16 @@ CONTAINS
         call netcdf_get_double(us,1,1,1,ZC(1:us),namevar_Zcellcenter,NCgridfile,alternative_filename=GridFile_Zcellcenter,return_error=ierr)
         if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
           ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-          call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+          if(trim(Zinterfaces_location)=='cell_interface_upper')then
+            call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+          elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! missing upper (surface) node
+            call netcdf_get_double(ws,1,1,1,ZW(2:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+            write(*,*)'read ZW=',ZW
+          else
+            write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
+               ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
+            stop 'quitting'
+          endif
           if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
             stop 'could not read neither Z nor ZW array'
           endif
@@ -458,17 +467,27 @@ CONTAINS
           do k=1,us_tridim
            ZC(k)=0.5*(ZW(k)+ZW(k+1))
           enddo
+        else
+          ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
+          if(trim(Zinterfaces_location)=='cell_interface_upper')then
+            call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+          elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! missing upper (surface) node
+            call netcdf_get_double(ws,1,1,1,ZW(2:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+            write(*,*)'read ZW=',ZW
+          else
+            write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
+               ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
+            stop 'quitting'
+          endif
+          if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+            write(*,*)'Zinterface computed from Zcell-center'
+            stop 'not yet implemented'
+            !do k=2,us_tridim
+            ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
+            !enddo
+          endif
         endif
 
-        ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-        call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
-        if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-          write(*,*)'Zinterface computed from Zcell-center'
-          stop 'not yet implemented'
-          !do k=2,us_tridim
-          ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
-          !enddo
-        endif
 
         !call netcdf_get_integer(vi,uj,3,1,BottomK,'KBottomRUV')
         BottomK(:,:,:) = ws_tridim
@@ -7095,54 +7114,6 @@ CONTAINS
         END SELECT
   END SUBROUTINE
 
-  CHARACTER(len=200) FUNCTION var_name_in_netcdf(var_id)
-#include "VAR_IDs.h"
-   USE PARAM_MOD, ONLY: namevar_Zeta,namevar_Salt,namevar_Temp,namevar_Uvel,namevar_Vvel,  &
-        namevar_Wvel,namevar_Aks,namevar_Dens,namevar_Uwind,namevar_Vwind, &
-        namevar_Iwind
-   IMPLICIT NONE
-   integer, intent(in):: var_id
-
-        SELECT CASE(var_id)
-          CASE(VAR_ID_zeta )
-                             var_name_in_netcdf='zeta' 
-                             if(len(trim(namevar_Zeta))>0) var_name_in_netcdf=trim(namevar_Zeta)
-          CASE(VAR_ID_salt ) 
-                             var_name_in_netcdf='salt' 
-                             if(len(trim(namevar_Salt))>0) var_name_in_netcdf=trim(namevar_Salt)
-          CASE(VAR_ID_temp ) 
-                             var_name_in_netcdf='temp' 
-                             if(len(trim(namevar_Temp))>0) var_name_in_netcdf=trim(namevar_Temp)
-          CASE(VAR_ID_den  ) 
-                             var_name_in_netcdf='rho'  
-                             if(len(trim(namevar_Dens))>0) var_name_in_netcdf=trim(namevar_Dens)
-          CASE(VAR_ID_uvel ) 
-                             var_name_in_netcdf='u' 
-                             if(len(trim(namevar_Uvel))>0) var_name_in_netcdf=trim(namevar_Uvel)
-          CASE(VAR_ID_vvel ) 
-                             var_name_in_netcdf='v' 
-                             if(len(trim(namevar_Vvel))>0) var_name_in_netcdf=trim(namevar_Vvel)
-          CASE(VAR_ID_wvel ) 
-                             var_name_in_netcdf='w' 
-                             if(len(trim(namevar_Wvel))>0) var_name_in_netcdf=trim(namevar_Wvel)
-          CASE(VAR_ID_kh   ) 
-                             var_name_in_netcdf='AKs'   
-                             if(len(trim(namevar_Aks))>0) var_name_in_netcdf=trim(namevar_Aks)
-          CASE(VAR_ID_uwind) 
-                             var_name_in_netcdf='sustr'
-                             if(len(trim(namevar_Uwind))>0) var_name_in_netcdf=trim(namevar_Uwind)
-          CASE(VAR_ID_vwind) 
-                             var_name_in_netcdf='svstr'
-                             if(len(trim(namevar_Vwind))>0) var_name_in_netcdf=trim(namevar_Vwind)
-          CASE(VAR_ID_iwind) 
-                             var_name_in_netcdf='wind_intensity'
-                             if(len(trim(namevar_Iwind))>0) var_name_in_netcdf=trim(namevar_Iwind)
-          CASE DEFAULT
-           WRITE(*,*)'Model presently does not support var id ',var_id
-           STOP
-        END SELECT
-  END FUNCTION
-
   CHARACTER(len=200) FUNCTION roms_netcdf_var_name(var_id)
 #include "VAR_IDs.h"
    IMPLICIT NONE
@@ -7216,7 +7187,8 @@ CONTAINS
    USE PARAM_MOD, ONLY: ui,uj,vi,vj,us,ws,Zgrid,hydrobytes,Zgrid,filenum,  &
         Hydro_NetCDF,First_vertical_layer_is_surface,                      &
         Uvel_location,Vvel_location,Wvel_location,                         &
-        Uwind_location,VWind_location,read_wind_as_sustress_svstress
+        Uwind_location,VWind_location,read_wind_as_sustress_svstress, &
+        var_name_in_netcdf
    USE RANDOM_MOD, ONLY: genrand_real1
    USE netcdf
    IMPLICIT NONE

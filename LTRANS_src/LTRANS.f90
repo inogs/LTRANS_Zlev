@@ -254,7 +254,7 @@ contains
                       Write_coastdist,stranding_on,us,Write_Poly_Presence, &
                       OpenOceanBoundary, mortality,                & !--- CL-OGS 
 !        *****   IMIOM        *****
-                      OilOn,WindWeatherFac
+                      OilOn,WindWeatherFac,parfile_has_header_line
     use oil_mod, only: InitOilModel,OilModel
     use tension_mod, only : initTensionModule
     use settlement_mod, only :  get_NumPoly,get_IDPoly
@@ -444,7 +444,7 @@ contains
 !                end do
         else
 !        ***** END IMIOM *****
-
+            if(parfile_has_header_line)read(1,*)
             do n=1,numpar
               if(settlementon)then
                 read (1,*) pLon(n),pLat(n),par(n,pZ),par(n,pDOB),startpoly(n) 
@@ -616,11 +616,11 @@ contains
 
     !--- CL-OGS: par(:,pZ) had to be given to setEle_all as the element number became dependant 
     !--- CL-OGS: on the vertical level of the particle, recomputed in setEle_all based on par(:,pZ)
-    write(*,*)'setEle_all'
-    CALL setEle_all(par(:,pX),par(:,pY),par(:,pZ),ele_err,n)
 
    if(SeabedRelease)then
     write(*,*)'SeabedRelease'
+    par(:,pZ)=-0.1
+    CALL setEle_all(par(:,pX),par(:,pY),par(:,pZ),ele_err,n)
     do m = 1, numpar
         if(mortality)then
           if ( isDead(m) ) cycle
@@ -650,9 +650,10 @@ contains
       write(*,*)' Example part 1: depth=',P_depth,' Zpart=',par(m,pZ)
       endif
      enddo
-     write(*,*)'setEle_all'
-     CALL setEle_all(par(:,pX),par(:,pY),par(:,pZ),ele_err,n)
     endif !if(SeabedRelease)
+
+    write(*,*)'setEle_all'
+    CALL setEle_all(par(:,pX),par(:,pY),par(:,pZ),ele_err,n)
 
     !If the particle was not found to be within an element,
     ! write a message to the screen and discontinue the program

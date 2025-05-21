@@ -76,6 +76,15 @@ CONTAINS
     GridFile_mask_v      =''
     GridFile_Zcellcenter =''
     GridFile_Zinterfaces ='' 
+    namedim_lon_rho     = 'xi_rho'   ! name of dimension in NetCDF Input File  
+    namedim_lat_rho     = 'eta_rho'  ! name of dimension in NetCDF Input File  
+    namedim_lon_u       = 'xi_u'    ! name of dimension in NetCDF Input File  
+    namedim_lat_u       = 'eta_u'    ! name of dimension in NetCDF Input File  
+    namedim_lon_v       = 'xi_v'     ! name of dimension in NetCDF Input File  
+    namedim_lat_v       = 'eta_v'    ! name of dimension in NetCDF Input File  
+    namedim_Zcellcenter = 'Z'        ! name of dimension in NetCDF Input File  
+    namedim_Zinterfaces = 'Zi'       ! name of dimension in NetCDF Input File  
+    Zinterfaces_location= 'cell_interface_all'  ! cell_interface_all,cell_interface_lower, cell_interface_upper
     namevar_depth       ='h' 
     namevar_lon_rho     ='lon_rho' 
     namevar_lat_rho     ='lat_rho' 
@@ -105,6 +114,7 @@ CONTAINS
     StrandingDist=1e-5
     strandingMaxDistFromBott=99999999
     strandingMaxDistFromSurf=99999999
+    parfile_has_header_line=.False.
 
     ! Check if an input file was provided
     if(len(trim(inputdatafile)).eq.0)then
@@ -345,53 +355,68 @@ CONTAINS
 
     ! GET VALUES FOR xi_rho,xi_u,xi_v,eta_rho,eta_u,eta_v,s_rho
 
-      STATUS = NF90_INQ_DIMID(GF_ID,'xi_rho',dimid)
+      STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lon_rho),dimid)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid xi_rho in INQ_DIMID'
+        write(*,*) 'Problem dimid ',trim(namedim_lon_rho),' in INQ_DIMID'
       endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid xi_rho'
+        write(*,*) 'Problem dimid ',trim(namedim_lon_rho)
         err = 20 
       endif
       xi_rho = dimcount
 
-      STATUS = NF90_INQ_DIMID(GF_ID,'eta_rho',dimid)
+      STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lat_rho),dimid)
+      if (STATUS .NE. NF90_NOERR) then
+        write(*,*) 'Problem dimid ',trim(namedim_lat_rho),' in INQ_DIMID'
+      endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid eta_rho'
+        write(*,*) 'Problem dimid ',trim(namedim_lat_rho)
         err = 20 
       endif
       eta_rho = dimcount
 
-      STATUS = NF90_INQ_DIMID(GF_ID,'xi_u',dimid)
+      STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lon_u),dimid)
+      if (STATUS .NE. NF90_NOERR) then
+        write(*,*) 'Problem dimid ',trim(namedim_lon_u),' in INQ_DIMID'
+      endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid xi_u'
+        write(*,*) 'Problem dimid ',trim(namedim_lon_u)
         err = 20 
       endif
       xi_u = dimcount
 
-      STATUS = NF90_INQ_DIMID(GF_ID,'eta_u',dimid)
+      STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lat_u),dimid)
+      if (STATUS .NE. NF90_NOERR) then
+        write(*,*) 'Problem dimid ',trim(namedim_lat_u),' in INQ_DIMID'
+      endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid eta_u'
+        write(*,*) 'Problem dimid ',trim(namedim_lat_u)
         err = 20 
       endif
       eta_u = dimcount
 
-      STATUS = NF90_INQ_DIMID(GF_ID,'xi_v',dimid)
+      STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lon_v),dimid)
+      if (STATUS .NE. NF90_NOERR) then
+        write(*,*) 'Problem dimid ',trim(namedim_lon_v),' in INQ_DIMID'
+      endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid xi_v'
+        write(*,*) 'Problem dimid ',trim(namedim_lon_v)
         err = 20 
       endif
       xi_v = dimcount
 
-      STATUS = NF90_INQ_DIMID(GF_ID,'eta_v',dimid)
+      STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lat_v),dimid)
+      if (STATUS .NE. NF90_NOERR) then
+        write(*,*) 'Problem dimid ',trim(namedim_lat_v),' in INQ_DIMID'
+      endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid eta_v'
+        write(*,*) 'Problem dimid ',trim(namedim_lat_v)
         err = 20 
       endif
       eta_v = dimcount
@@ -400,18 +425,25 @@ CONTAINS
      !--- CL-OGS: the w grid has dimensions xi_rho, eta_rho, and s_w
      !--- CL-OGS: so there is no need to read xi_w and eta_w
      if(Zgrid)then
-       STATUS = NF90_INQ_DIMID(GF_ID,'Z',dimid)
+
+       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_Zcellcenter),dimid)
+       if (STATUS .NE. NF90_NOERR) then
+         write(*,*) 'Problem dimid ',trim(namedim_Zcellcenter),' in INQ_DIMID'
+       endif
        STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
        if (STATUS .NE. NF90_NOERR) then
-         write(*,*) 'Problem dimid Z'
+         write(*,*) 'Problem dimid ',trim(namedim_Zcellcenter)
          err = 20 
        endif
        s_rho = dimcount
-
-       STATUS = NF90_INQ_DIMID(GF_ID,'Zi',dimid)
+       
+       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_Zinterfaces),dimid)
+       if (STATUS .NE. NF90_NOERR) then
+         write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces),' in INQ_DIMID'
+       endif
        STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
        if (STATUS .NE. NF90_NOERR) then
-         write(*,*) 'Problem dimid Zi'
+         write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces)
          err = 20 
        endif
        s_w = dimcount
@@ -422,27 +454,27 @@ CONTAINS
  
     ! ALLOCATE VARIABLE ARRAY DIMENSIONS
 
-      ALLOCATE (mask_rho(xi_rho,eta_rho,s_rho),STAT=STATUS) !--- CL-OGS: added third dim s_rho
-      if(STATUS /= 0) then
-        write(*,*) 'Problem allocating mask_rho'
-        err = 30 
-      endif
-      ALLOCATE (mask_u(xi_u,eta_u,s_rho),STAT=STATUS)       !--- CL-OGS: added third dim s_rho
-      if(STATUS /= 0) then
-        write(*,*) 'Problem allocating mask_u'
-        err = 30 
-      endif
-      ALLOCATE (mask_v(xi_v,eta_v,s_rho),STAT=STATUS)       !--- CL-OGS: added third dim s_rho
-      if(STATUS /= 0) then
-        write(*,*) 'Problem allocating mask_v'
-        err = 30 
-      endif
-      !--- CL-OGS: added allocation of mask_w
-      ALLOCATE (mask_w(xi_rho,eta_rho,s_w),STAT=STATUS)
-      if(STATUS /= 0) then
-        write(*,*) 'Problem allocating mask_w'
-        err = 30 
-      endif
+     !ALLOCATE (mask_rho(xi_rho,eta_rho,s_rho),STAT=STATUS) !--- CL-OGS: added third dim s_rho
+     !if(STATUS /= 0) then
+     !  write(*,*) 'Problem allocating mask_rho'
+     !  err = 30 
+     !endif
+     !ALLOCATE (mask_u(xi_u,eta_u,s_rho),STAT=STATUS)       !--- CL-OGS: added third dim s_rho
+     !if(STATUS /= 0) then
+     !  write(*,*) 'Problem allocating mask_u'
+     !  err = 30 
+     !endif
+     !ALLOCATE (mask_v(xi_v,eta_v,s_rho),STAT=STATUS)       !--- CL-OGS: added third dim s_rho
+     !if(STATUS /= 0) then
+     !  write(*,*) 'Problem allocating mask_v'
+     !  err = 30 
+     !endif
+     !!--- CL-OGS: added allocation of mask_w
+     !ALLOCATE (mask_w(xi_rho,eta_rho,s_w),STAT=STATUS)
+     !if(STATUS /= 0) then
+     !  write(*,*) 'Problem allocating mask_w'
+     !  err = 30 
+     !endif
       write(*,*)' xi_rho =', xi_rho
       write(*,*)'eta_rho =',eta_rho
       write(*,*)' xi_u   =', xi_u
@@ -455,35 +487,50 @@ CONTAINS
         write(*,*)'Problem s_rho != us'
         us=s_rho
       endif      
-      if (Zgrid .and. (ws .ne. s_w)) then ! rho-grid dimension in z direction
-        write(*,*)'Problem s_w != ws'
-        ws=s_w
+      if (Zgrid)then
+        if(trim(Zinterfaces_location)=='cell_interface_all')then
+         if(ws .ne. s_w) then
+            write(*,*)'Problem s_w != ws'
+            stop
+         endif
+          ws=s_w
+       elseif(trim(Zinterfaces_location)=='cell_interface_lower') then ! rho-grid dimension in z direction
+         if(ws .ne. s_w+1) then
+            write(*,*)'Problem s_w +1 != ws'
+            stop
+         endif  
+         ws=s_w+1
+       else
+         write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
+            ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
+         stop 'quitting'
+       endif
       endif    
         
 
-      ! rho grid mask
-      STATUS = NF90_INQ_VARID(GF_ID,'mask_rho',VID)
-      STATUS = NF90_GET_VAR(GF_ID,VID,mask_rho)
-      if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem read mask_rho'
-        err = 40 
-      endif
+     !! rho grid mask
+     !STATUS = NF90_INQ_VARID(GF_ID,'mask_rho',VID)
+     !STATUS = NF90_GET_VAR(GF_ID,VID,mask_rho)
+     !if (STATUS .NE. NF90_NOERR) then
+     !  write(*,*) 'Problem read mask_rho'
+     !  err = 40 
+     !endif
 
-      ! u grid mask
-      STATUS = NF90_INQ_VARID(GF_ID,'mask_u',VID)
-      STATUS = NF90_GET_VAR(GF_ID,VID,mask_u)
-      if(STATUS .NE. NF90_NOERR) then
-        write(*,*)'Problem read mask_u'
-        err = 40 
-      endif
+     !! u grid mask
+     !STATUS = NF90_INQ_VARID(GF_ID,'mask_u',VID)
+     !STATUS = NF90_GET_VAR(GF_ID,VID,mask_u)
+     !if(STATUS .NE. NF90_NOERR) then
+     !  write(*,*)'Problem read mask_u'
+     !  err = 40 
+     !endif
 
-      ! v grid mask
-      STATUS = NF90_INQ_VARID(GF_ID,'mask_v',VID)
-      STATUS = NF90_GET_VAR(GF_ID,VID,mask_v)
-      if(STATUS .NE. NF90_NOERR) then
-        write(*,*)'Problem read mask_v'
-        err = 40 
-      endif
+     !! v grid mask
+     !STATUS = NF90_INQ_VARID(GF_ID,'mask_v',VID)
+     !STATUS = NF90_GET_VAR(GF_ID,VID,mask_v)
+     !if(STATUS .NE. NF90_NOERR) then
+     !  write(*,*)'Problem read mask_v'
+     !  err = 40 
+     !endif
 
      !--- CL-OGS: added read mask_w
      !! w grid mask
@@ -538,7 +585,7 @@ CONTAINS
     write(*,*)'max_u_elements   =',max_u_elements   
     write(*,*)'max_v_elements   =',max_v_elements   
     !--- CL-OGS: added deallocate(mask_rho,mask_u,mask_v,mask_w)
-    DEALLOCATE(mask_rho,mask_u,mask_v,mask_w) 
+    !DEALLOCATE(mask_rho,mask_u,mask_v,mask_w) 
 
 
     !If IOSTAT is present, set return value to error code
@@ -548,5 +595,50 @@ CONTAINS
     ! 20=Error getting dimensions  50=Error Closing NCgridfile
 
   END SUBROUTINE gridData
+
+  CHARACTER(len=200) FUNCTION var_name_in_netcdf(var_id)
+#include "VAR_IDs.h"
+   IMPLICIT NONE
+   integer, intent(in):: var_id
+
+        SELECT CASE(var_id)
+          CASE(VAR_ID_zeta )
+                             var_name_in_netcdf='zeta' 
+                             if(len(trim(namevar_Zeta))>0) var_name_in_netcdf=trim(namevar_Zeta)
+          CASE(VAR_ID_salt ) 
+                             var_name_in_netcdf='salt' 
+                             if(len(trim(namevar_Salt))>0) var_name_in_netcdf=trim(namevar_Salt)
+          CASE(VAR_ID_temp ) 
+                             var_name_in_netcdf='temp' 
+                             if(len(trim(namevar_Temp))>0) var_name_in_netcdf=trim(namevar_Temp)
+          CASE(VAR_ID_den  ) 
+                             var_name_in_netcdf='rho'  
+                             if(len(trim(namevar_Dens))>0) var_name_in_netcdf=trim(namevar_Dens)
+          CASE(VAR_ID_uvel ) 
+                             var_name_in_netcdf='u' 
+                             if(len(trim(namevar_Uvel))>0) var_name_in_netcdf=trim(namevar_Uvel)
+          CASE(VAR_ID_vvel ) 
+                             var_name_in_netcdf='v' 
+                             if(len(trim(namevar_Vvel))>0) var_name_in_netcdf=trim(namevar_Vvel)
+          CASE(VAR_ID_wvel ) 
+                             var_name_in_netcdf='w' 
+                             if(len(trim(namevar_Wvel))>0) var_name_in_netcdf=trim(namevar_Wvel)
+          CASE(VAR_ID_kh   ) 
+                             var_name_in_netcdf='AKs'   
+                             if(len(trim(namevar_Aks))>0) var_name_in_netcdf=trim(namevar_Aks)
+          CASE(VAR_ID_uwind) 
+                             var_name_in_netcdf='sustr'
+                             if(len(trim(namevar_Uwind))>0) var_name_in_netcdf=trim(namevar_Uwind)
+          CASE(VAR_ID_vwind) 
+                             var_name_in_netcdf='svstr'
+                             if(len(trim(namevar_Vwind))>0) var_name_in_netcdf=trim(namevar_Vwind)
+          CASE(VAR_ID_iwind) 
+                             var_name_in_netcdf='wind_intensity'
+                             if(len(trim(namevar_Iwind))>0) var_name_in_netcdf=trim(namevar_Iwind)
+          CASE DEFAULT
+           WRITE(*,*)'Model presently does not support var id ',var_id
+           STOP
+        END SELECT
+  END FUNCTION
 
 END MODULE PARAM_MOD 

@@ -143,7 +143,7 @@
                     & Wind_hc, Wind_ke, &
                     & Stokes, &
                     & Uvel_location,Vvel_location,Wvel_location, &
-                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress, 
+                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress, & 
                     & input_masks_format
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
@@ -310,6 +310,15 @@
   CHARACTER(LEN=200) :: GridFile_mask_v       ! name of Input File  
   CHARACTER(LEN=200) :: GridFile_Zcellcenter  ! name of Input File  
   CHARACTER(LEN=200) :: GridFile_Zinterfaces  ! name of Input File  
+  CHARACTER(LEN=200) :: namedim_lon_rho       ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_lat_rho       ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_lon_u         ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_lat_u         ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_lon_v         ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_lat_v         ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_Zcellcenter   ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=200) :: namedim_Zinterfaces   ! name of dimension in NetCDF Input File  
+  CHARACTER(LEN=25)  :: Zinterfaces_location  ! cell_interface_all,cell_interface_lower, cell_interface_upper
   CHARACTER(LEN=200) :: namevar_depth         ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_lon_rho       ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_lat_rho       ! name of variable in NetCDF Input File  
@@ -328,9 +337,11 @@
            GridFile_depth,GridFile_lon_rho,GridFile_lat_rho,GridFile_lon_u,GridFile_lat_u,   & 
            GridFile_lon_v,GridFile_lat_v,GridFile_mask_rho,GridFile_mask_u,GridFile_mask_v,   &
            GridFile_Zcellcenter,GridFile_Zinterfaces,                                      &   
+           namedim_lon_rho,namedim_lat_rho,namedim_lon_u,namedim_lat_u,   & 
+           namedim_lon_v,namedim_lat_v,  namedim_Zcellcenter,namedim_Zinterfaces   , &
            namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
            namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
-           namevar_Zcellcenter,namevar_Zinterfaces   
+           namevar_Zcellcenter,namevar_Zinterfaces,Zinterfaces_location   
 
 !  ** Hydro Model Predictions NetCDF Input File **
 !  Filename = dirin + prefix + filenum + suffix
@@ -387,7 +398,8 @@
   CHARACTER(LEN=200) :: parfile     ! Particle locations file
   !Note: the path to the file is necessary if the file is not in the same folder as the code
 
-  namelist/parloc/parfile
+  LOGICAL :: parfile_has_header_line
+  namelist/parloc/parfile,parfile_has_header_line
 
 
 

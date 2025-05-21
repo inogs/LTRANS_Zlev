@@ -753,6 +753,15 @@ $hydromodelgrid
   GridFile_lat_rho     ='[...]/LTRANS_Zlev/SIM/input/coordinates.nc' ! name of Input File (optional, NCgridfile is read first) 
   GridFile_mask_rho    ='[...]/LTRANS_Zlev/SIM/input/mask.nc'        ! name of Input File (optional, NCgridfile is read first) 
   GridFile_Zinterfaces ='[...]/LTRANS_Zlev/SIM/input/Zi.nc'          ! name of Input File (optional, NCgridfile is read first) 
+  namedim_lon_rho     = 'xi_rho'   ! name of dimension in NetCDF Input File  
+  namedim_lat_rho     = 'eta_rho'  ! name of dimension in NetCDF Input File  
+  namedim_lon_u       = 'xi_u'    ! name of dimension in NetCDF Input File  
+  namedim_lat_u       = 'eta_u'    ! name of dimension in NetCDF Input File  
+  namedim_lon_v       = 'xi_v'     ! name of dimension in NetCDF Input File  
+  namedim_lat_v       = 'eta_v'    ! name of dimension in NetCDF Input File  
+  namedim_Zcellcenter = 'Z'        ! name of dimension in NetCDF Input File  
+  namedim_Zinterfaces = 'Zi'       ! name of dimension in NetCDF Input File  
+  Zinterfaces_location= 'cell_interface_all'  ! cell_interface_all,cell_interface_lower (missing surface interfaces assumed zero depth)
   namevar_depth       ='h'         ! Name of variable in input grid file, default is :'h'        
   namevar_lon_rho     ='lon_rho'   ! Name of variable in input grid file, default is :'lon_rho'  
   namevar_lat_rho     ='lat_rho'   ! Name of variable in input grid file, default is :'lat_rho'  
@@ -850,6 +859,7 @@ On the opposite, it must be set to `.FALSE.` if in the netcdfs hydro files the f
 ```fortran
 $parloc
   parfile  = '[...]/LTRANS_Zlev/SIM/input/Iniparloc_boxes_NiNj256_every_5-i_5-j_rhowaternode.csv'    ! Particle location file
+  parfile_has_header_line=.False.
 $end
 ```
 
