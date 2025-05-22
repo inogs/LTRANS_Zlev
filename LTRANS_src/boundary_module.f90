@@ -244,8 +244,8 @@ SUBROUTINE createBounds()
           if(count < 2) then
             mask_rho(i,j,k) = 0
             m = m + 1
-            write(*,*)'Deleting mask_rho at node i,i,k=',i,j,k
             if(BndOut)then
+              write(*,*)'Deleting mask_rho at node i,i,k=',i,j,k
               write(pyout+k,'(a,i3,a)')"if (thirddimindex==",k-1,"):"
               write(pyout+k,'(a,i4,a,i4,a,i4,a,i4,a)')                         &
                                      " if (v=='mask_rho'):datafield[",j-1,",", &

@@ -8,8 +8,9 @@ MODULE HYDRO_MOD
 #define UNODE 2
 #define VNODE 3
 #define WNODE 4
-#define VAR_NOT_FOUND 1
-#define VAR_READING_ISSUE 1
+#define FILE_NOT_OPENING 1
+#define VAR_NOT_FOUND 2
+#define VAR_READING_ISSUE 3
 
 !  This module handles all the input from the hydrodynamic NetCDF input files.
 !  It is the only module that interacts with NetCDF input files.  It contains
@@ -339,16 +340,48 @@ CONTAINS
 
       ! Depth (m)
       call netcdf_get_double(vi,uj,1,1,euleriandepth,namevar_depth,NCgridfile,alternative_filename=GridFile_depth)
+      write(*,*)'bathymetry depth (',trim(namevar_depth),') read successfully'
+      do j=1,uj
+        do i=1,vi
+          if(euleriandepth(i,j)>1e9) euleriandepth(i,j)=0.0
+          if(euleriandepth(i,j)<-1e9) euleriandepth(i,j)=0.0
+        enddo
+      enddo
+      if(SUM(euleriandepth)<0) euleriandepth = -euleriandepth ! bathymetry must be positive !
+      write(*,*)'euleriandepth=',euleriandepth(::50,::50)
 
       ! longitude at rho (°)
-      call netcdf_get_double(vi,uj,1,1,lon_rho,namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho)
-
+      lon_rho(:,:)=0.0
+      call netcdf_get_double(vi,uj,1,1,lon_rho,namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho,return_error=ierr)
+      if(ierr.ne.0.or.abs(lon_rho(1,2)-lon_rho(2,2))<1e-8)then ! var not found -> we compute it
+        write(*,*)'trying to read lon_rho (',trim(namevar_lon_rho),') as 1d array of dim ',vi
+        call netcdf_get_double(vi,1,1,1,lon_rho(:,1),namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho)
+        do j=1,uj
+          lon_rho(:,j)=lon_rho(:,1)
+        enddo
+        write(*,*)'lon_rho (',trim(namevar_lon_rho),') successfully read as 1d array'
+      else
+        write(*,*)'lon_rho (',trim(namevar_lon_rho),') read successfully'
+      endif
+      write(*,*)'lon_rho=',lon_rho(::50,::50)
       ! latitude at rho (°)
-      call netcdf_get_double(vi,uj,1,1,lat_rho,namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho)
+      call netcdf_get_double(vi,uj,1,1,lat_rho,namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho,return_error=ierr)
+      if(ierr.eq.VAR_NOT_FOUND .or. ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+        write(*,*)'trying to read lat_rho (',trim(namevar_lat_rho),') as 1d array of dim ',uj
+        call netcdf_get_double(uj,1,1,1,lat_rho(1,:),namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho)
+        do i=1,vi
+          lat_rho(i,:)=lat_rho(1,:)
+        enddo
+        write(*,*)'lat_rho (',trim(namevar_lat_rho),') successfully read as 1d array'
+      else
+        write(*,*)'lat_rho (',trim(namevar_lat_rho),') read successfully'
+      endif
+      write(*,*)'lat_rho=',lat_rho(::50,::50)
+
 
       ! longitude at u (°)
       call netcdf_get_double(ui,uj,1,1,lon_u,namevar_lon_u,NCgridfile,alternative_filename=GridFile_lon_u,return_error=ierr)
-      if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+      if(ierr.ne.0)then ! var not found -> we compute it
         write(*,*)'lon_u computed from lon_rho'
        do j=1,uj
         do i=1,ui
@@ -359,8 +392,8 @@ CONTAINS
 
       ! latitude at u (°)
       call netcdf_get_double(ui,uj,1,1,lat_u,namevar_lat_u,NCgridfile,alternative_filename=GridFile_lat_u,return_error=ierr)
-      if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-        write(*,*)'lat_u computed from lon_rho'
+      if(ierr.ne.0)then ! var not found -> we compute it
+       write(*,*)'lat_u computed from lat_rho'
        do j=1,uj
         do i=1,ui
           lat_u(i,j)=0.5*(lat_rho(i,j)+lat_rho(i+1,j))
@@ -370,7 +403,7 @@ CONTAINS
 
       ! longitude at v (°)
       call netcdf_get_double(vi,vj,1,1,lon_v,namevar_lon_v,NCgridfile,alternative_filename=GridFile_lon_v,return_error=ierr)
-      if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+      if(ierr.ne.0)then ! var not found -> we compute it
         write(*,*)'lon_v computed from lon_rho'
        do j=1,vj
         do i=1,vi
@@ -381,8 +414,8 @@ CONTAINS
 
       ! latitude at v (°)
       call netcdf_get_double(vi,vj,1,1,lat_v,namevar_lat_v,NCgridfile,alternative_filename=GridFile_lat_v,return_error=ierr)
-      if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-        write(*,*)'lat_v computed from lon_rho'
+      if(ierr.ne.0)then ! var not found -> we compute it
+        write(*,*)'lat_v computed from lat_rho'
        do j=1,vj
         do i=1,vi
           lat_v(i,j)=0.5*(lat_rho(i,j)+lat_rho(i,j+1))
@@ -400,6 +433,13 @@ CONTAINS
         case default
           write(*,*)'ERROR input_masks_format must be either integer or dble_prec'
       end select
+      write(*,*)'mask_rho (',trim(namevar_mask_rho),') read successfully'
+      if(sum(mask_rho(:,:,1))>sum(mask_rho(:,:,us)))then ! level 1 must be bottom, us must be surface
+        write(*,*)'vertical direction inversion in mask_rho'
+        call invert_array_of_int_along_third_dim(mask_rho,.False.)
+      endif
+      write(*,*)'mask_rho(k=1)=',mask_rho(::50,::50,1)
+      write(*,*)'mask_rho(k=us)=',mask_rho(::50,::50,us)
       
       ! mask on u grid
       select case(input_masks_format)
@@ -408,9 +448,15 @@ CONTAINS
         case('dble_prec')
           call netcdf_get_double(ui,uj,us_tridim,1,mask_u_dble,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
           mask_u(:,:,:)=mask_u_dble(:,:,:)
-      end select
-      if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-       write(*,*)'mask_u computed from lon_rho'
+      end select 
+      if(ierr.eq.0)then 
+        write(*,*)'mask_u (',trim(namevar_mask_u),') read successfully'
+        if(sum(mask_u(:,:,1))>sum(mask_u(:,:,us)))then ! level 1 must be bottom, us must be surface
+          write(*,*)'vertical direction inversion in mask_u'
+          call invert_array_of_int_along_third_dim(mask_u,.False.)
+        endif
+      else
+       write(*,*)'mask_u computed from mask_rho'
        do j=1,uj
         do i=1,ui
          do k=1,us_tridim
@@ -428,8 +474,14 @@ CONTAINS
           call netcdf_get_double(vi,vj,us_tridim,1,mask_v_dble,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
           mask_v(:,:,:)=mask_v_dble(:,:,:)
       end select
-      if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-       write(*,*)'mask_v computed from lon_rho'
+      if(ierr.eq.0)then 
+        write(*,*)'mask_v (',trim(namevar_mask_v),') read successfully'
+        if(sum(mask_v(:,:,1))>sum(mask_v(:,:,us)))then ! level 1 must be bottom, us must be surface
+          write(*,*)'vertical direction inversion in mask_v'
+          call invert_array_of_int_along_third_dim(mask_v,.False.)
+        endif
+      else
+       write(*,*)'mask_v computed from mask_rho'
        do j=1,vj
         do i=1,vi
          do k=1,us_tridim
@@ -446,46 +498,51 @@ CONTAINS
           stop
         endif
 
+        ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
+        if(trim(Zinterfaces_location)=='cell_interface_all')then
+          call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+        elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! missing upper (surface) node
+          ZW(:)=0.0
+          call netcdf_get_double(ws-1,1,1,1,ZW(1:ws-1),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+        else
+          write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
+             ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
+          stop 'quitting'
+        endif
+        if(sum(ZW)>0) ZW(:)=-ZW(:)
+        if(ZW(ws-1)<ZW(1))then
+          write(*,*)'vertical direction inversion in ZW'
+          if(trim(Zinterfaces_location)=='cell_interface_lower')then
+            ZW(2:ws)=ZW(1:ws-1)
+            ZW(1)=0.0
+          endif
+          call invert_1d_array_of_dble(ZW)
+        endif
+        if(ierr.eq.0)then 
+          write(*,*)'Zinterfaces (',trim(namevar_Zinterfaces),') read successfully'
+        else ! var not found -> we compute it
+          write(*,*)'Zinterface computed from Zcell-center'
+          stop 'not yet implemented'
+          !do k=2,us_tridim
+          ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
+          !enddo
+        endif
+        write(*,*)'ZW=',ZW
+
         ! Z-coordinate on rho grid (Z) : cell-centered coordinates
         call netcdf_get_double(us,1,1,1,ZC(1:us),namevar_Zcellcenter,NCgridfile,alternative_filename=GridFile_Zcellcenter,return_error=ierr)
-        if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-          ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-          if(trim(Zinterfaces_location)=='cell_interface_upper')then
-            call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
-          elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! missing upper (surface) node
-            call netcdf_get_double(ws,1,1,1,ZW(2:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
-            write(*,*)'read ZW=',ZW
-          else
-            write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
-               ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
-            stop 'quitting'
+        if(ierr.eq.0)then 
+          write(*,*)'Zcellcenter (',trim(namevar_Zcellcenter),') read successfully'
+          if(sum(ZC)>0) ZC(:)=-ZC(:)
+          if(ZC(us)<ZC(1))then
+            write(*,*)'vertical direction inversion in ZC'
+            call invert_1d_array_of_dble(ZC)
           endif
-          if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-            stop 'could not read neither Z nor ZW array'
-          endif
+        else ! var not found -> we compute it
           write(*,*)'Zcellcenter computed from Zinterfaces'
           do k=1,us_tridim
            ZC(k)=0.5*(ZW(k)+ZW(k+1))
           enddo
-        else
-          ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
-          if(trim(Zinterfaces_location)=='cell_interface_upper')then
-            call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
-          elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! missing upper (surface) node
-            call netcdf_get_double(ws,1,1,1,ZW(2:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
-            write(*,*)'read ZW=',ZW
-          else
-            write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
-               ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
-            stop 'quitting'
-          endif
-          if(ierr.eq.VAR_NOT_FOUND.or.ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
-            write(*,*)'Zinterface computed from Zcell-center'
-            stop 'not yet implemented'
-            !do k=2,us_tridim
-            ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
-            !enddo
-          endif
         endif
 
 
@@ -3716,8 +3773,8 @@ CONTAINS
     oP_ele_old(3)=P_v_element(n1)
 
     if(error.ne.0 .or.P_r_element(n1).le.0 .or.P_u_element(n1).le.0 .or.P_v_element(n1).le.0)then
-       write(*,*)'part n1 error setEleall',error,P_r_element(n1),P_u_element(n1),P_v_element(n1), &
-                          k,Xpar(n1),Ypar(n1)
+       write(*,*)'part n1=',n1,'error setEleall',error,P_r_element(n1),P_u_element(n1),P_v_element(n1), &
+                          k,Xpar(n1),Ypar(n1),Zpar(n1)
        stop
     endif
     parloop: do n=n1+1,numpar
@@ -5079,6 +5136,7 @@ CONTAINS
         getKRlevel = ws-1
       else
         do k=2,ws-2
+           !write(*,*)k,ZW(k),'<',Zin,'<',ZW(k+1)
            if ( ( Zin .GE. ZW(k) ) .and. ( Zin .LT. ZW(k+1) ) )then
              getKRlevel = k
              exit
@@ -7212,6 +7270,8 @@ CONTAINS
    DOUBLE PRECISION, ALLOCATABLE :: tmpfield(:,:,:,:)
    INTEGER :: k_Head,k_Tail,timeindex,ni_in_file,nj_in_file,nk_in_file
    CHARACTER(len=200) :: varname
+    !allocate(tmpfield(ni_in_file,nj_in_file,nk,incrstepf)) 
+    !tmpfield(:,:,:,:)=0.0
    
     call set_filename(var_id,iint+filenum,filenm)
   
@@ -7446,7 +7506,7 @@ CONTAINS
     ELSE ! NetCDF outputs
 
        STATUS = NF90_OPEN(TRIM(filenm), NF90_NOWRITE, NCID)
-       if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN'
+       if (STATUS .NE. NF90_NOERR) write(*,*) 'Problem NF90_OPEN',TRIM(filenm),'searching',varname
        if (STATUS .NE. NF90_NOERR) write(*,*) NF90_STRERROR(STATUS)
       
        STATUS = NF90_INQ_VARID(NCID,varname,VID)
@@ -7474,11 +7534,11 @@ CONTAINS
     ENDIF
  
     if(interpol_uv==UNODE) then
-      tmpfield(1:ni_in_file-1,:,:,tf1:tff) =                                                 & 
-        0.5 *( tmpfield(1:ni_in_file-1,:,:,tf1:tff)+tmpfield(2:ni_in_file,:,:,tf1:tff)) 
+      tmpfield(1:ni_in_file-1,:,:,:) =                                                 & 
+        0.5 *( tmpfield(1:ni_in_file-1,:,:,:)+tmpfield(2:ni_in_file,:,:,:)) 
     else if(interpol_uv==VNODE) then
       do j=start_index(2)-file_has_lower_Vnode,start_index(2)-file_has_lower_Vnode+count_index(2)-1-1
-       tmpfield(:,j,:,tf1:tff)= 0.5*(tmpfield(:,j,:,tf1:tff)+tmpfield(:,j+1,:,tf1:tff))
+       tmpfield(:,j,:,:)= 0.5*(tmpfield(:,j,:,:)+tmpfield(:,j+1,:,:))
       enddo
    ! else
     !  field(1:ni_in_file,:,:,tf1:tff) = tmpfield(1:ni_in_file,:,:,tf1:tff) 
@@ -7545,24 +7605,29 @@ CONTAINS
         enddo
        enddo
     endif
-        deallocate(start_index,count_index)
-
+    deallocate(start_index,count_index)
+    deallocate(tmpfield)        
   END SUBROUTINE
 
-  SUBROUTINE netcdf_open(NCfile,NCID)
+  SUBROUTINE netcdf_open(NCfile,NCID,return_error)
     USE netcdf
     IMPLICIT NONE
     INCLUDE 'netcdf.inc'
 
     character(*),intent(in) :: NCfile
     integer, intent(inout) :: NCID 
+    integer,intent(inout),optional :: return_error
     integer :: STATUS
 
     STATUS = NF90_OPEN(TRIM(NCfile),NF90_NOWRITE, NCID)
     if (STATUS .NE. NF90_NOERR) then
-       write(*,*) 'Problem NF90_OPEN ',NCfile
-       write(*,*) NF90_STRERROR(STATUS)
-       stop
+       write(*,*) 'Problem NF90_OPENING ',trim(NCfile)
+       write(*,*) trim(NF90_STRERROR(STATUS))
+       if(present(return_error))then
+         return_error=FILE_NOT_OPENING
+       else
+         stop
+       endif
     endif
   END SUBROUTINE
 
@@ -7577,6 +7642,7 @@ CONTAINS
     character(*),intent(in) :: filename
     character(*),intent(in),optional :: alternative_filename
     character(*),intent(in),optional :: alternative_varname
+    character(200)::fname
     integer,intent(inout),optional :: return_error
     integer :: STATUS,VID,NCID
      ! check that the field shape was correctly announced 
@@ -7587,15 +7653,28 @@ CONTAINS
              write(*,*)'size of the various dimensions must be given with the zeroes at the end'
              stop
       endif
-      if(present(return_error))return_error=0
-      call netcdf_open(filename,NCID)
+      if(present(return_error))then
+        return_error=0
+        call netcdf_open(filename,NCID,return_error)
+        if(return_error/=0)return
+      else
+        call netcdf_open(filename,NCID)
+      endif
+      fname=filename
       STATUS = NF90_INQ_VARID(NCID,varname,VID)
       if (STATUS .NE. NF90_NOERR) then
           if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
           if (STATUS .NE. NF90_NOERR) then
             call netcdf_close(NCID)
             if(PRESENT(alternative_filename))then
-              call netcdf_open(alternative_filename,NCID)
+              fname=alternative_filename
+              if(present(return_error))then
+                return_error=0
+                call netcdf_open(alternative_filename,NCID,return_error)
+                if(return_error/=0)return
+              else
+                call netcdf_open(alternative_filename,NCID)
+              endif
               STATUS = NF90_INQ_VARID(NCID,varname,VID)
               if (STATUS .NE. NF90_NOERR) then
                 if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
@@ -7616,8 +7695,7 @@ CONTAINS
       endif
       STATUS = NF90_GET_VAR(NCID,VID,field)
       if (STATUS .NE. NF90_NOERR) then 
-          write(*,*) 'Problem read ',varname
-          write(*,*) NF90_STRERROR(STATUS)
+          write(*,*) 'Problem read ',trim(varname),'from',trim(fname),':',trim(NF90_STRERROR(STATUS))
             if(present(return_error))then
               return_error=VAR_READING_ISSUE
               return
@@ -7639,6 +7717,7 @@ CONTAINS
     character(*),intent(in) :: filename
     character(*),intent(in),optional :: alternative_filename
     character(*),intent(in),optional :: alternative_varname
+    character(200)::fname
     integer,intent(inout),optional :: return_error
     integer :: STATUS,VID,NCID
      ! check that the field shape was correctly announced 
@@ -7649,15 +7728,27 @@ CONTAINS
              write(*,*)'size of the various dimensions must be given with the zeroes at the end'
              stop
       endif
-      if(present(return_error))return_error=0
-      call netcdf_open(filename,NCID)
+      if(present(return_error))then
+        return_error=0
+        call netcdf_open(filename,NCID,return_error)
+      else
+        call netcdf_open(filename,NCID)
+      endif
+      fname=filename
       STATUS = NF90_INQ_VARID(NCID,varname,VID)
       if (STATUS .NE. NF90_NOERR) then
           if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
           if (STATUS .NE. NF90_NOERR) then
             call netcdf_close(NCID)
             if(PRESENT(alternative_filename))then
-              call netcdf_open(alternative_filename,NCID)
+              fname=alternative_filename
+              if(present(return_error))then
+                return_error=0
+                call netcdf_open(alternative_filename,NCID,return_error)
+                if(return_error/=0)return
+              else
+                call netcdf_open(alternative_filename,NCID)
+              endif
               STATUS = NF90_INQ_VARID(NCID,varname,VID)
               if (STATUS .NE. NF90_NOERR) then
                 if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
@@ -7678,7 +7769,7 @@ CONTAINS
       endif
       STATUS = NF90_GET_VAR(NCID,VID,field)
       if (STATUS .NE. NF90_NOERR) then 
-          write(*,*) 'Problem read ',varname
+          write(*,*) 'Problem read ',trim(varname),' from',trim(fname),':',trim(NF90_STRERROR(STATUS))
           write(*,*) NF90_STRERROR(STATUS)
           if(present(return_error))then
             return_error=VAR_READING_ISSUE
@@ -7704,6 +7795,80 @@ CONTAINS
           stop
       endif
   END SUBROUTINE
+  
+  SUBROUTINE invert_1d_array_of_dble(array)
+   double precision, intent(inout):: array(:)
+   DOUBLE PRECISION, ALLOCATABLE :: tmparray(:)
+   INTEGER :: k_Head,k_Tail,nk
+    nk=size(array)
+    if(nk>1)then !invert vertical directions of the arrays
+    write(*,'(a,i5)')'inverting array of dim ',nk
+    allocate(tmparray(nk)) 
+    tmparray(:)=array
+     k_Head=1
+     k_Tail=nk
+     do 
+       if(k_Head>k_Tail) exit
+         array(k_Head) = tmparray(k_Tail)                                  
+         array(k_Tail) = tmparray(k_Head)
+         k_Head=k_Head+1
+         k_Tail=k_Tail-1
+     end do
+    endif 
+  END SUBROUTINE
+  
+  SUBROUTINE invert_array_of_dble_along_third_dim(array,missing_first_Wnode)
+   double precision, intent(inout):: array(:,:,:)
+   logical, intent(in):: missing_first_Wnode
+   DOUBLE PRECISION, ALLOCATABLE :: tmparray(:,:,:)
+   INTEGER :: k_Head,k_Tail,ni,nj,nk
+    ni=size(array,1)
+    nj=size(array,2)
+    nk=size(array,3)
+    if(nk>1)then ! invert vertical directions of the arrays
+    write(*,'(a,3i5)')'inverting array of dim ',ni,nj,nk
+    allocate(tmparray(ni,nj,nk)) 
+    tmparray(:,:,:)=array
+     k_Head=1+missing_first_Wnode
+     k_Tail=nk
+     do 
+       if(k_Head>k_Tail) exit
+         array(:,:,k_Head) = tmparray(:,:,k_Tail)                                  
+         array(:,:,k_Tail) = tmparray(:,:,k_Head)
+         k_Head=k_Head+1
+         k_Tail=k_Tail-1
+     end do
+    endif 
+    deallocate(tmparray)        
+     
+  END SUBROUTINE
+
+  SUBROUTINE invert_array_of_int_along_third_dim(array,missing_first_Wnode)
+   integer, intent(inout):: array(:,:,:)
+   logical, intent(in):: missing_first_Wnode
+   integer, ALLOCATABLE :: tmparray(:,:,:)
+   INTEGER :: k_Head,k_Tail,ni,nj,nk
+    ni=size(array,1)
+    nj=size(array,2)
+    nk=size(array,3)
+    if(nk>1)then ! invert vertical directions of the arrays
+    write(*,'(a,3i5)')'inverting array of dim ',ni,nj,nk
+    allocate(tmparray(ni,nj,nk)) 
+    tmparray(:,:,:)=array
+     k_Head=1+missing_first_Wnode
+     k_Tail=nk
+     do 
+       if(k_Head>k_Tail) exit
+         array(:,:,k_Head) = tmparray(:,:,k_Tail)                                  
+         array(:,:,k_Tail) = tmparray(:,:,k_Head)
+         k_Head=k_Head+1
+         k_Tail=k_Tail-1
+     end do
+    endif 
+    deallocate(tmparray)        
+     
+  END SUBROUTINE
+
 
 END MODULE HYDRO_MOD
 

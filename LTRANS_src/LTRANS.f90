@@ -641,6 +641,7 @@ contains
        P_depth = DBLE(-1.0)* getInterp(par(m,pX),par(m,pY),VAR_ID_depth,klev)
       else !             (Zgrid :)      
         call getDepth(par(m,pX),par(m,pY),m,it,P_depth,Fstlev,conflict)  
+        write(*,*)'part',m,par(m,pX),par(m,pY),P_depth,Fstlev
       endif
       parIniDepth(m)=P_depth+SeabedRelease_meters
       par(m,pZ) =parIniDepth(m)
