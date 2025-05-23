@@ -552,7 +552,9 @@ CONTAINS
         do i=1,vi
           do k=1,us_tridim
             if(mask_rho(i,j,k)>0.5)then
-              BottomK(i,j,1)=k   
+              BottomK(i,j,1)=k 
+              !write(*,*)'euleriandepth(i,j)=',euleriandepth(i,j),'->', min(-ZW(k),euleriandepth(i,j)),-ZW(max(1,k-1)) 
+              euleriandepth(i,j)=min(-ZW(k),euleriandepth(i,j)) 
               exit
             endif            
           enddo
