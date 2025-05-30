@@ -139,7 +139,7 @@ MODULE HYDRO_MOD
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:)  :: m_r,m_u,m_v
 !--- CL-OGS:  extension to third dimension of the masks
 !  INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask_rho
-  INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask_rho
+  INTEGER, ALLOCATABLE, DIMENSION(:,:,:),PUBLIC :: mask_rho
 
 !--- CL-OGS:  adding a dimension to account for the third dimension vertical level for the node-number-dependant-masks
 !  INTEGER, ALLOCATABLE, DIMENSION( : ) :: rho_mask,u_mask,v_mask   !ewn.v.2
@@ -153,7 +153,8 @@ MODULE HYDRO_MOD
   !Keeps track if the grid has been read in yet or not
   !  If the grid hasn't been read in, the boundaries can't be made
   LOGICAL :: GRD_SET = .FALSE.
-
+  LOGICAL :: MASK_SET = .FALSE.
+  LOGICAL :: ELE_SET = .FALSE.
   !The concatenated hydrodynamic input file name
   CHARACTER(len=200) :: filenm
 
@@ -162,8 +163,9 @@ MODULE HYDRO_MOD
 
   INTEGER :: fpy
   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: lastplotpos
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: euleriandepth
   !The following procedures have been made public:
-  PUBLIC :: initGrid,initHydro,updateHydro,setEle,setEle_all,setInterp,        &
+  PUBLIC :: initGrid,initGrid_after_bounds,initHydro,updateHydro,setEle,setEle_all,setInterp, &
     getInterp,WCTS_ITPI,getSlevel,getWlevel,getMask_Rho,getUVxy,        &
     getR_ele,getP_r_element,finHydro,initNetCDF,createNetCDF,writeNetCDF,      &
     getKRlevel,getDepth,filenm,getP_klev,& !--- CL-OGS
@@ -202,15 +204,13 @@ CONTAINS
 
     INTEGER :: i,j,m,count,inele
     INTEGER :: countele                                                          !--- CL-OGS   
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: euleriandepth,  &
-                                x_rho,y_rho,angle,GrainSize_tmp
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: GrainSize_tmp
 !--- CL-OGS:  extension to third dimension of the masks
 !    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: mask_u, mask_v
-    INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask_u, mask_v
-    DOUBLE PRECISION,ALLOCATABLE, DIMENSION(:,:,:) :: mask_rho_dble,mask_u_dble, mask_v_dble
+    DOUBLE PRECISION,ALLOCATABLE, DIMENSION(:,:,:) :: mask_rho_dble
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: lon_rho,lat_rho,lon_u,    &
                                                      lat_u,lon_v,lat_v
-    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: r_ele,u_ele,v_ele
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) ::  angle
     !INTEGER, ALLOCATABLE, DIMENSION( : ) :: rho_mask,u_mask,v_mask  !ewn.v.2
     INTEGER :: k,nf,ios,waiting,nodestocopy,kbot,kmax,maxnodestocopy     !--- CL-OGS 
     INTEGER :: old_i,old_j,old_count                                             !--- CL-OGS 
@@ -300,13 +300,7 @@ CONTAINS
     !ALLOCATE SUBROUTINE VARIABLES
     if(read_GrainSize)  ALLOCATE(GrainSize_tmp(vi,uj))     !--- CL-OGS:  for behavior 8
     ALLOCATE(euleriandepth(vi,uj))
-    ALLOCATE(mask_u(ui,uj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
-    ALLOCATE(mask_v(vi,vj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
     ALLOCATE(mask_rho_dble(vi,uj,us_tridim))                  !--- CL-OGS:  extension to third dimension    
-    ALLOCATE(mask_u_dble(ui,uj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
-    ALLOCATE(mask_v_dble(vi,vj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
-    ALLOCATE(x_rho(vi,uj))
-    ALLOCATE(y_rho(vi,uj))
     ALLOCATE(lon_rho(vi,uj))
     ALLOCATE(lat_rho(vi,uj))
     ALLOCATE(lon_u(ui,uj))
@@ -314,9 +308,6 @@ CONTAINS
     ALLOCATE(lon_v(vi,vj))
     ALLOCATE(lat_v(vi,vj))
     if(.not.Zgrid) ALLOCATE(angle(vi,uj))            !--- CL-OGS: temporary variable not used for MITgcm 
-    ALLOCATE(r_ele(4,max_rho_elements))
-    ALLOCATE(u_ele(4,max_u_elements))
-    ALLOCATE(v_ele(4,max_v_elements))
     !  ALLOCATE(rho_mask(rho_nodes))    !ewn.v.2
     !  ALLOCATE(u_mask(u_nodes))
     !  ALLOCATE(v_mask(v_nodes))
@@ -441,55 +432,6 @@ CONTAINS
       write(*,*)'mask_rho(k=1)=',mask_rho(::50,::50,1)
       write(*,*)'mask_rho(k=us)=',mask_rho(::50,::50,us)
       
-      ! mask on u grid
-      select case(input_masks_format)
-        case('integer')
-          call netcdf_get_integer(ui,uj,us_tridim,1,mask_u,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
-        case('dble_prec')
-          call netcdf_get_double(ui,uj,us_tridim,1,mask_u_dble,namevar_mask_u,NCgridfile,alternative_filename=GridFile_mask_u,return_error=ierr)
-          mask_u(:,:,:)=mask_u_dble(:,:,:)
-      end select 
-      if(ierr.eq.0)then 
-        write(*,*)'mask_u (',trim(namevar_mask_u),') read successfully'
-        if(sum(mask_u(:,:,1))>sum(mask_u(:,:,us)))then ! level 1 must be bottom, us must be surface
-          write(*,*)'vertical direction inversion in mask_u'
-          call invert_array_of_int_along_third_dim(mask_u,.False.)
-        endif
-      else
-       write(*,*)'mask_u computed from mask_rho'
-       do j=1,uj
-        do i=1,ui
-         do k=1,us_tridim
-          mask_u(i,j,k)=min(mask_rho(i,j,k),mask_rho(i+1,j,k))
-         enddo
-        enddo
-       enddo
-      endif
-      
-      ! mask on v grid
-      select case(input_masks_format)
-        case('integer')
-          call netcdf_get_integer(vi,vj,us_tridim,1,mask_v,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
-        case('dble_prec')
-          call netcdf_get_double(vi,vj,us_tridim,1,mask_v_dble,namevar_mask_v,NCgridfile,alternative_filename=GridFile_mask_v,return_error=ierr)
-          mask_v(:,:,:)=mask_v_dble(:,:,:)
-      end select
-      if(ierr.eq.0)then 
-        write(*,*)'mask_v (',trim(namevar_mask_v),') read successfully'
-        if(sum(mask_v(:,:,1))>sum(mask_v(:,:,us)))then ! level 1 must be bottom, us must be surface
-          write(*,*)'vertical direction inversion in mask_v'
-          call invert_array_of_int_along_third_dim(mask_v,.False.)
-        endif
-      else
-       write(*,*)'mask_v computed from mask_rho'
-       do j=1,vj
-        do i=1,vi
-         do k=1,us_tridim
-          mask_v(i,j,k)=min(mask_rho(i,j,k),mask_rho(i,j+1,k))
-         enddo
-        enddo
-       enddo
-      endif
 
       if(Zgrid) then !--- CL-OGS: read MITgcm specific grid files
         if(Vtransform.ne.0)then
@@ -501,7 +443,7 @@ CONTAINS
         ! Z-coordinate on w grid (Zp1) : interface-centered coordinates
         if(trim(Zinterfaces_location)=='cell_interface_all')then
           call netcdf_get_double(ws,1,1,1,ZW(1:ws),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
-        elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! missing upper (surface) node
+        elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! includes lower (bottom) interface and misses upper (surface) node
           ZW(:)=0.0
           call netcdf_get_double(ws-1,1,1,1,ZW(1:ws-1),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
         else
@@ -509,9 +451,9 @@ CONTAINS
              ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
           stop 'quitting'
         endif
-        if(sum(ZW)>0) ZW(:)=-ZW(:)
-        if(ZW(ws-1)<ZW(1))then
-          write(*,*)'vertical direction inversion in ZW'
+        if(sum(ZW)>0) ZW(:)=-ZW(:) ! ZW must be negative
+        if(ZW(ws-1)<ZW(2))then     ! ZW(1) must be bottom and ZW(us) must be surface
+          write(*,*)'vertical direction inversion in ZW to makes ZW(1) bottom and ZW(us) surface'
           if(trim(Zinterfaces_location)=='cell_interface_lower')then
             ZW(2:ws)=ZW(1:ws-1)
             ZW(1)=0.0
@@ -544,43 +486,8 @@ CONTAINS
            ZC(k)=0.5*(ZW(k)+ZW(k+1))
           enddo
         endif
+        write(*,*)'ZC=',ZC
 
-
-        !call netcdf_get_integer(vi,uj,3,1,BottomK,'KBottomRUV')
-        BottomK(:,:,:) = ws_tridim
-        do j=1,uj
-        do i=1,vi
-          do k=1,us_tridim
-            if(mask_rho(i,j,k)>0.5)then
-              BottomK(i,j,1)=k 
-              !write(*,*)'euleriandepth(i,j)=',euleriandepth(i,j),'->', min(-ZW(k),euleriandepth(i,j)),-ZW(max(1,k-1)) 
-              euleriandepth(i,j)=min(-ZW(k),euleriandepth(i,j)) 
-              exit
-            endif            
-          enddo
-        enddo
-        enddo
-        do j=1,uj
-        do i=1,ui
-          do k=1,us_tridim
-            if(mask_u(i,j,k)>0.5)then
-              BottomK(i,j,2)=k   
-              exit
-            endif            
-          enddo
-        enddo
-        enddo
-   
-        do j=1,vj
-        do i=1,vi
-          do k=1,us_tridim
-            if(mask_v(i,j,k)>0.5)then
-              BottomK(i,j,3)=k   
-              exit
-            endif            
-          enddo
-        enddo
-        enddo
 
       else          !--- CL-OGS: angle read only for ROMS files  
         if(Vtransform.eq.0)then
@@ -647,23 +554,50 @@ CONTAINS
 
     ! *************************** CREATE ELEMENTS *****************************
 
-    !Store Mask Values to multiply by...
-    m_r = mask_rho
-    m_u = mask_u
-    m_v = mask_v
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! ~  4B. Prepare Elements (i.e., assign ID numbers to rectangular grids)  ~
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! Create matrices of  x/y for rho nodes and depth values in rho node number
+    !   format 
+    count = 0
+    do j=1,uj
+      do i=1,vi
+        count = count + 1   !move to next node number
+        !cycles through each variable replacing the vi,uj part with count
+        !  essentially giving it node numbers
+        rx(count) = lon2x(lon_rho(i,j),lat_rho(i,j))
+        ry(count) = lat2y(lat_rho(i,j))
+      enddo
+    enddo
+    ! Create matrices of GrainSize in rho node number format
+    if(read_GrainSize)then
+     count = 0
+     do j=1,uj
+      do i=1,vi
+        count = count + 1   !move to next node number
+        GrainSize(count) = GrainSize_tmp(i,j)
+      enddo
+     enddo
+    endif
+
+    !---------------------------
+    ! Assign mask values to rho nodes 
+    do k=1,us_tridim  !--- CL-OGS: extention to 3d 
+    count = 0
+    do j=1,uj
+      do i=1,vi
+        count = count + 1   !move to next node number
+            !cycles through each variable replacing the vi,uj part with count
+            !  essentially giving it node numbers
+        if(.not.Zgrid) rho_angle(count) = angle(i,j)
+      enddo
+    enddo
+    enddo
+
     write(*,*) 'create coast_elements'
 
     ! Convert rho nodes lon/lat to x/y coordinates
-    do j=1,uj
-      do i=1,vi
-        x_rho(i,j) = lon2x(lon_rho(i,j),lat_rho(i,j))
-        y_rho(i,j) = lat2y(lat_rho(i,j))
-      enddo
-    enddo
 
 !   write(*,'(a,2(a,f15.7,",",f15.7),a)')'Rho coordinates( 1, 1) are ', &
 !                 '(lon[ 0, 0],lat[ 0, 0])= (',lon_rho(1,1),lat_rho(1,1), &
@@ -693,8 +627,154 @@ CONTAINS
         y_v(i,j) = lat2y(lat_v(i,j))
       enddo
     enddo
+    GRD_SET=.TRUE.
+
+    deallocate(mask_rho_dble)
+    if(read_GrainSize) DEALLOCATE(GrainSize_tmp) 
+    if(.not.Zgrid) DEALLOCATE(angle)
+  END SUBROUTINE initGrid
+
+  SUBROUTINE initGrid_after_bounds()
+    !This subroutine reads in the grid information and with it creates all the 
+    !  element variables
+    USE PARAM_MOD, ONLY: numpar,ui,vi,uj,vj,us,ws,rho_nodes,u_nodes,v_nodes,   &
+        max_rho_elements,max_u_elements,    &
+        max_v_elements,NCgridfile,  &
+        Zgrid,ADJele_file,ADJele_fname,BoundaryBLNs,                           & !--- CL-OGS
+        filestep,Vtransform,Wind,GrainSize_fname,read_GrainSize,         & !--- CL-OGS
+        OutDir,NCOutFile,Zgrid_depthinterp,WindIntensity,filenum,         &                !--- CL-OGS
+        readZeta,readSalt,readTemp,readDens,readU,readV,readW, &
+        readAks,readIwind,readUwind,readVwind,                              &       !--- CL-OGS
+        GridFile_depth,GridFile_lon_rho,GridFile_lat_rho,GridFile_lon_u,GridFile_lat_u,   & 
+        GridFile_lon_v,GridFile_lat_v,GridFile_mask_rho,GridFile_mask_u,GridFile_mask_v,   &
+        GridFile_Zcellcenter,GridFile_Zinterfaces,                                      &   
+        namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
+        namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
+        namevar_Zcellcenter,namevar_Zinterfaces,input_masks_format, Zinterfaces_location 
+!    USE CONVERT_MOD, ONLY: lon2x,lat2y                                          !--- CL-OGS
+    USE CONVERT_MOD, ONLY: lon2x,lat2y,x2lon,y2lat                               !--- CL-OGS
+    USE netcdf
+    !$ use OMP_LIB          
+#include "VAR_IDs.h"
+    IMPLICIT NONE
+
+    INCLUDE 'netcdf.inc'
+
+    INTEGER :: STATUS,NCID,VID
+    INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: mask_u, mask_v
+    INTEGER, ALLOCATABLE, DIMENSION(:,:) :: r_ele,u_ele,v_ele
+    INTEGER :: i,j,m,count,inele
+    INTEGER :: countele                                                          !--- CL-OGS   
+    INTEGER :: k,nf,ios,waiting,nodestocopy,kbot,kmax,maxnodestocopy     !--- CL-OGS 
+    INTEGER :: old_i,old_j,old_count                                             !--- CL-OGS 
+    DOUBLE PRECISION :: summask 
+    DOUBLE PRECISION,DIMENSION(4) :: tmpcoef,oldtmpcoef
+    character(len=1024) :: filename
+    integer :: ierr,NCIDvar
+    ALLOCATE(mask_u(ui,uj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
+    ALLOCATE(mask_v(vi,vj,us_tridim))                      !--- CL-OGS:  extension to third dimension 
+    ! Create matrix that contains the node numbers for each rho element
+    !  n(4,count)-------n(3,count)       ^ j
+    !       |     count     |            |   
+    !  n(1,count)-------n(2,count)       |--> i
+    ! 
+    ALLOCATE(r_ele(4,max_rho_elements))
+    ALLOCATE(u_ele(4,max_u_elements))
+    ALLOCATE(v_ele(4,max_v_elements))
+    count = 0
+    do j=1,uj-1                         !z2v3.2
+      do i=1,vi-1
+        count = count + 1
+        r_ele(1,count) = i + (j-1)*vi
+        r_ele(2,count) = i + 1 + (j-1)*vi
+        r_ele(3,count) = i + 1 + j*vi
+        r_ele(4,count) = i + j*vi
+      enddo
+    enddo
+
+    ! Create matrix that contains the node numbers for each u element
+    count = 0
+    do j=1,uj-1                         !z2v3.2
+      do i=1,ui-1
+        count = count + 1
+        u_ele(1,count) = i + (j-1)*ui
+        u_ele(2,count) = i + 1 + (j-1)*ui
+        u_ele(3,count) = i + 1 + j*ui
+        u_ele(4,count) = i + j*ui
+      enddo
+    enddo
+
+    ! Create matrix that contains the node numbers for each v element
+    count = 0
+    do j=1,vj-1                         !z2v3.2
+      do i=1,vi-1
+        count = count + 1
+        v_ele(1,count) = i + (j-1)*vi
+        v_ele(2,count) = i + 1 + (j-1)*vi
+        v_ele(3,count) = i + 1 + j*vi
+        v_ele(4,count) = i + j*vi
+      enddo
+    enddo
+
+    do j=1,uj
+     do i=1,ui
+      do k=1,us_tridim
+       mask_u(i,j,k)=min(mask_rho(i,j,k),mask_rho(i+1,j,k))
+      enddo
+     enddo
+    enddo
+    do j=1,vj
+     do i=1,vi
+      do k=1,us_tridim
+       mask_v(i,j,k)=min(mask_rho(i,j,k),mask_rho(i,j+1,k))
+      enddo
+     enddo
+    enddo
+    !Store Mask Values to multiply by...
+    m_r = mask_rho
+    m_u = mask_u
+    m_v = mask_v
 
    if(Zgrid)then !--- CL-OGS: read number of the bottom - vertical level 
+        !call netcdf_get_integer(vi,uj,3,1,BottomK,'KBottomRUV')
+        BottomK(:,:,:) = ws_tridim
+        do j=1,uj
+        do i=1,vi
+          if(mask_rho(i,j,us_tridim).eq.0)then
+            euleriandepth(i,j)=-ZW(ws_tridim)
+          else
+            do k=1,us_tridim
+              if(mask_rho(i,j,k)>0.5)then
+                BottomK(i,j,1)=k 
+                !write(*,*)'euleriandepth(i,j)=',euleriandepth(i,j),'->', min(-ZW(k),euleriandepth(i,j)),-ZW(max(1,k-1)) 
+                euleriandepth(i,j)=min(-ZW(k),euleriandepth(i,j)) 
+                exit
+              endif            
+            enddo
+          endif
+        enddo
+        enddo
+        do j=1,uj
+        do i=1,ui
+          do k=1,us_tridim
+            if(mask_u(i,j,k)>0.5)then
+              BottomK(i,j,2)=k   
+              exit
+            endif            
+          enddo
+        enddo
+        enddo
+   
+        do j=1,vj
+        do i=1,vi
+          do k=1,us_tridim
+            if(mask_v(i,j,k)>0.5)then
+              BottomK(i,j,3)=k   
+              exit
+            endif            
+          enddo
+        enddo
+        enddo
      count=0
      do j=1,uj
        do i=1,vi
@@ -731,7 +811,6 @@ CONTAINS
             !cycles through each variable replacing the vi,uj part with count
             !  essentially giving it node numbers
         rho_mask(count,k) = mask_rho(i,j,k)
-        if(.not.Zgrid) rho_angle(count) = angle(i,j)
       enddo
     enddo
     enddo
@@ -761,7 +840,7 @@ CONTAINS
       enddo
     enddo
     enddo
-
+    MASK_SET=.TRUE.
     IF(Zgrid)THEN   !--- CL-OGS: prepare parameters to copy hydrodynamic fields
                     ! of rho, u and v water nodes in neighbours land nodes
                     ! ----------- rho nodes : --------------------------------
@@ -1047,45 +1126,6 @@ CONTAINS
       enddo
     ENDIF  ! (Zgrid) -------- end preparing parameters to copy hydrodynamic fields  -------
 
-    ! Create matrix that contains the node numbers for each rho element
-    !  n(4,count)-------n(3,count)       ^ j
-    !       |     count     |            |   
-    !  n(1,count)-------n(2,count)       |--> i
-    ! 
-    count = 0
-    do j=1,uj-1                         !z2v3.2
-      do i=1,vi-1
-        count = count + 1
-        r_ele(1,count) = i + (j-1)*vi
-        r_ele(2,count) = i + 1 + (j-1)*vi
-        r_ele(3,count) = i + 1 + j*vi
-        r_ele(4,count) = i + j*vi
-      enddo
-    enddo
-
-    ! Create matrix that contains the node numbers for each u element
-    count = 0
-    do j=1,uj-1                         !z2v3.2
-      do i=1,ui-1
-        count = count + 1
-        u_ele(1,count) = i + (j-1)*ui
-        u_ele(2,count) = i + 1 + (j-1)*ui
-        u_ele(3,count) = i + 1 + j*ui
-        u_ele(4,count) = i + j*ui
-      enddo
-    enddo
-
-    ! Create matrix that contains the node numbers for each v element
-    count = 0
-    do j=1,vj-1                         !z2v3.2
-      do i=1,vi-1
-        count = count + 1
-        v_ele(1,count) = i + (j-1)*vi
-        v_ele(2,count) = i + 1 + (j-1)*vi
-        v_ele(3,count) = i + 1 + j*vi
-        v_ele(4,count) = i + j*vi
-      enddo
-    enddo
 
     !--------------------------------------------------------------------------
     !--- CL-OGS: assign number to elements to identify their distance from the coast in elements
@@ -1277,22 +1317,10 @@ CONTAINS
         count = count + 1   !move to next node number
         !cycles through each variable replacing the vi,uj part with count
         !  essentially giving it node numbers
-        rx(count) = x_rho(i,j)
-        ry(count) = y_rho(i,j)
         depth(count) = euleriandepth(i,j)
       enddo
     enddo
    
-    ! Create matrices of GrainSize in rho node number format
-    if(read_GrainSize)then
-     count = 0
-     do j=1,uj
-      do i=1,vi
-        count = count + 1   !move to next node number
-        GrainSize(count) = GrainSize_tmp(i,j)
-      enddo
-     enddo
-    endif
 
     ! Create matrices of x/y values for u nodes in u node number format 
     count = 0
@@ -1333,7 +1361,6 @@ CONTAINS
         r_kwele_y(4,j,k) = ry(RE(4,j,k))  !--- CL-OGS: extention to 3d
     enddo
     enddo
-
     if(BoundaryBLNs) then  !--- CL-OGS: write rho_kwele and rho bottom level and mask in csv file
       do k=1,us_tridim
           write (filename, "(A,I0.3,A)") 'rho_kwele_',k,'.csv'
@@ -1420,6 +1447,7 @@ CONTAINS
           CLOSE(110)   
       enddo
     endif
+    ELE_SET=.TRUE.
 
     ! ************************ FIND ADJACENT ELEMENTS *************************
 
@@ -1535,12 +1563,9 @@ CONTAINS
      if ( ios /= 0 ) stop " ERROR writing v_Adjacent "
     endif 
     CLOSE(110)
-    GRD_SET = .TRUE.
 
     !DEALLOCATE SUBROUTINE VARIABLES
-    DEALLOCATE(euleriandepth,mask_u,mask_v,x_rho,y_rho)
-    if(read_GrainSize) DEALLOCATE(GrainSize_tmp) 
-    if(.not.Zgrid) DEALLOCATE(angle)
+    DEALLOCATE(euleriandepth,mask_u,mask_v)
     ! DEALLOCATE(r_ele,u_ele,v_ele,rho_mask,u_mask,v_mask)
     DEALLOCATE(r_ele,u_ele,v_ele)
 
@@ -1554,902 +1579,88 @@ CONTAINS
     !ff=123456
     !open (unit = ff, file = 'part_not_in_ele.py')
     !write(ff,'(a)')'import matplotlib.pyplot as plt'
-    deallocate(mask_rho_dble,mask_u_dble, mask_v_dble)
-  END SUBROUTINE initGrid
-
+  END SUBROUTINE initGrid_after_bounds
 
 
   SUBROUTINE initHydro()
-    !This Subroutine reads in the hydrodynamic information for the first 
-    !  iteration
-    USE PARAM_MOD, ONLY: numpar,ui,vi,uj,vj,us,ws,rho_nodes,u_nodes,v_nodes,   &
-        filenum,filestep,tdim,numdigits,recordnum,days,dt, &
-        readZeta,constZeta,readSalt,constSalt, &
-        !readNetcdfSwdown,                &
-        readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
-        constW,readAks,constAks,WindIntensity,readIwind,constIwind,            &
-        readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       & 
-        suffix,Hydro_NetCDF,                                                   &
-!      *****   IMIOM      *****
-          swan_prefix, swan_suffix,swan_filenum,WindWaveModel,SigWaveHeight,   &
-          MeanWavePeriod,PeakDirection,PeakWaveLength,OilOn
-!      ***** END IMIOM *****
-        
-    USE netcdf
-    USE RANDOM_MOD, ONLY: genrand_real1 !--- CL-OGS
-    USE CONVERT_MOD, ONLY: x2lon,y2lat  !--- CL-OGS
-#include "VAR_IDs.h"
-    IMPLICIT NONE
+    USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,tdim,rho_nodes,u_nodes,v_nodes,     &
+        filestep,Zgrid,suffix,Hydro_Netcdf,recordnum,OilOn
+      if(    ((trim(suffix).eq.'.nc'  .or. trim(suffix).eq.'.NC') .and. (.not. Hydro_NetCDF))      &
+        .or. ((trim(suffix).ne.'.nc' .and. trim(suffix).ne.'.NC') .and. (      Hydro_NetCDF))) then
+        write(*,*)'ERROR hydrodynamic suffix is "',trim(suffix),'" while Hydro_NetCDF is',Hydro_NetCDF
+        write(*,*)'(Hydro_NetCDF implemented for suffixes ".nc" and ".NC"'
+        write(*,*)'PROGRAM STOPS'
+        stop
+      elseif((.not.Zgrid) .and.(.not.Hydro_NetCDF))then
+        write(*,*)'ERROR non Zgrid hydrofile in non-netcdf format not accepted'
+        write(*,*)'PROGRAM STOPS'
+        stop
+      endif
 
-    INCLUDE 'netcdf.inc'
-
-    INTEGER :: STATUS,NCID,VID
-
-    INTEGER :: i,j,k,t,count,counter,kmask,kbot
-    INTEGER :: nfmax,nfn,nfnn,incrstepf,nf  !--- CL-OGS
-    DOUBLE PRECISION :: fac                !--- CL-OGS
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: romZ !,romSwdown
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:,:) :: romW,romKH,romS,romT, &
-                                                romD,romU, romV
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: modelUwind,modelVwind,&
-                                                         modelIwind  !--- CL-OGS
-    !--- CL-OGS: following variables added to handle MITgcm-files
-    !--- CL-OGS  (using a different file for every field variable )
-    INTEGER :: ios,nvarf,ktlev,waiting,rand15
-    INTEGER :: searchnode,nodestocopy,tcopy, k1, k2
-    REAL, ALLOCATABLE, DIMENSION(:) :: tmpvec  
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: dbltmpvec  
-    DOUBLE PRECISION, DIMENSION(3) :: salt_up,salt_around  
-    DOUBLE PRECISION :: temp_up(3),temp_around(3)  
-    DOUBLE PRECISION :: den_up(3),den_around(3)  
-    DOUBLE PRECISION :: KH_up(3),KH_around(3)  
-
-!      *****   IMIOM      *****
-    INTEGER :: scounter                                   !swan file counter
-    INTEGER :: startnum                                   !start record to read in file
-    INTEGER :: ntloop                                     !numer of time to loop through opening new file each time
-    INTEGER :: nloop                                      !loop counter
-    DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :,:,: ) :: swanHs,swantm01,      &
-                                   swanpd,swanwl
-!      ***** END IMIOM *****
-    if(    ((trim(suffix).eq.'.nc'  .or. trim(suffix).eq.'.NC') .and. (.not. Hydro_NetCDF))      &
-      .or. ((trim(suffix).ne.'.nc' .and. trim(suffix).ne.'.NC') .and. (      Hydro_NetCDF))) then
-      write(*,*)'ERROR hydrodynamic suffix is "',trim(suffix),'" while Hydro_NetCDF is',Hydro_NetCDF
-      write(*,*)'(Hydro_NetCDF implemented for suffixes ".nc" and ".NC"'
-      write(*,*)'PROGRAM STOPS'
-      stop
-    elseif((.not.Zgrid) .and.(.not.Hydro_NetCDF))then
-      write(*,*)'ERROR non Zgrid hydrofile in non-netcdf format not accepted'
-      write(*,*)'PROGRAM STOPS'
-      stop
-    endif
-
-    !ALLOCATE MODULE VARIABLES
-    !ALLOCATE(t_Swdown(3,rho_nodes))
-    ALLOCATE(t_zeta(3,rho_nodes))
-    ALLOCATE(t_salt(3,rho_nodes,us))
-    ALLOCATE(t_temp(3,rho_nodes,us))
-    ALLOCATE(t_Wvel(3,rho_nodes,ws))
-    ALLOCATE(t_den (3,rho_nodes,us))
-    ALLOCATE(t_KH  (3,rho_nodes,ws))
-    ALLOCATE(t_Uvel(3,  u_nodes,us))
-    ALLOCATE(t_Vvel(3,  v_nodes,us))
-    ALLOCATE(updatenodesbuffer(2,uj,3)) !--- CL-OGS
-
-    !t_Swdown = 0.
-    t_zeta = 0.
-    t_salt = 0.
-    t_temp = 0.
-    t_den  = 0.
-    t_KH   = 0.
-    t_Uvel = 0.
-    t_Vvel = 0.
-    t_Wvel = 0.
-
-    !ALLOCATE SUBROUTINE VARIABLES
-    !ALLOCATE(romSwdown(vi,uj,3))
-    ALLOCATE(romZ(vi,uj,3))
-    ALLOCATE(romW(vi,uj,ws,3))
-    ALLOCATE(romS(vi,uj,us,3))
-    ALLOCATE(romT(vi,uj,us,3))
-    ALLOCATE(romD(vi,uj,us,3))
-    ALLOCATE(romU(ui,uj,us,3))
-    ALLOCATE(romV(vi,vj,us,3))
-    ALLOCATE(romKH(vi,uj,ws,3))
-    romZ=0
-    romW=0
-    romS=0
-    romT=0
-    romD=0
-    romU=0
-    romV=0
-    romKH=0
-    ALLOCATE(tmpvec(vi)) !--- CL-OGS 
-    ALLOCATE(dbltmpvec(vi)) !--- CL-OGS 
-
-    !if(Wind .and. Zgrid)then !--- CL-OGS 
+      !ALLOCATE MODULE VARIABLES
+      !ALLOCATE(t_Swdown(3,rho_nodes))
+      ALLOCATE(t_zeta(3,rho_nodes))
+      ALLOCATE(t_salt(3,rho_nodes,us))
+      ALLOCATE(t_temp(3,rho_nodes,us))
+      ALLOCATE(t_Wvel(3,rho_nodes,ws))
+      ALLOCATE(t_den (3,rho_nodes,us))
+      ALLOCATE(t_KH  (3,rho_nodes,ws))
+      ALLOCATE(t_Uvel(3,  u_nodes,us))
+      ALLOCATE(t_Vvel(3,  v_nodes,us))
+      ALLOCATE(updatenodesbuffer(2,uj,3)) !--- CL-OGS
       ALLOCATE(t_uwind(3,  u_nodes))
       ALLOCATE(t_vwind(3,  v_nodes))
+      ALLOCATE(t_iwind(3,  rho_nodes))
+
+      !t_Swdown = 0.
+      t_zeta = 0.
+      t_salt = 0.
+      t_temp = 0.
+      t_den  = 0.
+      t_KH   = 0.
+      t_Uvel = 0.
+      t_Vvel = 0.
+      t_Wvel = 0.
       t_uwind = 0
       t_vwind = 0 
-      ALLOCATE(modelUwind(ui,uj,3))  
-      ALLOCATE(modelVwind(vi,vj,3))  
-      modelUwind =0
-      modelVwind =0
-    !endif
-      ALLOCATE(modelIwind(vi,uj,3))
-    if(WindIntensity .and. Zgrid)then
-      ALLOCATE(t_iwind(3,  rho_nodes))
       t_iwind = 0
-    endif
-    !-----------------------------------------------------
-    IF(OilOn)THEN
-        !ALLOCATE IMIOM MODULE AND SUBROUTINE VARIABLES
-        ALLOCATE(t_hsig (3,rho_nodes))
-        ALLOCATE(t_tm01 (3,rho_nodes))
-        ALLOCATE(t_pdir (3,rho_nodes)) 
-        ALLOCATE(t_wlen (3,rho_nodes))
-
-        t_hsig  = 0
-        t_tm01  = 0
-        t_pdir  = 0
-        t_wlen  = 0
-
-        ALLOCATE(swanHs(vi,uj,3))  !--- CL-OGS : changed 1 -> 3
-        ALLOCATE(swantm01(vi,uj,3))!--- CL-OGS : changed 1 -> 3
-        ALLOCATE(swanpd(vi,uj,3))  !--- CL-OGS : changed 1 -> 3
-        ALLOCATE(swanwl(vi,uj,3))  !--- CL-OGS : changed 1 -> 3
-        !ALLOCATE(modelUwind(ui,uj,1))  !--- CL-OGS : commented out 
-        !ALLOCATE(modelVwind(vi,vj,1))  !--- CL-OGS : commented out
-    END IF      !OilOn
-    iint = 0
-
-    
-    !if(not Zgrid)then  !--- CL-OGS : restricting to ROMS hydro files !--- CL-OGS : commented out
-    ! if(tdim .lt. 3)then                                                   !--- CL-OGS : commented out
-    !      stepf = 1                                                       !--- CL-OGS : commented out
-    ! else                                                                  !--- CL-OGS : commented out
-    !      stepf = 3                                                       !--- CL-OGS : commented out
-    ! end if                                                                !--- CL-OGS : commented out
-    !endif                                                                  !--- CL-OGS : commented out
-    !--- CL-OGS : commented out the IMIOM following code lines 
-    !DO nloop = 1, 3
-
-    ! !Open netCDF file
-    ! if(nloop .eq. 1)then
-    !       iint = 0
-    !       startnum = 1
-    ! else
-    !       SELECT CASE(tdim)
-    !             case(1)
-    !                   iint = iint + 1
-    !                   startnum = startnum
-    !             case(2)
-    !                   iint = iint + mod(nloop,tdim)
-    !                   if(startnum .eq. 1)then
-    !                         startnum = startnum + 1
-    !                   else
-    !                         startnum = startnum - 1
-    !                   end if
-    !             case default      !3 or greater
-    !                   iint = iint
-    !                   startnum = startnum + 1
-    !       END SELECT
-    ! end if
-!    ***** END IMIOM *****
-
-    ! Verfications of consistency of the input parameter for hydro files:
-    if  (tdim == 0 .and. filestep.ne.0 ) then
-        write(*,*) 'error inconsistency between tdim null=',tdim,              &
-                   ' and filestep=',filestep
-        stop
-    endif
-
-    if  (tdim.ne.0 .and. filestep == 0 )  then
-        write(*,*) 'warning tdim=',tdim,                   &
-                   ' and filestep null=',filestep
-    endif
-    if  (tdim == 1 .and. recordnum.ne.1)  then
-        write(*,*) 'error inconsistency between tdim unitary=',tdim,          &
-                   ' and recordnum=',recordnum
-        stop
-    endif
-
-    if (tdim==1)then ! each of the three timestep are in different files
-      nfmax=3
-      nfn=1
-      nfnn=1
-      incrstepf=1
-    elseif(tdim==0 .or. (tdim>=(recordnum+3))) then ! all threetimesteps are in the same file
-      nfmax=1
-      nfn=1
-      nfnn=3
-      incrstepf=3
-    else
-      write(*,*)'case where the first 3 time steps are ',                      &
-                 'in 2 different files not yet implemented.'
-      write(*,*)'the program will now stop.'
-      stop
-    endif
-    stepf=recordnum-1    !Forward step is (recordnum+3)rd time step of file
-
-    !t_ijruv = (/175,195,155,175,175,195,155,175,175,195,155,175/)
-
-    t_b = 1    !Back step is 1st time step in arrays
-    t_c = 2    !Center step is 2nd time step in arrays
-    t_f = 3    !Forward step is 3rd time step in arrays
-
-    !Get i/j max/min for rho/u/v
-    call setijruv()
-
-
-    DO nf=1,nfmax
-      !Open netCDF file
-      if (nf>1) then
-        iint=iint+filestep
-        nfn=nfn+1
-        nfnn=nfnn+1
+      if(OilOn)then  !ALLOCATE IMIOM MODULE AND SUBROUTINE VARIABLES
+          ALLOCATE(t_hsig (3,rho_nodes))
+          ALLOCATE(t_tm01 (3,rho_nodes))
+          ALLOCATE(t_pdir (3,rho_nodes)) 
+          ALLOCATE(t_wlen (3,rho_nodes))
+          t_hsig  = 0
+          t_tm01  = 0
+          t_pdir  = 0
+          t_wlen  = 0
+      endif
+      iint = 0
+      ! Verfications of consistency of the input parameter for hydro files:
+      if  (tdim == 0 .and. filestep.ne.0 ) then
+          write(*,*) 'error inconsistency between tdim null=',tdim,              &
+                     ' and filestep=',filestep
+          stop
       endif
 
-      counter=iint+filenum  !176 + 1 = 177 --> June 26,1995
-      countfilenum=counter
-      stepf=stepf+incrstepf
-      write(*,*)'reading record ',recordnum,':',recordnum+incrstepf-1
-
-      ! Read in data for first three external time steps
-      !------------------------------------
-      if(readZeta)then  
-        call read_data_from_file(VAR_ID_zeta,vi,uj,1,3,nf,nfn,nfnn,romZ,recordnum,incrstepf)
-      else
-        romZ = constZeta
+      if  (tdim.ne.0 .and. filestep == 0 )  then
+          write(*,*) 'warning tdim=',tdim,                   &
+                     ' and filestep null=',filestep
       endif
-      !------------------------------------
-      if(readSalt)then
-        call read_data_from_file(VAR_ID_salt,vi,uj,us,3,nf,nfn,nfnn,romS,recordnum,incrstepf)
-      else
-        romS = constSalt
+      if  (tdim == 1 .and. recordnum.ne.1)  then
+          write(*,*) 'error inconsistency between tdim unitary=',tdim,          &
+                     ' and recordnum=',recordnum
+          stop
       endif
-      !------------------------------------
-      if(readTemp)then  
-        call read_data_from_file(VAR_ID_temp,vi,uj,us,3,nf,nfn,nfnn,romT,recordnum,incrstepf)
-      else
-        romT = constTemp
-      endif
-      !------------------------------------
-      if(readDens)then  
-        call read_data_from_file(VAR_ID_den,vi,uj,us,3,nf,nfn,nfnn,romD,recordnum,incrstepf)
-      else
-        romD = constDens
-      endif
-      !------------------------------------
-      if(readU)then  
-        call read_data_from_file(VAR_ID_uvel,ui,uj,us,3,nf,nfn,nfnn,romU,recordnum,incrstepf)
-      else
-        romU = constU
-      endif
-      !------------------------------------
-      if(readV)then  
-          call read_data_from_file(VAR_ID_vvel,vi,vj,us,3,nf,nfn,nfnn,romV,recordnum,incrstepf)
-      else
-        romV = constV
-      endif
-      !------------------------------------
-      if(readW)then  
-        call read_data_from_file(VAR_ID_wvel,vi,uj,ws,3,nf,nfn,nfnn,romW,recordnum,incrstepf)
-      else
-        romW = constW
-      endif
-      !------------------------------------
-      if(readAks)then  
-        call read_data_from_file(VAR_ID_kh,vi,uj,us,3,nf,nfn,nfnn,romKH,recordnum,incrstepf)
-      else
-        romKH = constAks
-      endif
-      !------------------------------------
-      if(Wind .and.readUwind)then  
-        call read_data_from_file(VAR_ID_uwind,ui,uj,1,3,nf,nfn,nfnn,modelUwind,recordnum,incrstepf)
-      else
-        modelUwind = constUwind
-      endif       
-      !------------------------------------
-      if(Wind .and.readVwind)then  
-        call read_data_from_file(VAR_ID_vwind,vi,vj,1,3,nf,nfn,nfnn,modelVwind,recordnum,incrstepf)
-      else
-        modelVwind = constVwind
-      endif
-      !------------------------------------
-      if(readIwind)then  
-        call read_data_from_file(VAR_ID_iwind,vi,uj,1,3,nf,nfn,nfnn,modelIwind,recordnum,incrstepf)
-      else
-        modelIwind = constIwind
-      endif
-      !------------------------------------
 
+      stepf=recordnum-1    !Forward step is (recordnum+3)rd time step of file
 
-    ENDDO !nf=1,nfmax
-      
-      ! Store the ranges of nodes that were update
-      updatenodesbuffer=0
-      ! rho node range
-      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-        updatenodesbuffer(1,j,1) = (j-1)*vi + t_ijruv(IMIN,RNODE) ! frst rnode at latitude j
-        updatenodesbuffer(2,j,1) = (j-1)*vi + t_ijruv(IMAX,RNODE) ! last rnode at latitude j
-      enddo
-      write(*,'(2(a,2i5))')'updating rho nodes data in i=',t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE),         &
-                ' j=',t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
+      !t_ijruv = (/175,195,155,175,175,195,155,175,175,195,155,175/)
 
-     !write(*,'(a,F10.5,a,F10.5,a)')'lon=[ ',                                  &
-     ! x2lon(rx(updatenodesbuffer(1,t_ijruv(JMIN,RNODE),1)),                            &
-     !       ry(updatenodesbuffer(1,t_ijruv(JMIN,RNODE),1))),' : ',                     &
-     ! x2lon(rx(updatenodesbuffer(2,t_ijruv(JMAX,RNODE),1)),                            &
-     !       ry(updatenodesbuffer(2,t_ijruv(JMAX,RNODE),1))),' ]'
-     !write(*,'(a,F10.5,a,F10.5,a)')'lat=[ ',                                  &
-     ! y2lat(ry(updatenodesbuffer(1,t_ijruv(JMIN,RNODE),1))),' : ' ,                    &
-     ! y2lat(ry(updatenodesbuffer(2,t_ijruv(JMAX,RNODE),1))),' ]'
+      t_b = 1    !Back step is 1st time step in arrays
+      t_c = 2    !Center step is 2nd time step in arrays
+      t_f = 3    !Forward step is 3rd time step in arrays
 
-      ! u node range
-       
-      do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-        updatenodesbuffer(1,j,2) = (j-1)*ui + t_ijruv(IMIN,UNODE) ! frst unode at latitude j
-        updatenodesbuffer(2,j,2) = (j-1)*ui + t_ijruv(IMAX,UNODE) ! last unode at latitude j
-      enddo
-      write(*,*)'updating u nodes data in i=',t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE),' j=',     &
-                   t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-     !write(*,'(a,F10.5,a,F10.5,a)')'lon=[ ',                                  &
-     ! x2lon(ux(updatenodesbuffer(1,t_ijruv(JMIN,UNODE),2)),                            &
-     !       uy(updatenodesbuffer(1,t_ijruv(JMIN,UNODE),2))),' : ',                     &
-     ! x2lon(ux(updatenodesbuffer(2,t_ijruv(JMAX,UNODE),2)),                            &
-     !       uy(updatenodesbuffer(2,t_ijruv(JMAX,UNODE),2))),' ]'
-     !write(*,'(a,F10.5,a,F10.5,a)')'lat=[ ',                                  &
-     ! y2lat(uy(updatenodesbuffer(1,t_ijruv(JMIN,UNODE),2))),' : ',                     &
-     ! y2lat(uy(updatenodesbuffer(2,t_ijruv(JMAX,UNODE),2))),' ]'
-
-      ! v node range
-      do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-        updatenodesbuffer(1,j,3) = (j-1)*vi + t_ijruv(IMIN,VNODE)  ! frst vnode at latitude j
-        updatenodesbuffer(2,j,3) = (j-1)*vi + t_ijruv(IMAX,VNODE) ! last vnode at latitude j
-      enddo
-      write(*,*)'updating v nodes data in i=',t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE),' j=',    &
-                t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-     !write(*,'(a,F10.5,a,F10.5,a)')'lon=[ ',                                  &
-     ! x2lon(vx(updatenodesbuffer(1,t_ijruv(JMIN,VNODE),3)),                           &
-     !       vy(updatenodesbuffer(1,t_ijruv(JMIN,VNODE),3))),' : ',                    &
-     ! x2lon(vx(updatenodesbuffer(2,t_ijruv(JMAX,VNODE),3)),                           &
-     !       vy(updatenodesbuffer(2,t_ijruv(JMAX,VNODE),3))),' ]'                        
-     !write(*,'(a,F10.5,a,F10.5,a)')'lat=[ ',                                  &
-     ! y2lat(vy(updatenodesbuffer(1,t_ijruv(JMIN,VNODE),3))),' : ',                    &
-     ! y2lat(vy(updatenodesbuffer(2,t_ijruv(JMAX,VNODE),3))),' ]'
-
-
-      !Reshape input to fit node numbers assigned to elements
-      do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-        !write(*,*)'initHydro nodes',(j-1)*vi + t_ijruv(IMIN,RNODE),':',& 
-        !   (j-1)*vi + t_ijruv(IMAX,RNODE)
-        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-          count = (j-1)*vi + i
-          do k=1,us
-            kmask=min(k,us_tridim) 
-            t_salt(1,count,k) = romS(i,j,k,1) * m_r(i,j,kmask)
-            t_salt(2,count,k) = romS(i,j,k,2) * m_r(i,j,kmask)
-            t_salt(3,count,k) = romS(i,j,k,3) * m_r(i,j,kmask)
-            t_temp(1,count,k) = romT(i,j,k,1) * m_r(i,j,kmask)
-            t_temp(2,count,k) = romT(i,j,k,2) * m_r(i,j,kmask)
-            t_temp(3,count,k) = romT(i,j,k,3) * m_r(i,j,kmask)
-            t_Wvel(1,count,k+1) = romW(i,j,k+1,1) * m_r(i,j,kmask)
-            t_Wvel(2,count,k+1) = romW(i,j,k+1,2) * m_r(i,j,kmask)
-            t_Wvel(3,count,k+1) = romW(i,j,k+1,3) * m_r(i,j,kmask)
-            t_den(1,count,k) = (romD(i,j,k,1) + DBLE(1000.0)) * m_r(i,j,kmask)
-            t_den(2,count,k) = (romD(i,j,k,2) + DBLE(1000.0)) * m_r(i,j,kmask)
-            t_den(3,count,k) = (romD(i,j,k,3) + DBLE(1000.0)) * m_r(i,j,kmask)
-            t_KH(1,count,k+1) = romKH(i,j,k+1,1) * m_r(i,j,kmask)                
-            t_KH(2,count,k+1) = romKH(i,j,k+1,2) * m_r(i,j,kmask)                
-            t_KH(3,count,k+1) = romKH(i,j,k+1,3) * m_r(i,j,kmask)                
-          enddo                                         
-          t_Wvel(1,count,1) = romW(i,j,1,1) * m_r(i,j,1)  ! BEUG? SHOULD BE 0?               
-          t_Wvel(2,count,1) = romW(i,j,1,2) * m_r(i,j,1)  ! BEUG? SHOULD BE 0?               
-          t_Wvel(3,count,1) = romW(i,j,1,3) * m_r(i,j,1)  ! BEUG? SHOULD BE 0?                
-          t_KH(1,count,1) =  romKH(i,j,1,1) * m_r(i,j,1)
-          t_KH(2,count,1) =  romKH(i,j,1,2) * m_r(i,j,1)
-          t_KH(3,count,1) =  romKH(i,j,1,3) * m_r(i,j,1)
-          t_zeta(1,count) =    romZ(i,j,1) *    m_r(i,j,us_tridim)
-          t_zeta(2,count) =    romZ(i,j,2) *    m_r(i,j,us_tridim)
-          t_zeta(3,count) =    romZ(i,j,3) *    m_r(i,j,us_tridim)
-          !t_Swdown(1,count) =    romSwdown(i,j,1) 
-          !t_Swdown(2,count) =    romSwdown(i,j,2) 
-          !t_Swdown(3,count) =    romSwdown(i,j,3) 
-        enddo
-      enddo
-
-      do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-        do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-          count = (j-1)*ui + i
-          do k=1,us
-            kmask=min(k,us_tridim) 
-            t_Uvel(1,count,k) = romU(i,j,k,1) * m_u(i,j,kmask)
-            t_Uvel(2,count,k) = romU(i,j,k,2) * m_u(i,j,kmask)
-            t_Uvel(3,count,k) = romU(i,j,k,3) * m_u(i,j,kmask)
-          enddo
-        enddo
-      enddo
-
-      do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-        do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-          count = (j-1)*vi + i
-          do k=1,us
-            kmask=min(k,us_tridim)
-            t_Vvel(1,count,k) = romV(i,j,k,1) * m_v(i,j,kmask)
-            t_Vvel(2,count,k) = romV(i,j,k,2) * m_v(i,j,kmask)
-            t_Vvel(3,count,k) = romV(i,j,k,3) * m_v(i,j,kmask)
-          enddo
-        enddo    
-      enddo
-
-
-      if(Zgrid)then
-        ! COPY DATA OF FIRST CELL ABOVE THE BOTTOM TO ALL CELLS BELOW 
-        nodestocopy=1
-        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-         !write(*,'(8(a,i4),a)')&
-         !  '---------------------------------------------- j=',j,&
-         !' (in [',t_ijruv(JMIN,RNODE),',',t_ijruv(JMAX,RNODE), &
-         !']) i=[',t_ijruv(IMIN,RNODE),',',t_ijruv(IMAX,RNODE),'] --- ui=',ui, &
-         !' uj=',uj,' us=',us,'----------------------------------------------'
-          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-            count = (j-1)*vi + i
-            kbot=BottomK(i,j,1)
-            if(kbot>1)then
-             if(kbot<ws)then
-              t_salt(:,count,kbot-1) = t_salt(:,count,kbot)
-              t_temp(:,count,kbot-1) = t_temp(:,count,kbot)
-              t_den(:,count,kbot-1)  = t_den(:,count,kbot) 
-              t_KH(:,count,kbot-1)   = t_KH(:,count,kbot)  
-             endif
-             do searchnode=nodestocopy,NUM_COPNOD(RNODE)
-               if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(RNODE,searchnode).ge.count)exit
-             enddo
-             do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
-               k1=klev_COPNOD(RNODE,nodestocopy,2)
-               k2=klev_COPNOD(RNODE,nodestocopy,1)
-               do tcopy=1,3
-                 t_salt(tcopy,count,k1:k2)=(                        &
-                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
-                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
-                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
-                 t_salt(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
-                 t_temp(tcopy,count,k1:k2)=(                        &
-                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
-                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
-                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
-                 t_temp(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
-                 t_den(tcopy,count,k1:k2)=(                        &
-                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
-                            *Coef_COPNOD(RNODE,nodestocopy,1) +  &
-                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
-                            *Coef_COPNOD(RNODE,nodestocopy,2) +  &
-                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
-                            *Coef_COPNOD(RNODE,nodestocopy,3) +  &
-                 t_den(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
-                            *Coef_COPNOD(RNODE,nodestocopy,4) ) 
-                 t_KH(tcopy,count,k1:k2)=(                        &
-                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
-                           *Coef_COPNOD(RNODE,nodestocopy,1) +  &
-                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
-                           *Coef_COPNOD(RNODE,nodestocopy,2) +  &
-                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
-                           *Coef_COPNOD(RNODE,nodestocopy,3) +  &
-                 t_KH(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
-                           *Coef_COPNOD(RNODE,nodestocopy,4) ) 
-               enddo
-               nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
-             enddo !while
-            endif
-            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
-          enddo    
-          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
-        enddo
-
-        nodestocopy=1
-        do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-          do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-           count = (j-1)*ui + i
-           kbot=BottomK(i,j,2)
-           if( kbot>1)then
-             if(kbot<ws)then
-               t_Uvel(:,count,kbot-1) =  t_Uvel(:,count,kbot)
-             endif
-             do searchnode=nodestocopy,NUM_COPNOD(UNODE)
-               if(Node_COPNOD(UNODE,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(UNODE,searchnode).ge.count)exit
-             enddo
-             do while(Node_COPNOD(UNODE,nodestocopy).eq.count)
-               k1=klev_COPNOD(UNODE,nodestocopy,2)
-               k2=klev_COPNOD(UNODE,nodestocopy,1)
-               do tcopy=1,3
-                 t_Uvel(tcopy,count,k1:k2)=(                        &
-                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(UNODE,nodestocopy,1) +  &
-                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(UNODE,nodestocopy,2) +  &
-                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(UNODE,nodestocopy,3) +  &
-                 t_Uvel(tcopy,Nghb_COPNOD(UNODE,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(UNODE,nodestocopy,4) ) 
-               enddo  !tcopy
-               nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
-             enddo !While
-           endif
-           if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
-          enddo    
-          if(nodestocopy.gt.NUM_COPNOD(UNODE))exit
-        enddo
-
-
-        nodestocopy=1
-        do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-          do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-           count = (j-1)*vi + i
-           kbot=BottomK(i,j,3)
-           if( kbot>1)then
-             if(kbot<ws)then
-               t_Vvel(:,count,kbot-1) =  t_Vvel(:,count,kbot)
-             endif
-             do searchnode=nodestocopy,NUM_COPNOD(VNODE)
-               if(Node_COPNOD(VNODE,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(VNODE,searchnode).ge.count)exit
-             enddo
-             do while(Node_COPNOD(VNODE,nodestocopy).eq.count)
-               k1=klev_COPNOD(VNODE,nodestocopy,2)
-               k2=klev_COPNOD(VNODE,nodestocopy,1)
-               do tcopy=1,3
-                 t_Vvel(tcopy,count,k1:k2)=(                        &
-                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(VNODE,nodestocopy,1) +  &
-                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(VNODE,nodestocopy,2) +  &
-                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(VNODE,nodestocopy,3) +  &
-                 t_Vvel(tcopy,Nghb_COPNOD(VNODE,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(VNODE,nodestocopy,4) ) 
-               enddo  !tcopy
-               nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
-             enddo !While
-           endif
-           if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
-          enddo    
-          if(nodestocopy.gt.NUM_COPNOD(VNODE))exit
-        enddo      
-  
-        nodestocopy=1
-        do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-          do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-            count = (j-1)*vi + i
-            kbot=BottomK(i,j,1)
-            if(kbot>1)then
-             if(kbot<ws)then
-              t_Wvel(:,count,kbot-1) = t_Wvel(:,count,kbot)
-             endif
-             do searchnode=nodestocopy,NUM_COPNOD(RNODE)
-               if(Node_COPNOD(RNODE,searchnode).le.count)nodestocopy=searchnode
-               if(Node_COPNOD(RNODE,searchnode).ge.count)exit
-             enddo
-             do while(Node_COPNOD(RNODE,nodestocopy).eq.count)
-               k1=klev_COPNOD(RNODE,nodestocopy,2)
-               k2=klev_COPNOD(RNODE,nodestocopy,1)
-               do tcopy=1,3
-                 t_Wvel(tcopy,count,k1:k2)=(                        &
-                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,1),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,1) +  &
-                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,2),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,2) +  &
-                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,3),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,3) +  &
-                 t_Wvel(tcopy,Nghb_COPNOD(RNODE,nodestocopy,4),k1:k2) &
-                             *Coef_COPNOD(RNODE,nodestocopy,4) ) 
-               enddo
-               nodestocopy = nodestocopy +1
-               if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
-             enddo !while
-            endif
-            if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
-          enddo    
-          if(nodestocopy.gt.NUM_COPNOD(RNODE))exit
-        enddo
-
- 
-     endif ! (Zgrid)
-
-    ! --- CL-OGS : 
-    write(*,*)'counter at inithydro=',counter-2*432,counter-432,counter
-      ! --- CL-OGS : 
-       do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-        do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-          count = (j-1)*ui + i
-          t_uwind(1,count) =    modelUwind(i,j,1) *    m_u(i,j,us_tridim)
-          t_uwind(2,count) =    modelUwind(i,j,2) *    m_u(i,j,us_tridim)
-          t_uwind(3,count) =    modelUwind(i,j,3) *    m_u(i,j,us_tridim)
-        enddo
-       enddo
-       do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-        do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-          count = (j-1)*vi + i
-          t_vwind(1,count) =    modelVwind(i,j,1) *    m_v(i,j,us_tridim)
-          t_vwind(2,count) =    modelVwind(i,j,2) *    m_v(i,j,us_tridim)
-          t_vwind(3,count) =    modelVwind(i,j,3) *    m_v(i,j,us_tridim)
-        enddo
-       enddo
-      if(WindIntensity .and. Zgrid)then
-       do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-        do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-          count = (j-1)*vi + i
-          t_iwind(1,count) =    modelIwind(i,j,1) *    m_r(i,j,us_tridim)
-          t_iwind(2,count) =    modelIwind(i,j,2) *    m_r(i,j,us_tridim)
-          t_iwind(3,count) =    modelIwind(i,j,3) *    m_r(i,j,us_tridim)
-        enddo
-       enddo
-      endif
-      !  ***    IMIOM *****
-      ! WIND WAVE MODEL DATA  ------------------------------------
-      IF(OilOn)then
-       if(WindWaveModel)THEN
-         write(*,*)'WindWaveModel activated'
-         if (tdim==1)then ! each of the three timestep are in different files
-           nfmax=3
-           nfn=1
-           nfnn=1
-           incrstepf=1
-         elseif(tdim==0 .or. (tdim>=(recordnum+3))) then ! all threetimesteps are in the same file
-           nfmax=1
-           nfn=1
-           nfnn=3
-           incrstepf=3
-         else
-           write(*,*)'case where the first 3 time steps are in 2 different files not yet implemented.'
-           write(*,*)'the program will now stop.'
-           stop
-         endif
-         stepf=recordnum-1    !Forward step is (recordnum+3)rd time step of file
-         DO nf=1,nfmax
-            if (nf>1) then
-              iint=iint+filestep
-              nfn=nfn+1
-              nfnn=nfnn+1
-            endif
-            counter=iint+filenum  !176 + 1 = 177 --> June 26,1995
-            countfilenum=counter
-
-            stepf=stepf+incrstepf
-            nvarf=1
-            scounter = iint + swan_filenum
-
-            call set_filename(VAR_ID_swan,scounter,swannm)
-
-            ! Read in data for first three external time steps
-            STATUS = NF90_OPEN(TRIM(swannm), NF90_NOWRITE, NCID)
-            if (STATUS .NE. NF90_NOERR) then
-              write(*,*) 'Problem NF90_OPEN'
-              write(*,*) NF90_STRERROR(STATUS)
-              stop
-            endif
-                ! **** Hsig ****
-                startz(1)=t_ijruv(IMIN,RNODE)
-                startz(2)=t_ijruv(JMIN,RNODE)
-                startz(3)=recordnum
-
-                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-                countr(3)=incrstepf
-
-                STATUS = NF90_INQ_VARID(NCID,'Hs',VID)
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem find Hs'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                STATUS = NF90_GET_VAR(NCID,VID,swanHs(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),   &
-                              t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
-
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem read SwanHs array'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                ! **** tm01 ****
-                startz(1)=t_ijruv(IMIN,RNODE)
-                startz(2)=t_ijruv(JMIN,RNODE)
-                startz(3)=recordnum
-
-                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-                countr(3)=incrstepf
-
-                STATUS = NF90_INQ_VARID(NCID,'tm01',VID)
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem find tm01'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                STATUS = NF90_GET_VAR(NCID,VID,swantm01(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE), &
-                           t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
-
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem read swantm01 array'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                ! **** u10 ****
-                startr(1)=t_ijruv(IMIN,UNODE)
-                startr(2)=t_ijruv(JMIN,UNODE)
-                startz(3)=recordnum
-
-                countr(1)=t_ijruv(IMAX,UNODE)-t_ijruv(IMIN,UNODE)+1
-                countr(2)=t_ijruv(JMAX,UNODE)-t_ijruv(JMIN,UNODE)+1
-                countr(3)=incrstepf
-
-                STATUS = NF90_INQ_VARID(NCID,'u10',VID)
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem find u10'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                STATUS=NF90_GET_VAR(NCID,VID,modelUwind(t_ijruv(IMIN,UNODE):t_ijruv(IMAX,UNODE), &
-                               t_ijruv(JMIN,UNODE):t_ijruv(JMAX,UNODE),nfn:nfnn),STARTz,COUNTz)
-
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem read swanU array'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                ! **** V10 ****
-                startr(1)=t_ijruv(IMIN,VNODE)
-                startr(2)=t_ijruv(JMIN,VNODE)
-                startz(3)=recordnum
-
-                countr(1)=t_ijruv(IMAX,VNODE)-t_ijruv(IMIN,VNODE)+1
-                countr(2)=t_ijruv(JMAX,VNODE)-t_ijruv(JMIN,VNODE)+1
-                countr(3)=incrstepf
-
-                STATUS = NF90_INQ_VARID(NCID,'v10',VID)
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem find v10'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                STATUS=NF90_GET_VAR(NCID,VID,modelVwind(t_ijruv(IMIN,VNODE):t_ijruv(IMAX,VNODE),&
-                       t_ijruv(JMIN,VNODE):t_ijruv(JMAX,VNODE),nfn:nfnn),STARTz,COUNTz)
-
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem read swanV array'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                ! **** PeakDir ****
-                startz(1)=t_ijruv(IMIN,RNODE)
-                startz(2)=t_ijruv(JMIN,RNODE)
-                startz(3)=recordnum
-
-                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-                countr(3)=incrstepf
-
-                STATUS = NF90_INQ_VARID(NCID,'Pd',VID)
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem find Pd'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                STATUS=NF90_GET_VAR(NCID,VID,swanpd(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),     &
-                             t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
-
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem read swanpd array'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                ! **** PeakWaveLength ****
-                startz(1)=t_ijruv(IMIN,RNODE)
-                startz(2)=t_ijruv(JMIN,RNODE)
-                startz(3)=recordnum
-
-                countz(1)=t_ijruv(IMAX,RNODE)-t_ijruv(IMIN,RNODE)+1
-                countz(2)=t_ijruv(JMAX,RNODE)-t_ijruv(JMIN,RNODE)+1
-                countr(3)=incrstepf
-
-                STATUS = NF90_INQ_VARID(NCID,'Pwl',VID)
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem find Pwl'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-                STATUS = NF90_GET_VAR(NCID,VID,swanwl(t_ijruv(IMIN,RNODE):t_ijruv(IMAX,RNODE),   &
-                                 t_ijruv(JMIN,RNODE):t_ijruv(JMAX,RNODE),nfn:nfnn),STARTz,COUNTz)
-
-                if (STATUS .NE. NF90_NOERR) then
-                  write(*,*) 'Problem read swanwl array'
-                  write(*,*) NF90_STRERROR(STATUS)
-                  stop
-                endif
-
-            !close the dataset and reassign the NCID
-            STATUS = NF90_CLOSE(NCID)
-         ENDDO
-
-         write(*,*)'Wind fields will be overwritten by Wave Model Winds'
-         DO nloop=1,3
-           do j=t_ijruv(JMIN,UNODE),t_ijruv(JMAX,UNODE)
-             do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
-               count = (j-1)*ui + i
-               t_uwind(nloop,count) = modelUwind(i,j,nloop) * m_u(i,j,us_tridim)
-             enddo
-           enddo
-         ENDDO
-         DO nloop=1,3
-           do j=t_ijruv(JMIN,VNODE),t_ijruv(JMAX,VNODE)
-             do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
-               count = (j-1)*vi + i
-               t_vwind(nloop,count) = modelVwind(i,j,nloop) * m_v(i,j,us_tridim)
-             enddo
-           enddo
-         ENDDO
-        else   ! if WindWaveModel
-              write(*,*)'WindWaveModel not activated'
-              swanHs   = SigWaveHeight
-              swantm01 = MeanWavePeriod
-              swanpd   = PeakDirection
-              swanwl   = PeakWaveLength
-        endif                ! if WindWaveModel
-
-        !Reshape input to fit node numbers assigned to elements
-        DO nloop=1,3
-         do j=t_ijruv(JMIN,RNODE),t_ijruv(JMAX,RNODE)
-            do i=t_ijruv(IMIN,RNODE),t_ijruv(IMAX,RNODE)
-              count = (j-1)*vi + i
-              t_hsig(nloop,count) = swanHs(i,j,nloop) * m_r(i,j,us_tridim)
-              t_tm01(nloop,count) = swantm01(i,j,nloop) * m_r(i,j,us_tridim)
-              t_pdir(nloop,count) = swanpd(i,j,nloop) * m_r(i,j,us_tridim)
-              t_wlen(nloop,count) = swanwl(i,j,nloop) * m_r(i,j,us_tridim)
-            enddo
-         enddo
-        ENDDO
-      END IF        ! if OilOn
-
-
-     !DEALLOCATE SUBROUTINE VARIABLES
-     if(OilOn)then
-             DEALLOCATE(swanHs,swantm01,swanpd,swanwl)
-     END IF        !if OilOn
-
-
-    !DEALLOCATE SUBROUTINE VARIABLES
-    DEALLOCATE(romZ,romW,romD,romKH,romS,romT,romU,romV,&
-                 modelUwind,modelVwind,modelIwind)
-    !DEALLOCATE(romSwdown)
-
-    write(*,*)'counter at end of inithydro=',counter
   END SUBROUTINE initHydro
-
 
   SUBROUTINE updateHydro()
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,tdim,rho_nodes,u_nodes,v_nodes,     &
@@ -2459,7 +1670,7 @@ CONTAINS
         !readNetcdfSwdown,                                    &
         startfile,filestep,                                              &
         readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       &  !--- CL-OGS:
-        WindIntensity,readIwind,constIwind,                                    &
+        WindIntensity,readIwind,constIwind,suffix,Hydro_Netcdf,recordnum,    &
 !      *****   IMIOM      *****
           swan_prefix, swan_suffix,swan_filenum,WindWaveModel,SigWaveHeight,   &
           MeanWavePeriod,PeakDirection,PeakWaveLength,OilOn
@@ -2471,7 +1682,7 @@ CONTAINS
 
     INCLUDE 'netcdf.inc'
 
-    INTEGER :: STATUS,NCID,VID,FID
+    INTEGER :: STATUS,NCID,VID
 
     INTEGER :: i,j,k,t,count,counter,kmask,kbot
 
@@ -2522,18 +1733,10 @@ CONTAINS
         ALLOCATE(swanpdf(vi,uj,1))
         ALLOCATE(swanwlf(vi,uj,1))
     end if
-     
-    !Rotate Indices
-    t_b = mod(t_b,3)+1  ! 1 -> 2 -> 3 -> 1
-    t_c = mod(t_c,3)+1  ! 2 -> 3 -> 1 -> 2
-    t_f = mod(t_f,3)+1  ! 3 -> 1 -> 2 -> 3
-
 
     !if the current input file is not yet finished, just increment stepf to 
     !  the next time step
-    IF (( &! (startfile .AND. (iint==0) .AND. (stepf==tdim)) .OR.   &
-         (stepf .LT. tdim) )      .OR. filestep==0              ) THEN
-
+    IF (stepf .LT. tdim) THEN
       stepf=stepf+1
       counter=countfilenum
       write(*,*)'continue reading in previous hydro file from record ',stepf
@@ -2548,17 +1751,20 @@ CONTAINS
       countfilenum=counter
       stepf = 1
       write(*,*)'opening new hydro file number',counter
-      if(filestep.eq.0)then
+      if(filestep.eq.0.and.tdim>1)then
         write(*,*)'ERROR filestep null while record numbers read in input files reached tdim=',tdim
         write(*,*)'PROGRAM STOPS'
         stop
       endif
     ENDIF
 
+    !Rotate Indices
+    t_b = mod(t_b,3)+1  ! 1 -> 2 -> 3 -> 1
+    t_c = mod(t_c,3)+1  ! 2 -> 3 -> 1 -> 2
+    t_f = mod(t_f,3)+1  ! 3 -> 1 -> 2 -> 3
 
     !Get i/j max/min for rho/u/v
     call setijruv()
-    FID=110 
 
       !------------------------------------
 
@@ -3248,7 +2454,6 @@ CONTAINS
        enddo
     END IF        ! if OilOn
 
-
      !DEALLOCATE SUBROUTINE VARIABLES
      if(OilOn)then
        DEALLOCATE(swanHsf,swantm01f,swanpdf,swanwlf)
@@ -3358,9 +2563,9 @@ CONTAINS
       same_vertical_level=.True.
     endif 
 
-     IF(P_r_element(n).eq.0.or.P_u_element(n).eq.0.or.P_v_element(n).eq.0)then
+     IF(P_r_element(n).le.0.or.P_u_element(n).le.0.or.P_v_element(n).le.0)then
      write(*,*)'----------------------------------------------------------'
-     write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
+     write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
       ' ->',Xpar,&
@@ -3369,10 +2574,6 @@ CONTAINS
       ' ; ',Zpar_at_setEle(n),&
       ' ->',Zpar, &
       ' ) ; P_r,u,v=(',P_r_element(n),' ->',P_r_ele,' ; ',P_u_element(n),' ->',P_u_ele,' ; ',P_v_element(n),' ->',P_v_ele, &
-      ' ) lon,lat,depth,k=( ',x2lon(Xpar_at_setEle(n),Ypar_at_setEle(n)), &
-      ' ->',x2lon(Xpar,Ypar),  &
-      ' ; ',y2lat(Ypar_at_setEle(n)),&
-      ' ->',y2lat(Ypar),&
       ' ; ', Zpar_at_setEle(n),&
       ' ->',Zpar,&
       ' ; ',P_klev_old(n), &
@@ -5262,7 +4463,7 @@ CONTAINS
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(OUT) :: mask(:,:,:)
 
-    if(GRD_SET)then
+    if(MASK_SET)then
       mask = mask_rho
     else
       write(*,*) 'ERROR: Cannot create boundaries, mask_rho not yet read in'
@@ -5304,7 +4505,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: k
     DOUBLE PRECISION, INTENT(OUT) :: ele_x(:,:),ele_y(:,:)
 
-    if(GRD_SET)then
+    if(ELE_SET)then
       ele_x = r_kwele_x(:,:,k)
       ele_y = r_kwele_y(:,:,k)
     else
@@ -7300,6 +6501,9 @@ CONTAINS
              file_has_upper_Unode = 1    
            case('cell_center')
              interpol_uv = RUVnod    
+           case('cell_interface_inner')
+             file_has_lower_Unode = 0
+             file_has_upper_Unode = 0    
              !file_has_lower_Unode = 1    
            case default
              stop 'case "'//trim(Uvel_location)//'" not a valid location for Uvel'
@@ -7316,6 +6520,9 @@ CONTAINS
              file_has_upper_Vnode = 1    
            case('cell_center')
              interpol_uv = RUVnod    
+           case('cell_interface_inner')
+             file_has_lower_Vnode = 0
+             file_has_upper_Vnode = 0    
              !file_has_lower_Vnode = 1 ! uj-nj   
            case default
              stop 'case "'//trim(Vvel_location)//'" not a valid location for Vvel'
@@ -7326,15 +6533,18 @@ CONTAINS
            case('cell_interface_lower') ! missing upper (surface) node
              if(First_vertical_layer_is_surface)then ! invert vertical directions of the fields
                 missing_first_Wnode = 1 ! upper is first  
-             else
+             else                                    ! do not invert vertical directions of the fields
                 missing_last_Wnode = 1  ! upper is last
              endif
            case('cell_interface_upper') ! missing lower (bottom) node
              if(First_vertical_layer_is_surface)then ! invert vertical directions of the fields
-                missing_last_Wnode = 1  ! lower is last 
-             else
-                missing_first_Wnode = 1 ! lower is first
+                missing_last_Wnode = 1  ! lower (bottom) is last 
+             else                                    ! do not invert vertical directions of the fields
+                missing_first_Wnode = 1 ! lower (bottom) is first
              endif
+           case('cell_interface_inner')
+                missing_first_Wnode = 1 
+                missing_last_Wnode = 1  
            case('cell_center')                         
              interpol_uv = RUVnod    
              missing_last_Wnode = 1   
@@ -7353,6 +6563,9 @@ CONTAINS
            case('cell_interface_all')
              file_has_lower_Unode = 1
              file_has_upper_Unode = 1    
+           case('cell_interface_inner')
+             file_has_lower_Unode = 0
+             file_has_upper_Unode = 0    
            case('cell_center')
              interpol_uv = RUVnod    
              !file_has_lower_Unode = 1    
@@ -7369,6 +6582,9 @@ CONTAINS
            case('cell_interface_all')
              file_has_lower_Vnode = 1
              file_has_upper_Vnode = 1    
+           case('cell_interface_inner')
+             file_has_lower_Vnode = 0
+             file_has_upper_Vnode = 0    
            case('cell_center')
              interpol_uv = RUVnod    
              !file_has_lower_Vnode = 1 ! uj-nj   
@@ -7434,17 +6650,9 @@ CONTAINS
       varname=trim(var_name_in_netcdf(var_id))
       write(*,'(4a,3(a,i8))')'read in NetCDF file var ',trim(varname),' from file',TRIM(filenm), &
            ' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk_in_file
-      write(*,'(9(a,i5))') ' i=',start_index(1),':',start_index(1)+count_index(1)-1,' ui=',ui,' vi=',vi,' ni=',ni,' ni_in_file=',ni_in_file,' file_has_lower_Unode=',file_has_lower_Unode,' file_has_upper_Unode=',file_has_upper_Unode,' one_if_interpol_u=',one_if_interpol_u 
-      write(*,'(9(a,i5))') ' j=',start_index(2),':',start_index(2)+count_index(2)-1,' uj=',uj,' vj=',vj,' nj=',nj,' nj_in_file=',nj_in_file,' file_has_lower_Vnode=',file_has_lower_Vnode,' file_has_upper_Vnode=',file_has_upper_Vnode,' one_if_interpol_v=',one_if_interpol_v 
-      write(*,'(8(a,i5))') ' k=',start_index(3),':',start_index(3)+count_index(3)-1,' us=',us,' ws=',ws,' nk=',nk,' nk_in_file=',nk_in_file,' missing_last_Wnode='  ,missing_last_Wnode  ,' missing_first_Wnode =',missing_first_Wnode 
-      write(*,'(6(a,i5))') ' t=',start_index(4),':',start_index(4)+count_index(4)-1,' tf1=',tf1,' tff=',tff,' incrstepf=',incrstepf,' tarray=',tarray
     else
       write(*,'(4a,3(a,i8))')'read in MITgcm native binary file for var ',trim(explicit_var_name(var_id)),' from file',TRIM(filenm), &
            ' for time record num=',start_index(timeindex),':',start_index(timeindex)+count_index(timeindex)-1,' nk=',nk_in_file
-      write(*,'(9(a,i5))') ' i=',start_index(1),':',start_index(1)+count_index(1)-1,' ui=',ui,' vi=',vi,' ni=',ni,' ni_in_file=',ni_in_file,' file_has_lower_Unode=',file_has_lower_Unode,' file_has_upper_Unode=',file_has_upper_Unode,' one_if_interpol_u=',one_if_interpol_u 
-      write(*,'(9(a,i5))') ' j=',start_index(2),':',start_index(2)+count_index(2)-1,' uj=',uj,' vj=',vj,' nj=',nj,' nj_in_file=',nj_in_file,' file_has_lower_Vnode=',file_has_lower_Vnode,' file_has_upper_Vnode=',file_has_upper_Vnode,' one_if_interpol_v=',one_if_interpol_v 
-      write(*,'(8(a,i5))') ' k=',start_index(3),':',start_index(3)+count_index(3)-1,' us=',us,' ws=',ws,' nk=',nk,' nk_in_file=',nk_in_file,' missing_last_Wnode='  ,missing_last_Wnode  ,' missing_first_Wnode =',missing_first_Wnode 
-      write(*,'(6(a,i5))') ' t=',start_index(4),':',start_index(4)+count_index(4)-1,' tf1=',tf1,' tff=',tff,' incrstepf=',incrstepf,' tarray=',tarray
     endif
 
 
@@ -7521,6 +6729,11 @@ CONTAINS
                                                  t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod)+ one_if_interpol_v, &
                                                  1+missing_first_Wnode:nk_in_file+missing_first_Wnode,:),      &
                                                  start_index,count_index                                       )
+         write(*,'(8(a,i4),2(a,4i4),a)')'saving in field(',t_ijruv(IMIN,RUVnod), &
+                   ':',t_ijruv(IMAX,RUVnod),'+',one_if_interpol_u, &
+                   ' , ',t_ijruv(JMIN,RUVnod),':',t_ijruv(JMAX,RUVnod),'+', one_if_interpol_v, &
+                   ' , ',1+missing_first_Wnode,':',nk_in_file+missing_first_Wnode,' , : ) reading startindex =[',&   
+                         start_index,'], count_index= [',count_index,']' 
        if (STATUS .NE. NF90_NOERR) then
          write(*,*) 'Problem reading ',varname
          write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1

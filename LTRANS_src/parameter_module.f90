@@ -61,6 +61,9 @@ CONTAINS
     Uvel_location='undefined'
     Vvel_location='undefined'
     Wvel_location='undefined'
+    Unode_location='undefined'
+    Vnode_location='undefined'
+    Wnode_location='undefined'
     Uwind_location='undefined'
     VWind_location='undefined'
     read_wind_as_sustress_svstress=.False. 
@@ -380,32 +383,59 @@ CONTAINS
       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lon_u),dimid)
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-      xi_u=xi_rho-1
+         xi_u=xi_rho-1
       else
-      xi_u = dimcount
+         select case(trim(Unode_location))
+           case('cell_interface_lower')
+             xi_u = dimcount-1
+           case('cell_interface_upper')
+             xi_u = dimcount-1
+           case('cell_interface_all')
+             xi_u = dimcount-2
+           case('cell_center')
+             xi_u = dimcount-1
+           case('cell_interface_inner')
+             xi_u = dimcount
+           case default
+             stop 'case "'//trim(Unode_location)//'" not a valid location for Unode'
+         end select
       endif
+      
       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lat_u),dimid)
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-      eta_u = eta_rho
+         eta_u = eta_rho
       else
-      eta_u = dimcount
+         eta_u = dimcount
       endif
 
       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lon_v),dimid)
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-      xi_v=xi_rho
+         xi_v=xi_rho
       else
-      xi_v = dimcount
+         xi_v = dimcount
       endif
 
       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lat_v),dimid)
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-      eta_v = eta_rho-1
+         eta_v = eta_rho-1
       else
-      eta_v = dimcount
+         select case(trim(Vnode_location))
+           case('cell_interface_lower')
+             eta_v = dimcount-1
+           case('cell_interface_upper')
+             eta_v = dimcount-1
+           case('cell_interface_all')
+             eta_v = dimcount-2
+           case('cell_center')
+             eta_v = dimcount-1
+           case('cell_interface_inner')
+             eta_v = dimcount
+           case default
+             stop 'case "'//trim(Vnode_location)//'" not a valid location for Vnode'
+         end select
       endif
 
      !--- CL-OGS: the rho,u,v grids have the third dimension s_rho.
@@ -426,9 +456,11 @@ CONTAINS
        s_w = dimcount
        elseif(trim(Zinterfaces_location)=='cell_interface_lower') then ! rho-grid dimension in z direction
        s_w = dimcount+1
+       elseif(trim(Zinterfaces_location)=='cell_interface_inner') then ! rho-grid dimension in z direction
+       s_w = dimcount+1
        else
          write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
-            ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
+            ' not implemented, must be "cell_interface_all" or "cell_interface_lower" or "cell_interface_inner'
          stop 'quitting'
        endif
 

@@ -129,7 +129,6 @@
   CHARACTER(LEN=25):: Uwind_location ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   CHARACTER(LEN=25):: VWind_location ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   LOGICAL :: read_wind_as_sustress_svstress ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
-   CHARACTER(LEN=20) :: input_masks_format !--- CL-OGS: 'integer' or 'dble_prec'
 !
   namelist/hydroparam/us,ws,tdim,hc,z0,Vtransform,readZeta,constZeta,readSalt,   &
                     & constSalt,readTemp,constTemp,readU,constU,readV,           & !--- CL-OGS: cancelled readU which was mentionned twice
@@ -143,8 +142,7 @@
                     & Wind_hc, Wind_ke, &
                     & Stokes, &
                     & Uvel_location,Vvel_location,Wvel_location, &
-                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress, & 
-                    & input_masks_format
+                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
   LOGICAL          :: VTurbOn       ! Vertical   Turbulence on (.TRUE.) or off (.FALSE.)
@@ -328,6 +326,10 @@
   CHARACTER(LEN=200) :: namevar_mask_v        ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_Zcellcenter   ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_Zinterfaces   ! name of variable in NetCDF Input File  
+  CHARACTER(LEN=25):: Unode_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25):: Vnode_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25):: Wnode_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=20) :: input_masks_format !--- CL-OGS: 'integer' or 'dble_prec'
 
   namelist/hydromodelgrid/NCgridfile, &
            Zgrid,Zgrid_depthinterp,ADJele_fname,ADJele_file,&              !--- CL-OGS additional parameters
@@ -338,7 +340,9 @@
            namedim_lon_v,namedim_lat_v,  namedim_Zcellcenter,namedim_Zinterfaces   , &
            namevar_depth,namevar_lon_rho,namevar_lat_rho,namevar_lon_u,namevar_lat_u,   & 
            namevar_lon_v,namevar_lat_v,namevar_mask_rho,namevar_mask_u,namevar_mask_v,   &
-           namevar_Zcellcenter,namevar_Zinterfaces,Zinterfaces_location   
+           namevar_Zcellcenter,namevar_Zinterfaces,Zinterfaces_location, &  
+           Unode_location,Vnode_location,Wnode_location, &
+           input_masks_format
 
 !  ** Hydro Model Predictions NetCDF Input File **
 !  Filename = dirin + prefix + filenum + suffix

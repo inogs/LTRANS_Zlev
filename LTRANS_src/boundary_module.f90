@@ -15,6 +15,7 @@ MODULE BOUNDARY_MOD
 ! Created on:                  2005
 ! Last Modified on:     08 Aug 2008
 
+  USE HYDRO_MOD, ONLY:mask_rho
 IMPLICIT NONE
 PRIVATE
 SAVE
@@ -120,7 +121,7 @@ END FUNCTION isBndSet
 SUBROUTINE createBounds()
   USE PARAM_MOD, ONLY:ui,uj,vi,vj,us,ws,BoundaryBLNs,NCOutFile,BndOut, &
                       Zgrid
-  USE HYDRO_MOD, ONLY:getMask_Rho,getUVxy,seteleform,setbounds
+  USE HYDRO_MOD, ONLY:getUVxy,seteleform,setbounds
 !This subroutine creates boundaries based on the masking of the rho grid
 !  The boundary points are U & V grid points directly between the rho points
 !  This subroutine assumes there is only one body of water in the grid 
@@ -185,7 +186,6 @@ SUBROUTINE createBounds()
   DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: x_u,y_u,x_v,y_v
 
   !Rho Mask Used to create boundaries
-  DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: mask_rho
 
   !Keep track of boundary points on open ocean
   LOGICAL, ALLOCATABLE, DIMENSION(:,:) :: oo
@@ -204,7 +204,6 @@ SUBROUTINE createBounds()
   ALLOCATE(y_u(ui,uj))
   ALLOCATE(x_v(vi,vj))
   ALLOCATE(y_v(vi,vj))
-  ALLOCATE(mask_rho(vi,uj,us_tridim))
   ALLOCATE(crossnum(us_tridim))
   ALLOCATE(BND_SET(us_tridim))
   if(BndOut)then
@@ -215,7 +214,7 @@ SUBROUTINE createBounds()
   endif
   BND_SET=.false.
 
-  CALL getMask_Rho(mask_rho)
+  !CALL getMask_Rho(mask_rho)
 
   !Edit Rho Mask - remove nodes that don't have at least 2 neighbors
   !  This removes a situation that may occur where an area that is 
@@ -1978,7 +1977,6 @@ SUBROUTINE createBounds()
   DEALLOCATE(y_u)
   DEALLOCATE(x_v)
   DEALLOCATE(y_v)
-  DEALLOCATE(mask_rho)
   DEALLOCATE(oo)
   DEALLOCATE(is_continent)
   DEALLOCATE(nestingdegree)
@@ -2341,7 +2339,7 @@ END SUBROUTINE getNext
     start = 0              !initialize start to 0
 
     coastdist=9999999.
-    do
+    do while(i .le. max_mbnd_pts-2)   
       i = i + 1            !iterate through main boundary points
       endMbnd = .FALSE.
       if(i == tot_mbnd_pts(klev))then

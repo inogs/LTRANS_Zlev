@@ -774,6 +774,10 @@ $hydromodelgrid
   namevar_mask_v      ='mask_v'    ! Name of variable in input grid file, default is :'mask_v'   
   namevar_Zcellcenter ='Z'         ! Name of variable in input grid file, default is :'Z'        
   namevar_Zinterfaces ='Zp1'       ! Name of variable in input grid file, default is :'Zp1'     
+  Unode_location    ='cell_center' ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Vnode_location    ='cell_center' ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  Wnode_location    ='cell_center' ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
+  input_masks_format  = 'integer'  !--- CL-OGS: 'integer' or 'dble_prec'
 $end
 
 ```

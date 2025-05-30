@@ -238,8 +238,9 @@ contains
     use convert_mod,  only: lon2x,lat2y,x2lon,y2lat                                  !--- CL-OGS   
 
     use random_mod,   only: init_genrand
-    use hydro_mod,    only: initGrid,initHydro,setEle_all,initNetCDF,       &
-                      createNetCDF,writeNetCDF,                             &
+    use hydro_mod,    only: initGrid,initGrid_after_bounds,                 &
+                      initHydro,updateHydro,setEle_all,      &
+                      initNetCDF,createNetCDF,writeNetCDF,                  &
                       getKRlevel,setnodesdepth, &                 !--- CL-OGS: for coupling with MITgcm'Z-grid bathymetry and fields
                       setInterp,getInterp,getDepth,getP_klev
     use param_mod,    only: numpar,days,dt,idt,seed,parfile,settlementon,   &
@@ -512,6 +513,7 @@ contains
 
     !Create Boundaries
     CALL createBounds()
+    CALL initGrid_after_bounds()
     
     if(Zgrid) CALL setnodesdepth()
 
@@ -721,6 +723,9 @@ contains
 
     !Read in initial hydrodynamic model data
     CALL initHydro()
+    CALL updateHydro()
+    CALL updateHydro()
+    CALL updateHydro()
 
     !Create files to output 'land hits' and 'bottom hits'
     IF(TrackCollisions) then
@@ -2163,7 +2168,7 @@ contains
                   ' at new Z=',newZpos  ,&
                   '; PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
                   'meters : newZ=',newZpos,              & 
-                  ' =min(depth[',P_depth, ' ], oldZ[',par(n,pZ),            &
+                  ' =max(depth[',P_depth, ' ], oldZ[',par(n,pZ),            &
                    ' ] + Adv[', AdvectZ,' ] + Tu[',TurbV,' ] + Bhv[',ZBehav,       &
                    ' ]) + reflectsup[',reflectsup,']'
            call handleERROR('setEle    ',2,ele_err,n,     &
@@ -2192,7 +2197,7 @@ contains
                             Pwc_wzc(getKRlevel(newZpos)) ,  &
                   'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)), &
                   'm : newZ=',newZpos,              & 
-                  '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
+                  '=max(depth[',P_depth, '], oldZ[',par(n,pZ),            &
                    ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
                    ']) +reflectsup[',reflectsup,']'
            
@@ -2349,7 +2354,7 @@ contains
             'PART n=',n,' WENT DOWN of ',-(newZpos-par(n,pZ)),' meters'
         write(*,'(9(a,f6.2),a)') &
             'newZ=',newZpos,              & 
-            '=min(depth[',P_depth, '], oldZ[',par(n,pZ),            &
+            '=max(depth[',P_depth, '], oldZ[',par(n,pZ),            &
              ']+Adv[', AdvectZ,']+Tu[',TurbV,']+Bhv[',ZBehav,       &
              ']) +reflectsup[',reflectsup,']+ reflectinf[',reflectinf,&
              ']+ pushedup[',pushedup,']'
