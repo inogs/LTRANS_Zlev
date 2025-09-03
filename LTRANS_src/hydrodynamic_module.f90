@@ -6061,7 +6061,7 @@ CONTAINS
    write(*,*)'---------------------------------------------------------'
     if(BoundaryBLNs) then  !--- CL-OGS: write rho_kwele and rho bottom level and mask in csv file
       OPEN(110,FILE='rho_nodes.csv',POSITION='APPEND',status='replace')
-       write(110,*) 'lon, lat, depth, count, i, j'
+       write(110,*) 'lon, lat, depth, count, i, j, x, y'
        count = 0
        do j=1,uj                         !z2v3.2
        do i=1,vi
@@ -6070,25 +6070,25 @@ CONTAINS
        !r_ele(2,count) = i + 1 + (j-1)*vi
        !r_ele(3,count) = i + 1 + j*vi
        !r_ele(4,count) = i + j*vi
-            write(110,"(3(F10.5,','),3(i7,','))") &
+            write(110,"(3(F10.5,','),3(i7,','),F10.2,',',F10.2)") &
                           x2lon(rx(count),ry(count)),         &
                           y2lat(ry(count)),                   &
                           depthR(count),                      &
-                            count,i,j
+                            count,i,j,rx(count),ry(count)
        enddo
        enddo
       CLOSE(110)
       OPEN(110,FILE='u_nodes.csv',POSITION='APPEND',status='replace')
-       write(110,*) 'lon, lat, depth, count, i, j'
+       write(110,*) 'lon, lat, depth, count, i, j, x, y'
         count = 0
         do j=1,uj                        !z2v3.2
           do i=1,ui
             count = count + 1
-            write(110,"(3(F10.5,','),3(i7,','))") &
+            write(110,"(3(F10.5,','),3(i7,','),F10.2,',',F10.2)") &
                           x2lon(ux(count),uy(count)),         &
                           y2lat(uy(count)),                   &
                           depthU(count),                      &
-                            count,i,j
+                            count,i,j,ux(count),uy(count)
           enddo
         enddo
       CLOSE(110)
