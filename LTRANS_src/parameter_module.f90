@@ -236,7 +236,10 @@ CONTAINS
 
     IF(err == 0) THEN
       call gridData(IOSTAT=istat)
-      IF(istat/=0)err = 150
+      IF(istat/=0)then
+         write(*,*)istat
+         err = 150
+      ENDIF
     ENDIF
 
     SELECT CASE(err)
@@ -444,14 +447,16 @@ CONTAINS
      !--- CL-OGS: so there is no need to read xi_w and eta_w
      if(Zgrid)then
        
-       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_Zinterfaces),dimid)
-       if (STATUS .NE. NF90_NOERR) then
-         write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces),' ',trim(NCgridfile)
-       endif
-       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
-       if (STATUS .NE. NF90_NOERR) then
-         write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces)
-         err = 20 
+       if(.not.trim(Zinterfaces_location)=='not_provided') then 
+         STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_Zinterfaces),dimid)
+         if (STATUS .NE. NF90_NOERR) then
+           write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces),' ',trim(NCgridfile)
+         endif
+         STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
+         if (STATUS .NE. NF90_NOERR) then
+           write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces)
+           err = 20 
+         endif
        endif
        if(trim(Zinterfaces_location)=='cell_interface_all')then
        s_w = dimcount
@@ -459,6 +464,8 @@ CONTAINS
        s_w = dimcount+1
        elseif(trim(Zinterfaces_location)=='cell_interface_inner') then ! rho-grid dimension in z direction
        s_w = dimcount+1
+       elseif(trim(Zinterfaces_location)=='not_provided') then 
+         write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location),' it will be computed from cell center'
        else
          write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
             ' not implemented, must be "cell_interface_all" or "cell_interface_lower" or "cell_interface_inner'
@@ -471,6 +478,9 @@ CONTAINS
        s_rho = s_w-1
        else       
        s_rho = dimcount
+       if(trim(Zinterfaces_location)=='not_provided') then
+         s_w=s_rho+1
+       endif 
        endif
      else
        s_rho=1

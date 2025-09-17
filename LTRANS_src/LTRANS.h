@@ -314,7 +314,7 @@
   CHARACTER(LEN=200) :: namedim_lat_v         ! name of dimension in NetCDF Input File  
   CHARACTER(LEN=200) :: namedim_Zcellcenter   ! name of dimension in NetCDF Input File  
   CHARACTER(LEN=200) :: namedim_Zinterfaces   ! name of dimension in NetCDF Input File  
-  CHARACTER(LEN=25)  :: Zinterfaces_location  ! cell_interface_all,cell_interface_lower, cell_interface_upper
+  CHARACTER(LEN=25)  :: Zinterfaces_location  ! cell_interface_all,cell_interface_lower, cell_interface_upper, not provided
   CHARACTER(LEN=200) :: namevar_depth         ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_lon_rho       ! name of variable in NetCDF Input File  
   CHARACTER(LEN=200) :: namevar_lat_rho       ! name of variable in NetCDF Input File  

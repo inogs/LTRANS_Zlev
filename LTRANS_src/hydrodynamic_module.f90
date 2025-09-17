@@ -330,6 +330,7 @@ CONTAINS
     ! *************************** READ IN GRID INFO **************************
 
       ! Depth (m)
+      write(*,*)'Reading bathymetry',namevar_depth
       call netcdf_get_double(vi,uj,1,1,euleriandepth,namevar_depth,NCgridfile,alternative_filename=GridFile_depth)
       write(*,*)'bathymetry depth (',trim(namevar_depth),') read successfully'
       do j=1,uj
@@ -446,30 +447,34 @@ CONTAINS
         elseif(trim(Zinterfaces_location)=='cell_interface_lower')then ! includes lower (bottom) interface and misses upper (surface) node
           ZW(:)=0.0
           call netcdf_get_double(ws-1,1,1,1,ZW(1:ws-1),namevar_Zinterfaces,NCgridfile,alternative_filename=GridFile_Zinterfaces,return_error=ierr)
+        elseif(trim(Zinterfaces_location)=='not_provided') then 
+          write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location),' it will be computed from cell center'
         else
           write(*,*)'Zinterfaces_location=',trim(Zinterfaces_location), &
-             ' not implemented, must be "cell_interface_all" or "cell_interface_lower"'
+             ' not implemented, must be "cell_interface_all", "cell_interface_lower" or "not provided"'
           stop 'quitting'
         endif
-        if(sum(ZW)>0) ZW(:)=-ZW(:) ! ZW must be negative
-        if(ZW(ws-1)<ZW(2))then     ! ZW(1) must be bottom and ZW(us) must be surface
-          write(*,*)'vertical direction inversion in ZW to makes ZW(1) bottom and ZW(us) surface'
-          if(trim(Zinterfaces_location)=='cell_interface_lower')then
-            ZW(2:ws)=ZW(1:ws-1)
-            ZW(1)=0.0
+        if(.not. trim(Zinterfaces_location)=='not_provided') then 
+          if(sum(ZW)>0) ZW(:)=-ZW(:) ! ZW must be negative
+          if(ZW(ws-1)<ZW(2))then     ! ZW(1) must be bottom and ZW(us) must be surface
+            write(*,*)'vertical direction inversion in ZW to makes ZW(1) bottom and ZW(us) surface'
+            if(trim(Zinterfaces_location)=='cell_interface_lower')then
+              ZW(2:ws)=ZW(1:ws-1)
+              ZW(1)=0.0
+            endif
+            call invert_1d_array_of_dble(ZW)
           endif
-          call invert_1d_array_of_dble(ZW)
+          if(ierr.eq.0)then 
+            write(*,*)'Zinterfaces (',trim(namevar_Zinterfaces),') read successfully'
+          else ! var not found -> we compute it
+            write(*,*)'Zinterface computed from Zcell-center'
+            stop 'not yet implemented'
+            !do k=2,us_tridim
+            ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
+            !enddo
+          endif
+          write(*,*)'ZW=',ZW
         endif
-        if(ierr.eq.0)then 
-          write(*,*)'Zinterfaces (',trim(namevar_Zinterfaces),') read successfully'
-        else ! var not found -> we compute it
-          write(*,*)'Zinterface computed from Zcell-center'
-          stop 'not yet implemented'
-          !do k=2,us_tridim
-          ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
-          !enddo
-        endif
-        write(*,*)'ZW=',ZW
 
         ! Z-coordinate on rho grid (Z) : cell-centered coordinates
         call netcdf_get_double(us,1,1,1,ZC(1:us),namevar_Zcellcenter,NCgridfile,alternative_filename=GridFile_Zcellcenter,return_error=ierr)
@@ -480,15 +485,24 @@ CONTAINS
             write(*,*)'vertical direction inversion in ZC'
             call invert_1d_array_of_dble(ZC)
           endif
-        else ! var not found -> we compute it
+        elseif(maxval(ZW)>0)then ! var not found -> we compute it
           write(*,*)'Zcellcenter computed from Zinterfaces'
           do k=1,us_tridim
            ZC(k)=0.5*(ZW(k)+ZW(k+1))
           enddo
+        else
+         stop' missing vertical coordimates'
         endif
         write(*,*)'ZC=',ZC
 
-
+        if(trim(Zinterfaces_location)=='not_provided') then 
+          ZW(ws)=0.0
+          do k=us_tridim,1,-1
+           ZW(k)=ZW(k+1)+2*(ZC(k)-ZW(k+1))
+           write(*,*)'ZW(',k,')=',ZW(k+1),'+2*(',ZC(k),'-',ZW(k+1),')=',ZW(k)
+          enddo
+          write(*,*)'computed ZW=',ZW
+        endif
       else          !--- CL-OGS: angle read only for ROMS files  
         if(Vtransform.eq.0)then
           write(*,*)'error in input data file: Vtransform set to ',Vtransform
@@ -2535,6 +2549,7 @@ CONTAINS
     !' ) ENTERING setEle ROUTINE'
 
     if(Xpar/=Xpar .or. Ypar/=Ypar .or. Zpar/=Zpar)then
+     if(num/=2) &
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -2575,7 +2590,9 @@ CONTAINS
     endif 
 
      IF(P_r_element(n).le.0.or.P_u_element(n).le.0.or.P_v_element(n).le.0)then
+     if(num/=2) &
      write(*,*)'----------------------------------------------------------'
+     if(num/=2) &
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -2613,6 +2630,7 @@ CONTAINS
       if(triangle.EQ.0)error = 4
 
       if (error.eq.4 .and. same_vertical_level) then
+     if(num/=2) &
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -2669,6 +2687,7 @@ CONTAINS
 
 
       if (error.eq.5 .and. same_vertical_level)then
+     if(num/=2) &
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -2724,6 +2743,7 @@ CONTAINS
       if(triangle.EQ.0)error = 6
 
       if (error.eq.6 .and. same_vertical_level)then
+     if(num/=2) &
      write(*,'(a,i12,a,i1,a,i6,4(a,f13.4),2(a,f9.4),6(a,i7),4(a,f10.6),2(a,f9.4),4(a,i3),a)')&
       'setEle warning it=',it,' at call num',num,' for part ',n, &
       ' of pos (X,Y,Z)=(',Xpar_at_setEle(n),&
@@ -6558,9 +6578,12 @@ CONTAINS
                 missing_last_Wnode = 1  
            case('cell_center')                         
              interpol_uv = RUVnod    
-             missing_last_Wnode = 1   
-             missing_first_Wnode = 1   
-             stop 'case where Wvel is cell center not yet fully implemented'
+             if(First_vertical_layer_is_surface)then ! invert vertical directions of the fields
+                missing_first_Wnode = 1 ! upper is first  
+             else                                    ! do not invert vertical directions of the fields
+                missing_last_Wnode = 1  ! upper is last
+             endif
+             write(*,*) 'WARNING case where Wvel is cell center not yet fully implemented'
            case default
              stop 'case "'//trim(Wvel_location)//'" not a valid location for Wvel'
          end select
@@ -6612,14 +6635,14 @@ CONTAINS
     one_if_interpol_v=0 
     if(interpol_uv==VNODE) one_if_interpol_v=1 
  
-    ni_in_file = ni + file_has_lower_Unode + file_has_upper_Unode - one_if_interpol_u ! vi- missing_upper_Unode - missing_lower_Unode 
-    nj_in_file = nj + file_has_lower_Vnode + file_has_upper_Vnode - one_if_interpol_v ! uj - missing_upper_Vnode - missing_lower_Vnode 
+    ni_in_file = ni + file_has_lower_Unode + file_has_upper_Unode + one_if_interpol_u ! vi- missing_upper_Unode - missing_lower_Unode 
+    nj_in_file = nj + file_has_lower_Vnode + file_has_upper_Vnode + one_if_interpol_v ! uj - missing_upper_Vnode - missing_lower_Vnode 
     nk_in_file = nk - missing_last_Wnode - missing_first_Wnode ! here using us even when nk=uw=us+1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
     
     if(interpol_uv.eq.0)then
      write(*,*)''
     else
-     write(*,*)' interpolating from cell-center values to cell borders'
+     write(*,*)' interpolating from cell-center values to cell borders',ni_in_file,nj_in_file
     endif
   
     !if(nk>1)then !(if(Zgrid.or.nk>1))
@@ -6763,9 +6786,8 @@ CONTAINS
       tmpfield(1:ni_in_file-1,:,:,:) =                                                 & 
         0.5 *( tmpfield(1:ni_in_file-1,:,:,:)+tmpfield(2:ni_in_file,:,:,:)) 
     else if(interpol_uv==VNODE) then
-      do j=start_index(2)-file_has_lower_Vnode,start_index(2)-file_has_lower_Vnode+count_index(2)-1-1
-       tmpfield(:,j,:,:)= 0.5*(tmpfield(:,j,:,:)+tmpfield(:,j+1,:,:))
-      enddo
+      tmpfield(:,1:nj_in_file-1,:,:) =                                                 & 
+        0.5 *( tmpfield(:,1:nj_in_file-1,:,:)+tmpfield(:,2:nj_in_file,:,:)) 
    ! else
     !  field(1:ni_in_file,:,:,tf1:tff) = tmpfield(1:ni_in_file,:,:,tf1:tff) 
     endif

@@ -763,7 +763,7 @@ $hydromodelgrid
   namedim_lat_v       = 'eta_v'    ! name of dimension in NetCDF Input File  
   namedim_Zcellcenter = 'Z'        ! name of dimension in NetCDF Input File  
   namedim_Zinterfaces = 'Zi'       ! name of dimension in NetCDF Input File  
-  Zinterfaces_location= 'cell_interface_all'  ! cell_interface_all,cell_interface_lower (missing surface interfaces assumed zero depth)
+  Zinterfaces_location= 'cell_interface_all'  ! cell_interface_all,cell_interface_lower,cell_interface_upper, not provided
   namevar_depth       ='h'         ! Name of variable in input grid file, default is :'h'        
   namevar_lon_rho     ='lon_rho'   ! Name of variable in input grid file, default is :'lon_rho'  
   namevar_lat_rho     ='lat_rho'   ! Name of variable in input grid file, default is :'lat_rho'  
