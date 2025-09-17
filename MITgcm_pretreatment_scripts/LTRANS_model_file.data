@@ -49,8 +49,11 @@ $hydroparam
   constU     = 0.0               ! Constant value for U if readU is .FALSE.
   readV      = READV             ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
   constV     = 0.0               ! Constant value for V if readV is .FALSE.
-  readW      = READW             ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
-  constW     = 0.0               ! Constant value for W if readW is .FALSE.
+  readW      = READW             ! If .TRUE. read in w-momentum component (W   )  
+                                 ! from file, else compute from continuity equation or use constW
+  computeW   = .FALSE.           ! If readW = .TRUE. and constW= .TRUE. compute w-momentum component (W   )
+                                 ! from U and V, else use constW 
+  constW     = 0.0               ! Constant value for W if readW is .FALSE. and computeW=.FALSE.
   readAks    = READAKS           ! If .TRUE. read in salinity vertical diffusion coefficient (Aks ) from NetCDF file, els
                                  ! use constAks
   constAks   = 0.0               ! Constant value for Aks if readAks is .FALSE.

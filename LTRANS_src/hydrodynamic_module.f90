@@ -1666,7 +1666,7 @@ CONTAINS
     USE PARAM_MOD, ONLY: ui,vi,uj,vj,us,ws,tdim,rho_nodes,u_nodes,v_nodes,     &
         filenum,numdigits,readZeta,constZeta,readSalt,constSalt, &
         readTemp,constTemp,readDens,constDens,readU,constU,readV,constV,readW, &
-        constW,readAks,constAks,&
+        computeW,constW,readAks,constAks,&
         !readNetcdfSwdown,                                    &
         startfile,filestep,                                              &
         readUwind,constUwind,readVwind,constVwind,Zgrid,Wind,hydrobytes,       &  !--- CL-OGS:
@@ -2063,6 +2063,17 @@ CONTAINS
 
       if(readW)then  
         call read_data_from_file(VAR_ID_wvel,vi,uj,ws,1,1,1,1,romWf,stepf,1)
+      elseif(computeW)then
+       romWf(:,:,:,1)=0.0
+       do j=t_ijruv(JMIN,VNODE)+1,t_ijruv(JMAX,VNODE)
+         do i=t_ijruv(IMIN,UNODE)+1,t_ijruv(IMAX,UNODE)
+           do k=1,us    
+             romWf(i,j,k+1,1)=romWf(i,j,k+1,1) - (ZW(k+1)-ZW(k)) * ( &
+                     (romUf(i,j,k+1,1)-romUf(i-1,j,k+1,1))/(x_u(i,j)-x_u(i-1,j))  &
+                    +(romVf(i,j,k+1,1)-romVf(i,j-1,k+1,1))/(y_v(i,j)-y_v(i-1,j)) )
+          enddo
+         enddo
+       enddo
       else
         romWf = constW
       endif

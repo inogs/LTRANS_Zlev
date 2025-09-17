@@ -100,7 +100,8 @@
   DOUBLE PRECISION :: constU        ! Constant value for U if readU is .FALSE.
   LOGICAL          :: readV         ! If .TRUE. read in v-momentum component (V   ) from NetCDF file, else use constV
   DOUBLE PRECISION :: constV        ! Constant value for V if readV is .FALSE.
-  LOGICAL          :: readW         ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else use constW
+  LOGICAL          :: readW         ! If .TRUE. read in w-momentum component (W   ) from NetCDF file, else compute from continuity equation or use constW
+  LOGICAL          :: computeW      ! If .TRUE. compute w-momentum component (W   ) from U and V 
   DOUBLE PRECISION :: constW        ! Constant value for W if readW is .FALSE.
   LOGICAL          :: readAks       ! If .TRUE. read in salinity vertical diffusion coefficient (Aks ) from NetCDF file, else use constAks
   DOUBLE PRECISION :: constAks      ! Constant value for Aks if readAks is .FALSE.
@@ -142,7 +143,7 @@
                     & Wind_hc, Wind_ke, &
                     & Stokes, &
                     & Uvel_location,Vvel_location,Wvel_location, &
-                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress
+                    & Uwind_location,VWind_location, read_wind_as_sustress_svstress,computeW
 !*** TURBULENCE MODULE PARAMETERS ***
   LOGICAL          :: HTurbOn       ! Horizontal Turbulence on (.TRUE.) or off (.FALSE.)
   LOGICAL          :: VTurbOn       ! Vertical   Turbulence on (.TRUE.) or off (.FALSE.)

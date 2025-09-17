@@ -66,6 +66,7 @@ CONTAINS
     Wnode_location='undefined'
     Uwind_location='undefined'
     VWind_location='undefined'
+    computeW=.False.
     read_wind_as_sustress_svstress=.False. 
     GridFile_depth       =''
     GridFile_lon_rho     =''

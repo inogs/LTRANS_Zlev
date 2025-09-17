@@ -465,7 +465,9 @@ $hydroparam
                                  ! from file, else use constV
   constV     = 0.0               ! Constant value for V if readV is .FALSE.
   readW      = .TRUE.            ! If .TRUE. read in w-momentum component (W   )  
-                                 ! from file, else use constW
+                                 ! from file, else compute from continuity equation or use constW
+  computeW   = .FALSE.           ! If readW = .TRUE. and constW= .TRUE. compute w-momentum component (W   )
+                                 ! from U and V, else use constW 
   constW     = 0.0               ! Constant value for W if readW is .FALSE.
   readAks    = .FALSE.           ! If .TRUE. read in salinity vertical diffusion  
                                  ! coefficient (Aks ) from file, else use constAks
