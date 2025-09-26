@@ -1714,6 +1714,7 @@ CONTAINS
     INTEGER :: scounter
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: swanHsf,swantm01f,      &
                                         swanpdf,swanwlf
+    DOUBLE PRECISION :: dx,dy,dz,area,Fu_east,Fu_west,Fv_north,Fv_south,flux_div
 
     !ALLOCATE SUBROUTINE VARIABLES
     !ALLOCATE(romSwdownf(vi,uj,1))
@@ -2079,23 +2080,30 @@ CONTAINS
         call read_data_from_file(VAR_ID_wvel,vi,uj,ws,1,1,1,1,romWf,stepf,1)
       elseif(computeW)then
        romWf(:,:,:,1)=0.0
+       ! Compute vertical velocity by integrating the continuity equation
+       ! remembering that ui=ni-1, vj=nj-1, ws=us+1 (k=1 is bottom)
        do j=t_ijruv(JMIN,VNODE)+1,t_ijruv(JMAX,VNODE)
          do i=t_ijruv(IMIN,UNODE)+1,t_ijruv(IMAX,UNODE)
-           do k=1,us ! Loop over vertical levels and integrate from bottom to surface (k=1 is bottom)
+           do k=1,us ! Loop over vertical levels and integrate from bottom to surface
               dx = (x_u(i,j)-x_u(i-1,j))
               dy = (y_v(i,j)-y_v(i,j-1))
-              dz = abs(ZW(k+1)-ZW(k))
+              if(k<us)then 
+                dz = abs(ZW(k+1)-ZW(k))
+              else ! add sea surface elevation at top layer
+                dz = abs(ZW(k+1)-ZW(k)) + romZf(i,j,1) * m_r(i,j,us_tridim) 
+              endif
+
               area = dx*dy
               ! east and west fluxes (m^3/s)
-              Fu_plus = romUf(i  ,j,k,1) * dy * dz   ! east flux of u at i+1/2
-              Fu_minus = romUf(i-1,j,k,1) * dy * dz   ! west flux of u at i-1/2
+              Fu_east = romUf(i  ,j,k,1) * dy * dz   ! east flux of u at rho_i+1/2
+              Fu_west = romUf(i-1,j,k,1) * dy * dz   ! west flux of u at rho_i-1/2
               ! north and south fluxes
-              Fv_plus = romVf(i,j  ,k,1) * dx * dz   ! north flux of v at j+1/2
-              Fv_minus = romVf(i,j-1,k,1) * dx * dz   ! south flux of v at j-1/2
+              Fv_north = romVf(i,j  ,k,1) * dx * dz   ! north flux of v at rho_j+1/2
+              Fv_south = romVf(i,j-1,k,1) * dx * dz   ! south flux of v at rho_j-1/2
 
               ! horizontal divergence (m/s)
-              flux_div = (Fu_plus - Fu_minus + Fv_plus - Fv_minus) / area
-              ! vertical velocity at k+1/2
+              flux_div = (Fu_east - Fu_west + Fv_north - Fv_south) / area
+              ! vertical velocity at rho_k+1/2
               romWf(i,j,k+1,1)= romWf(i,j,k,1) - flux_div 
           enddo
          enddo
