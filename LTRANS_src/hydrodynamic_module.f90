@@ -416,7 +416,10 @@ CONTAINS
       endif
 
       ! mask on rho grid
+      write(*,*)'Reading mask_rho (',trim(namevar_mask_rho),') as ',trim(input_masks_format)
       select case(input_masks_format)
+        case('byte')
+          call netcdf_get_byte(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
         case('integer')
           call netcdf_get_integer(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
         case('dble_prec')
@@ -6973,6 +6976,85 @@ CONTAINS
       endif
       call netcdf_close(NCID)
   END SUBROUTINE
+
+  SUBROUTINE netcdf_get_byte(n1,n2,n3,n4,field,varname,filename,alternative_filename,alternative_varname,return_error)
+    USE netcdf
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+    integer, intent(in):: n1,n2,n3,n4
+    integer, intent(inout):: field(n1,n2,n3,n4)
+    character(*),intent(in) :: varname
+    character(*),intent(in) :: filename
+    character(*),intent(in),optional :: alternative_filename
+    character(*),intent(in),optional :: alternative_varname
+    character(200)::fname
+    integer,intent(inout),optional :: return_error
+    integer(kind=1):: field_byte(n1,n2,n3,n4)
+    integer :: STATUS,VID,NCID
+     ! check that the field shape was correctly announced 
+      if( ( n1==1 .and. n2>1 ) .or. &
+          ( n2==1 .and. n3>1 ) .or. &
+          ( n3==1 .and. n4>1 ) )then
+             write(*,*)'programming issue in call to netcdf_get_byte(',trim(varname),')'
+             write(*,*)'size of the various dimensions must be given with the zeroes at the end'
+             stop
+      endif
+      if(present(return_error))then
+        return_error=0
+        call netcdf_open(filename,NCID,return_error)
+      else
+        call netcdf_open(filename,NCID)
+      endif
+      fname=filename
+      STATUS = NF90_INQ_VARID(NCID,varname,VID)
+      if (STATUS .NE. NF90_NOERR) then
+          if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
+          if (STATUS .NE. NF90_NOERR) then
+            call netcdf_close(NCID)
+            if(PRESENT(alternative_filename))then
+              fname=alternative_filename
+              if(present(return_error))then
+                return_error=0
+                call netcdf_open(alternative_filename,NCID,return_error)
+                if(return_error/=0)return
+              else
+                call netcdf_open(alternative_filename,NCID)
+              endif
+              STATUS = NF90_INQ_VARID(NCID,varname,VID)
+              if (STATUS .NE. NF90_NOERR) then
+                if(PRESENT(alternative_varname)) STATUS = NF90_INQ_VARID(NCID,alternative_varname,VID) 
+                if (STATUS .NE. NF90_NOERR) then
+                  call netcdf_close(NCID)
+                  write(*,*) 'Problem find ',varname
+                  write(*,*) NF90_STRERROR(STATUS)
+                  if(present(return_error))then
+                    return_error=VAR_NOT_FOUND
+                    return
+                  else
+                    stop
+                  endif
+                endif
+              endif
+            endif
+          endif
+      endif
+      STATUS = NF90_GET_VAR(NCID,VID,field_byte)
+      if (STATUS .NE. NF90_NOERR) then 
+          write(*,*) 'Problem read ',trim(varname),' from',trim(fname),':',trim(NF90_STRERROR(STATUS))
+          write(*,*) NF90_STRERROR(STATUS)
+          if(present(return_error))then
+            return_error=VAR_READING_ISSUE
+            return
+          else
+            stop
+          endif
+      else
+          field=field_byte
+      endif
+      call netcdf_close(NCID)
+  END SUBROUTINE
+
 
   SUBROUTINE netcdf_get_integer(n1,n2,n3,n4,field,varname,filename,alternative_filename,alternative_varname,return_error)
     USE netcdf

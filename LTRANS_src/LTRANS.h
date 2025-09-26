@@ -330,7 +330,7 @@
   CHARACTER(LEN=25):: Unode_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   CHARACTER(LEN=25):: Vnode_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   CHARACTER(LEN=25):: Wnode_location  ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
-  CHARACTER(LEN=20) :: input_masks_format !--- CL-OGS: 'integer' or 'dble_prec'
+  CHARACTER(LEN=20) :: input_masks_format !--- CL-OGS: 'byte', 'integer' or 'dble_prec'
 
   namelist/hydromodelgrid/NCgridfile, &
            Zgrid,Zgrid_depthinterp,ADJele_fname,ADJele_file,&              !--- CL-OGS additional parameters

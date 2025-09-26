@@ -88,7 +88,7 @@ CONTAINS
     namedim_lat_v       = 'eta_v'    ! name of dimension in NetCDF Input File  
     namedim_Zcellcenter = 'Z'        ! name of dimension in NetCDF Input File  
     namedim_Zinterfaces = 'Zi'       ! name of dimension in NetCDF Input File  
-    Zinterfaces_location= 'cell_interface_all'  ! cell_interface_all,cell_interface_lower, cell_interface_upper
+    Zinterfaces_location= 'not_provided'  ! cell_interface_all,cell_interface_lower, cell_interface_upper
     namevar_depth       ='h' 
     namevar_lon_rho     ='lon_rho' 
     namevar_lat_rho     ='lat_rho' 
@@ -353,33 +353,33 @@ CONTAINS
     ! *********************** GET GRID INFO ***********************
 
     ! OPEN NETCDF FILE - GET GF_ID VALUE
-
+    write(*,*)'Opening grid file '//trim(NCgridfile)
     STATUS = NF90_OPEN(trim(NCgridfile),NF90_NOWRITE,GF_ID)
     if (STATUS .NE. NF90_NOERR) then
       write(*,*) 'Problem NF90_OPEN Error opening',trim(NCgridfile)
       err = 10
     endif
-
+      write(*,*)'Successfully opened '//trim(NCgridfile)
     ! GET VALUES FOR xi_rho,xi_u,xi_v,eta_rho,eta_u,eta_v,s_rho
 
       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lon_rho),dimid)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid ',trim(namedim_lon_rho),' ',trim(NCgridfile)
+        write(*,*) 'Problem dimid name dim lon_rho: "',trim(namedim_lon_rho),'" not found in "',trim(NCgridfile),'"'
       endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid ',trim(namedim_lon_rho)
+        write(*,*) 'Problem dimid with name dim lon_rho: "',trim(namedim_lon_rho),'".'
         err = 20 
       endif
       xi_rho = dimcount
 
       STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_lat_rho),dimid)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid ',trim(namedim_lat_rho),' ',trim(NCgridfile)
+        write(*,*) 'Problem dimid name dim lat_rho: "',trim(namedim_lat_rho),'" not found in "',trim(NCgridfile),'"'
       endif
       STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
       if (STATUS .NE. NF90_NOERR) then
-        write(*,*) 'Problem dimid ',trim(namedim_lat_rho)
+        write(*,*) 'Problem dimid with name dim lat_rho: "',trim(namedim_lat_rho),'".'
         err = 20 
       endif
       eta_rho = dimcount
@@ -450,11 +450,11 @@ CONTAINS
        if(.not.trim(Zinterfaces_location)=='not_provided') then 
          STATUS = NF90_INQ_DIMID(GF_ID,trim(namedim_Zinterfaces),dimid)
          if (STATUS .NE. NF90_NOERR) then
-           write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces),' ',trim(NCgridfile)
+           write(*,*) 'Problem dimid Zint',trim(namedim_Zinterfaces),' ',trim(NCgridfile)
          endif
          STATUS = NF90_INQUIRE_DIMENSION(GF_ID,dimid,len=dimcount)
          if (STATUS .NE. NF90_NOERR) then
-           write(*,*) 'Problem dimid ',trim(namedim_Zinterfaces)
+           write(*,*) 'Problem dimid  Zint',trim(namedim_Zinterfaces)
            err = 20 
          endif
        endif

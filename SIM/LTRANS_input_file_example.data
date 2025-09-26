@@ -89,7 +89,7 @@ $hydroparam
   Uwind_location='undefined'                ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   VWind_location='undefined'                ! cell_center,cell_interface_all,cell_interface_lower, cell_interface_upper
   read_wind_as_sustress_svstress=.False.    ! .True. for ROMS wind files containaing sustress,svstress, otherwise .FALSE. 
-  input_masks_format='integer' ! format of the grid masks read in the netcdf, must be either 'integer' or 'dble_prec'
+  input_masks_format='integer' ! format of the grid masks read in the netcdf, must be either 'byte', 'integer' or 'dble_prec'
 $end
 
 
