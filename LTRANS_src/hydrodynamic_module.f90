@@ -2081,10 +2081,22 @@ CONTAINS
        romWf(:,:,:,1)=0.0
        do j=t_ijruv(JMIN,VNODE)+1,t_ijruv(JMAX,VNODE)
          do i=t_ijruv(IMIN,UNODE)+1,t_ijruv(IMAX,UNODE)
-           do k=1,us    
-             romWf(i,j,k+1,1)=romWf(i,j,k+1,1) - (ZW(k+1)-ZW(k)) * ( &
-                     (romUf(i,j,k+1,1)-romUf(i-1,j,k+1,1))/(x_u(i,j)-x_u(i-1,j))  &
-                    +(romVf(i,j,k+1,1)-romVf(i,j-1,k+1,1))/(y_v(i,j)-y_v(i-1,j)) )
+           do k=1,us ! Loop over vertical levels and integrate from bottom to surface (k=1 is bottom)
+              dx = (x_u(i,j)-x_u(i-1,j))
+              dy = (y_v(i,j)-y_v(i,j-1))
+              dz = abs(ZW(k+1)-ZW(k))
+              area = dx*dy
+              ! east and west fluxes (m^3/s)
+              Fu_plus = romUf(i  ,j,k,1) * dy * dz   ! east flux of u at i+1/2
+              Fu_minus = romUf(i-1,j,k,1) * dy * dz   ! west flux of u at i-1/2
+              ! north and south fluxes
+              Fv_plus = romVf(i,j  ,k,1) * dx * dz   ! north flux of v at j+1/2
+              Fv_minus = romVf(i,j-1,k,1) * dx * dz   ! south flux of v at j-1/2
+
+              ! horizontal divergence (m/s)
+              flux_div = (Fu_plus - Fu_minus + Fv_plus - Fv_minus) / area
+              ! vertical velocity at k+1/2
+              romWf(i,j,k+1,1)= romWf(i,j,k,1) - flux_div 
           enddo
          enddo
        enddo
