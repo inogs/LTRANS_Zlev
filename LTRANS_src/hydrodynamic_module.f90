@@ -216,6 +216,7 @@ CONTAINS
     INTEGER :: old_i,old_j,old_count                                             !--- CL-OGS 
     DOUBLE PRECISION :: summask 
     DOUBLE PRECISION,DIMENSION(4) :: tmpcoef,oldtmpcoef
+    DOUBLE PRECISION, ALLOCATABLE, DIMENSION (:) :: tmp_vec
     character(len=1024) :: filename
     integer :: ierr,NCIDvar
     !ALLOCATE MODULE VARIABLES
@@ -347,28 +348,37 @@ CONTAINS
       call netcdf_get_double(vi,uj,1,1,lon_rho,namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho,return_error=ierr)
       if(ierr.ne.0.or.abs(lon_rho(1,2)-lon_rho(2,2))<1e-8)then ! var not found -> we compute it
         write(*,*)'trying to read lon_rho (',trim(namevar_lon_rho),') as 1d array of dim ',vi
-        call netcdf_get_double(vi,1,1,1,lon_rho(:,1),namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho)
+        allocate(tmp_vec(vi))
+        call netcdf_get_double(vi,1,1,1,tmp_vec,namevar_lon_rho,NCgridfile,alternative_filename=GridFile_lon_rho)
         do j=1,uj
-          lon_rho(:,j)=lon_rho(:,1)
+          lon_rho(:,j)=tmp_vec(:)
         enddo
+        deallocate(tmp_vec)
         write(*,*)'lon_rho (',trim(namevar_lon_rho),') successfully read as 1d array'
       else
         write(*,*)'lon_rho (',trim(namevar_lon_rho),') read successfully'
       endif
-      write(*,*)'lon_rho=',lon_rho(::50,::50)
       ! latitude at rho (°)
       call netcdf_get_double(vi,uj,1,1,lat_rho,namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho,return_error=ierr)
-      if(ierr.eq.VAR_NOT_FOUND .or. ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
+      if(ierr.ne.0 .or.lat_rho(2,2)-lat_rho(2,1)<1e-8) then !ierr.eq.VAR_NOT_FOUND .or. ierr.eq.VAR_READING_ISSUE)then ! var not found -> we compute it
         write(*,*)'trying to read lat_rho (',trim(namevar_lat_rho),') as 1d array of dim ',uj
-        call netcdf_get_double(uj,1,1,1,lat_rho(1,:),namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho)
+        allocate(tmp_vec(uj))
+        call netcdf_get_double(uj,1,1,1,tmp_vec,namevar_lat_rho,NCgridfile,alternative_filename=GridFile_lat_rho)
         do i=1,vi
-          lat_rho(i,:)=lat_rho(1,:)
+          lat_rho(i,:)=tmp_vec(:)
         enddo
+        deallocate(tmp_vec)
         write(*,*)'lat_rho (',trim(namevar_lat_rho),') successfully read as 1d array'
       else
         write(*,*)'lat_rho (',trim(namevar_lat_rho),') read successfully'
       endif
-      write(*,*)'lat_rho=',lat_rho(::50,::50)
+      write(*,*)'(lon_rho,lat_rho)='
+      do j=uj,1,-1
+        do i=1,vi
+          write(*,'("(",F6.2,F6.2,") ")',advance='no')lon_rho(i,j),lat_rho(i,j)
+        enddo
+        write(*,*)''
+      enddo
 
 
       ! longitude at u (°)
@@ -420,6 +430,8 @@ CONTAINS
       select case(input_masks_format)
         case('byte')
           call netcdf_get_byte(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
+        case('bool')
+          call netcdf_get_byte(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
         case('integer')
           call netcdf_get_integer(vi,uj,us_tridim,1,mask_rho,namevar_mask_rho,NCgridfile,alternative_filename=GridFile_mask_rho)
         case('dble_prec')
@@ -433,8 +445,13 @@ CONTAINS
         write(*,*)'vertical direction inversion in mask_rho'
         call invert_array_of_int_along_third_dim(mask_rho,.False.)
       endif
-      write(*,*)'mask_rho(k=1)=',mask_rho(::50,::50,1)
-      write(*,*)'mask_rho(k=us)=',mask_rho(::50,::50,us)
+      write(*,*)'surface mask_rho(k=us)='
+      do j=uj,1,-1
+        do i=1,vi
+          write(*,'(i1)',advance='no')mask_rho(i,j,us)
+        enddo
+        write(*,*)''
+      enddo
       
 
       if(Zgrid) then !--- CL-OGS: read MITgcm specific grid files
