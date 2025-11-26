@@ -1510,12 +1510,18 @@ CONTAINS
     !endif
     if(ADJele_file)then
       write(*,*)'read from file ',TRIM(ADJele_fname)
-      read(110,rec=1,IOSTAT=ios)r_Adjacent(:,:,:)
-      if ( ios /= 0 ) stop " ERROR reading r_Adjacent "
-      read(110,rec=2,IOSTAT=ios)u_Adjacent(:,:,:)
-      if ( ios /= 0 ) stop " ERROR reading u_Adjacent "
-      read(110,rec=3,IOSTAT=ios)v_Adjacent(:,:,:)
-      if ( ios /= 0 ) stop " ERROR reading v_Adjacent "
+      do k=1,us_tridim
+       read(110,rec=1,IOSTAT=ios)r_Adjacent(:,:,k)
+       if ( ios /= 0 ) stop " ERROR reading r_Adjacent "
+      enddo
+      do k=1,us_tridim
+       read(110,rec=2,IOSTAT=ios)u_Adjacent(:,:,k)
+       if ( ios /= 0 ) stop " ERROR reading u_Adjacent "
+      enddo
+      do k=1,us_tridim
+       read(110,rec=3,IOSTAT=ios)v_Adjacent(:,:,k)
+       if ( ios /= 0 ) stop " ERROR reading v_Adjacent "
+      enddo
     else
       ! I. For each element, list all elements that are adjacent to it 
       write(*,*) ' - compute rho adjacent elements '
@@ -1589,12 +1595,18 @@ CONTAINS
 
      write(*,*)'write in rho,u and v adjacent elements in file ',              &
                                                   TRIM(ADJele_fname)
-     write(110,rec=1,IOSTAT=ios)r_Adjacent(:,:,:)
-     if ( ios /= 0 ) stop " ERROR writing r_Adjacent "
-     write(110,rec=2,IOSTAT=ios)u_Adjacent(:,:,:)
-     if ( ios /= 0 ) stop " ERROR writing u_Adjacent "
-     write(110,rec=3,IOSTAT=ios)v_Adjacent(:,:,:)
-     if ( ios /= 0 ) stop " ERROR writing v_Adjacent "
+     do k=1,us_tridim
+       write(110,rec=1,IOSTAT=ios)r_Adjacent(:,:,k)
+       if ( ios /= 0 ) stop " ERROR writing r_Adjacent "
+     enddo
+     do k=1,us_tridim
+       write(110,rec=2,IOSTAT=ios)u_Adjacent(:,:,k)
+       if ( ios /= 0 ) stop " ERROR writing u_Adjacent "
+     enddo
+     do k=1,us_tridim
+       write(110,rec=3,IOSTAT=ios)v_Adjacent(:,:,k)
+       if ( ios /= 0 ) stop " ERROR writing v_Adjacent "
+     enddo
     endif 
     CLOSE(110)
 
