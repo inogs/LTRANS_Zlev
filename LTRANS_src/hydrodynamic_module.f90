@@ -1998,7 +1998,8 @@ CONTAINS
          do i=t_ijruv(IMIN,UNODE),t_ijruv(IMAX,UNODE)
            count = (j-1)*ui + i
            do k=1,us    
-             t_Uvel(t_f,count,k) = romUf(i,j,k,1) * m_u(i,j,min(k,us_tridim))
+             romUf(i,j,k,1)=romUf(i,j,k,1)*m_u(i,j,min(k,us_tridim))
+             t_Uvel(t_f,count,k) = romUf(i,j,k,1)
            enddo
          enddo
        enddo
@@ -2052,7 +2053,8 @@ CONTAINS
          do i=t_ijruv(IMIN,VNODE),t_ijruv(IMAX,VNODE)
            count = (j-1)*vi + i
            do k=1,us    
-             t_Vvel(t_f,count,k) = romVf(i,j,k,1) * m_v(i,j,min(k,us_tridim))
+             romVf(i,j,k,1) = romVf(i,j,k,1) * m_v(i,j,min(k,us_tridim))
+             t_Vvel(t_f,count,k) = romVf(i,j,k,1)
            enddo
          enddo    
        enddo
@@ -2105,6 +2107,7 @@ CONTAINS
        do j=t_ijruv(JMIN,VNODE)+1,t_ijruv(JMAX,VNODE)
          do i=t_ijruv(IMIN,UNODE)+1,t_ijruv(IMAX,UNODE)
            do k=1,us ! Loop over vertical levels and integrate from bottom to surface
+              if(m_r(i,j,k).lt.0.5) cycle !skip land points
               dx = (x_u(i,j)-x_u(i-1,j))
               dy = (y_v(i,j)-y_v(i,j-1))
               if(k<us)then 
