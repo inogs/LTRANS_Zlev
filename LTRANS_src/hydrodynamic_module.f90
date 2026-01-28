@@ -341,7 +341,7 @@ CONTAINS
         enddo
       enddo
       if(SUM(euleriandepth)<0) euleriandepth = -euleriandepth ! bathymetry must be positive !
-      write(*,*)'euleriandepth=',euleriandepth(::50,::50)
+      !write(*,*)'euleriandepth=',euleriandepth(::50,::50)
 
       ! longitude at rho (°)
       lon_rho(:,:)=0.0
@@ -372,58 +372,58 @@ CONTAINS
       else
         write(*,*)'lat_rho (',trim(namevar_lat_rho),') read successfully'
       endif
-      write(*,*)'(lon_rho,lat_rho)='
-      do j=uj,1,-1
-        do i=1,vi
-          write(*,'("(",F6.2,F6.2,") ")',advance='no')lon_rho(i,j),lat_rho(i,j)
-        enddo
-        write(*,*)''
-      enddo
+     !write(*,*)'(lon_rho,lat_rho)='
+     !do j=uj,1,-1
+     !  do i=1,vi
+     !    write(*,'("(",F6.2,F6.2,") ")',advance='no')lon_rho(i,j),lat_rho(i,j)
+     !  enddo
+     !  write(*,*)''
+     !enddo
 
 
-      ! longitude at u (°)
-      call netcdf_get_double(ui,uj,1,1,lon_u,namevar_lon_u,NCgridfile,alternative_filename=GridFile_lon_u,return_error=ierr)
-      if(ierr.ne.0)then ! var not found -> we compute it
+     ! ! longitude at u (°)
+     ! call netcdf_get_double(ui,uj,1,1,lon_u,namevar_lon_u,NCgridfile,alternative_filename=GridFile_lon_u,return_error=ierr)
+     ! if(ierr.ne.0)then ! var not found -> we compute it
         write(*,*)'lon_u computed from lon_rho'
        do j=1,uj
         do i=1,ui
           lon_u(i,j)=0.5*(lon_rho(i,j)+lon_rho(i+1,j))
         enddo
        enddo
-      endif
+     ! endif
 
-      ! latitude at u (°)
-      call netcdf_get_double(ui,uj,1,1,lat_u,namevar_lat_u,NCgridfile,alternative_filename=GridFile_lat_u,return_error=ierr)
-      if(ierr.ne.0)then ! var not found -> we compute it
+     ! ! latitude at u (°)
+     ! call netcdf_get_double(ui,uj,1,1,lat_u,namevar_lat_u,NCgridfile,alternative_filename=GridFile_lat_u,return_error=ierr)
+     ! if(ierr.ne.0)then ! var not found -> we compute it
        write(*,*)'lat_u computed from lat_rho'
        do j=1,uj
         do i=1,ui
           lat_u(i,j)=0.5*(lat_rho(i,j)+lat_rho(i+1,j))
         enddo
        enddo
-      endif
+     ! endif
 
-      ! longitude at v (°)
-      call netcdf_get_double(vi,vj,1,1,lon_v,namevar_lon_v,NCgridfile,alternative_filename=GridFile_lon_v,return_error=ierr)
-      if(ierr.ne.0)then ! var not found -> we compute it
+     ! ! longitude at v (°)
+     ! call netcdf_get_double(vi,vj,1,1,lon_v,namevar_lon_v,NCgridfile,alternative_filename=GridFile_lon_v,return_error=ierr)
+     ! if(ierr.ne.0)then ! var not found -> we compute it
         write(*,*)'lon_v computed from lon_rho'
        do j=1,vj
         do i=1,vi
           lon_v(i,j)=0.5*(lon_rho(i,j)+lon_rho(i,j+1))
         enddo
        enddo
-      endif
+     ! endif
 
-      ! latitude at v (°)
-      call netcdf_get_double(vi,vj,1,1,lat_v,namevar_lat_v,NCgridfile,alternative_filename=GridFile_lat_v,return_error=ierr)
-      if(ierr.ne.0)then ! var not found -> we compute it
+     ! ! latitude at v (°)
+     ! call netcdf_get_double(vi,vj,1,1,lat_v,namevar_lat_v,NCgridfile,alternative_filename=GridFile_lat_v,return_error=ierr)
+     ! if(ierr.ne.0)then ! var not found -> we compute it
         write(*,*)'lat_v computed from lat_rho'
        do j=1,vj
         do i=1,vi
           lat_v(i,j)=0.5*(lat_rho(i,j)+lat_rho(i,j+1))
         enddo
        enddo
-      endif
+     ! endif
 
       ! mask on rho grid
       write(*,*)'Reading mask_rho (',trim(namevar_mask_rho),') as ',trim(input_masks_format)
@@ -446,12 +446,12 @@ CONTAINS
         call invert_array_of_int_along_third_dim(mask_rho,.False.)
       endif
       write(*,*)'surface mask_rho(k=us)='
-      do j=uj,1,-1
-        do i=1,vi
-          write(*,'(i1)',advance='no')mask_rho(i,j,us)
-        enddo
-        write(*,*)''
-      enddo
+     !do j=uj,1,-1
+     !  do i=1,vi
+     !    write(*,'(i1)',advance='no')mask_rho(i,j,us)
+     !  enddo
+     !  write(*,*)''
+     !enddo
       
 
       if(Zgrid) then !--- CL-OGS: read MITgcm specific grid files
@@ -6557,8 +6557,10 @@ CONTAINS
    INTEGER:: STATUS,NCID,VID
    DOUBLE PRECISION, ALLOCATABLE :: tmpfield_forkinv(:,:,:)
    DOUBLE PRECISION, ALLOCATABLE :: tmpfield(:,:,:,:)
+   DOUBLE PRECISION, ALLOCATABLE :: read_buffer(:,:,:,:)
    INTEGER :: k_Head,k_Tail,timeindex,ni_in_file,nj_in_file,nk_in_file
    CHARACTER(len=200) :: varname
+   logical :: var_has_vertical_dimension
     !allocate(tmpfield(ni_in_file,nj_in_file,nk,incrstepf)) 
     !tmpfield(:,:,:,:)=0.0
    
@@ -6694,11 +6696,6 @@ CONTAINS
     nj_in_file = nj + file_has_lower_Vnode + file_has_upper_Vnode + one_if_interpol_v ! uj - missing_upper_Vnode - missing_lower_Vnode 
     nk_in_file = nk - missing_last_Wnode - missing_first_Wnode ! here using us even when nk=uw=us+1 as W output has dim us=uw-1 instead of uw for MITGCM (no bottom value)
     
-    if(interpol_uv.eq.0)then
-     write(*,*)''
-    else
-     write(*,*)' interpolating from cell-center values to cell borders',ni_in_file,nj_in_file
-    endif
   
     !if(nk>1)then !(if(Zgrid.or.nk>1))
       allocate(start_index(4))
@@ -6814,15 +6811,21 @@ CONTAINS
          write(*,*) NF90_STRERROR(STATUS)
          stop
        endif
-         STATUS = NF90_GET_VAR(NCID,VID,tmpfield(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod)+ one_if_interpol_u, &
-                                                 t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod)+ one_if_interpol_v, &
-                                                 1+missing_first_Wnode:nk_in_file+missing_first_Wnode,:),      &
-                                                 start_index,count_index                                       )
-         write(*,'(8(a,i4),2(a,4i4),a)')'saving in field(',t_ijruv(IMIN,RUVnod), &
-                   ':',t_ijruv(IMAX,RUVnod),'+',one_if_interpol_u, &
-                   ' , ',t_ijruv(JMIN,RUVnod),':',t_ijruv(JMAX,RUVnod),'+', one_if_interpol_v, &
-                   ' , ',1+missing_first_Wnode,':',nk_in_file+missing_first_Wnode,' , : ) reading startindex =[',&   
-                         start_index,'], count_index= [',count_index,']' 
+        ! Check that the variable dimensions match expected ni,nj,nk and has a vertical dimension
+       call check_netcdf_variable_dimensions(NCID,VID,varname,ni_in_file,nj_in_file,nk_in_file, &
+           start_index,count_index,recordnum,incrstepf,var_has_vertical_dimension)
+        if(.not.var_has_vertical_dimension) then
+                start_index(3)=recordnum
+                count_index(3)=incrstepf
+                start_index(4)=1
+                count_index(4)=1
+                write(*,'(a,i6,a,i6)') 'Adjusting time dimension to be dimension 3  with start_index(3)=',start_index(3), &
+                          ' count_index(3)=',count_index(3)
+        endif  
+
+       allocate(read_buffer(count_index(1), count_index(2), count_index(3), count_index(4)))
+       
+       STATUS = NF90_GET_VAR(NCID,VID,read_buffer, start_index,count_index                                       )
        if (STATUS .NE. NF90_NOERR) then
          write(*,*) 'Problem reading ',varname
          write(*,*) ' i=',start_index(1),':',start_index(1)+count_index(1)-1
@@ -6833,10 +6836,30 @@ CONTAINS
          write(*,*) NF90_STRERROR(STATUS)
          stop
        endif
-       !close the dataset and reassign the NCID
+
+      ! Then copy to tmpfield at the correct indices
+      tmpfield(t_ijruv(IMIN,RUVnod):t_ijruv(IMAX,RUVnod)+ one_if_interpol_u, &
+              t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod)+ one_if_interpol_v, &
+              1+missing_first_Wnode:nk_in_file+missing_first_Wnode, &
+              1:incrstepf) = read_buffer
+         write(*,'(8(a,i4),2(a,4i4),a)')'saving in field(',t_ijruv(IMIN,RUVnod), &
+                   ':',t_ijruv(IMAX,RUVnod),'+',one_if_interpol_u, &
+                   ' , ',t_ijruv(JMIN,RUVnod),':',t_ijruv(JMAX,RUVnod),'+', one_if_interpol_v, &
+                   ' , ',1+missing_first_Wnode,':',nk_in_file+missing_first_Wnode,' , : ) reading startindex =[',&   
+                         start_index,'], count_index= [',count_index,']' 
+
+      write(*,'(4a,2(a,ES14.6E3))')'finished reading var ',trim(varname ),' from NetCDF file ',TRIM(filenm),' ,var read has min=',minval(read_buffer), &
+               ' max=',maxval(read_buffer)
+      deallocate(read_buffer)
+      !close the dataset and reassign the NCID
        STATUS = NF90_CLOSE(NCID)
     ENDIF
  
+    if(interpol_uv.eq.0)then
+     write(*,*)''
+    else
+     write(*,'(3a)')' interpolating variable',trim(varname),' from cell-center values to cell borders'
+    endif
     if(interpol_uv==UNODE) then
       tmpfield(1:ni_in_file-1,:,:,:) =                                                 & 
         0.5 *( tmpfield(1:ni_in_file-1,:,:,:)+tmpfield(2:ni_in_file,:,:,:)) 
@@ -6911,6 +6934,106 @@ CONTAINS
     deallocate(start_index,count_index)
     deallocate(tmpfield)        
   END SUBROUTINE
+ 
+    subroutine check_netcdf_variable_dimensions(NCID,VID,varname,ni_in_file,nj_in_file,nk_in_file, &
+           start_index,count_index,recordnum,incrstepf,var_has_vertical_dimension)
+    USE netcdf
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+    INTEGER,intent(in):: NCID,VID
+    CHARACTER(*), intent(in) :: varname
+    integer,intent(in) :: ni_in_file,nj_in_file,nk_in_file,recordnum,incrstepf
+    integer,intent(in), dimension(:) :: start_index,count_index
+    logical, intent(out) :: var_has_vertical_dimension
+    integer :: STATUS
+    integer :: nc_dim,nc_ndims, nc_dimids(NF90_MAX_VAR_DIMS),nc_dimsize(NF90_MAX_VAR_DIMS)
+    character(len=NF90_MAX_NAME) :: nc_dimname,nc_dimname_lower
+    var_has_vertical_dimension=.True.
+       ! Get number of dimensions and dimension IDs
+       STATUS = NF90_INQUIRE_VARIABLE(NCID, VID, ndims=nc_ndims, dimids=nc_dimids)
+       if (STATUS .NE. NF90_NOERR) then 
+         write(*,*) 'Problem inquiring number of dimensions of variable',varname
+         write(*,*) NF90_STRERROR(STATUS)
+         stop
+       endif
+       
+       ! Get the size of each dimension (e.g., the 3rd dimension)
+       do nc_dim=1,nc_ndims
+         STATUS = NF90_INQUIRE_DIMENSION(NCID, nc_dimids(nc_dim),name=nc_dimname, len=nc_dimsize(nc_dim))
+         if (STATUS .NE. NF90_NOERR) then
+           write(*,*) 'Problem inquiring size of dimension',nc_dim,' of variable',varname
+           write(*,*) NF90_STRERROR(STATUS)
+           stop
+         endif
+         write(*,'(a,i2,3a,i6)') ' >>> dimension ',nc_dim,' of variable read in the file is ',trim(nc_dimname),' of size ',nc_dimsize(nc_dim)
+         call to_lower(nc_dimname,nc_dimname_lower)
+
+         select case (nc_dim)
+
+          case(1) ! Check dimension 1: contains "lon"
+           if (index(nc_dimname_lower, 'lon') == 0) then
+             write(*,*) 'Warning: Dimension 1 does not contain lon, got:', trim(nc_dimname)
+           endif
+           if(nc_dimsize(nc_dim).ne.ni_in_file) then
+            write(*,*) 'Warning: Dimension 1 size mismatch, expected ',ni_in_file,' got ',nc_dimsize(nc_dim)
+           endif
+
+          case(2) ! Check dimension 2: contains "lat"
+            if (index(nc_dimname_lower, 'lat') == 0) then
+              write(*,*) 'Warning: Dimension 2 does not contain lat, got:', trim(nc_dimname)
+            endif
+           if(nc_dimsize(nc_dim).ne.nj_in_file) then
+            write(*,*) 'Warning: Dimension 2 size mismatch, expected ',nj_in_file,' got ',nc_dimsize(nc_dim)
+           endif
+
+          case(3)! Check dimension 3: contains "z" or "depth", or eventually time 
+          if (index(nc_dimname_lower, 'z') == 0 .and. index(nc_dimname_lower, 'h') == 0) then
+              if (index(nc_dimname_lower, 'time') > 0) then
+                write(*,*) 'Dimension 3 does not contain either z, h ; it is instead time:', trim(nc_dimname)
+                var_has_vertical_dimension=.False.
+                if(nc_dimsize(nc_dim)<recordnum) then
+                  write(*,*) 'ERROR: Dimension 3 size mismatch for time'
+                  write(*,*) ' we want record',recordnum, &
+                            ' while the file contains ',nc_dimsize(nc_dim),'records'
+                            stop
+                endif
+              else
+                write(*,*) 'ERROR: Dimension 3 does not contain z, h, not time got:', trim(nc_dimname)
+                stop
+              endif
+          else if(nc_dimsize(nc_dim).ne.nk_in_file) then
+            write(*,*) 'Warning: Dimension 3 size mismatch, expected ',nk_in_file,' got ',nc_dimsize(nc_dim)
+           endif
+
+         case(4) ! Check dimension 4: contains "time"
+           if (index(nc_dimname_lower, 'time') == 0) then
+             write(*,*) 'Warning: Dimension 4 does not contain time, got:', trim(nc_dimname)
+           endif
+           if(nc_dimsize(nc_dim).lt.start_index(4)) then
+            write(*,*) 'ERROR: Dimension 4 size mismatch for time, we want record',start_index(4), &
+                      ' while the file contains ',nc_dimsize(nc_dim),'records'
+                      stop
+           endif
+         case default
+           write(*,*) 'Warning: Variable has more than 4 dimensions, cannot validate all dimensions'
+         end select
+
+       enddo
+      end subroutine check_netcdf_variable_dimensions
+
+    subroutine to_lower(str_in, str_out)
+    character(len=*), intent(in)  :: str_in
+    character(len=*), intent(out) :: str_out
+    integer :: i, ic
+    
+    str_out = str_in
+    do i = 1, len_trim(str_in)
+      ic = iachar(str_in(i:i))
+      if (ic >= iachar('A') .and. ic <= iachar('Z')) then
+        str_out(i:i) = achar(ic + 32)
+      endif
+    enddo
+  end subroutine to_lower
 
   SUBROUTINE netcdf_open(NCfile,NCID,return_error)
     USE netcdf
