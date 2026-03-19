@@ -643,7 +643,7 @@ contains
        P_depth = DBLE(-1.0)* getInterp(par(m,pX),par(m,pY),VAR_ID_depth,klev)
       else !             (Zgrid :)      
         call getDepth(par(m,pX),par(m,pY),m,it,P_depth,Fstlev,conflict)  
-        write(*,*)'part',m,par(m,pX),par(m,pY),P_depth,Fstlev
+        write(*,'(a,i7,2f18.4,f12.3,i7)')'part',m,par(m,pX),par(m,pY),P_depth,Fstlev
       endif
       parIniDepth(m)=P_depth+SeabedRelease_meters
       par(m,pZ) =parIniDepth(m)
@@ -1161,19 +1161,18 @@ contains
     DOUBLE PRECISION frstpriv_Average_Value(NUM_ID_VALUES)
     INTEGER frstpriv_Average_Numpart(NUM_ID_NUMPARTS)
     INTEGER n
-    frstpriv_Average_Numpart(:)=0
-    frstpriv_Average_Value(:)=0.0
     Average_Numpart(:)=0       
     Average_Value(:) = 0.0     
 
    !$OMP PARALLEL DEFAULT(NONE) &
-   !$OMP SHARED(numpar,par) &
-   !$OMP PRIVATE(Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf) &
-   !$OMP FIRSTPRIVATE (frstpriv_Average_Value,frstpriv_Average_Numpart)  &
-   !$OMP REDUCTION(+:Average_Value) &    
-   !$OMP REDUCTION(+:Average_Numpart) 
+   !$OMP SHARED(numpar,par,Average_Value,Average_Numpart) &
+   !$OMP PRIVATE(Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf,n, &
+   !$OMP         frstpriv_Average_Value,frstpriv_Average_Numpart)  
 
-   !$OMP DO PRIVATE(n)  
+    frstpriv_Average_Numpart(:)=0
+    frstpriv_Average_Value(:)=0.0
+
+   !$OMP DO SCHEDULE(STATIC) 
     DO n=1,numpar
       call update_single_particle(n,frstpriv_Average_Value,frstpriv_Average_Numpart, &
                                   Pwc_zb,Pwc_zc,Pwc_zf,Pwc_wzb,Pwc_wzc,Pwc_wzf)
@@ -1196,10 +1195,12 @@ contains
 
    !DEALLOCATE(Pwc_zb,Pwc_zc,Pwc_zf)
    !DEALLOCATE(Pwc_wzb,Pwc_wzc,Pwc_wzf)
-
+   
+   ! Safe accumulation, one thread at a time:
+   !$OMP CRITICAL
     Average_Value(:)=Average_Value(:)+frstpriv_Average_Value(:)
     Average_Numpart(:)=Average_Numpart(:)+frstpriv_Average_Numpart(:)
-
+   !$OMP END CRITICAL
    !$OMP END PARALLEL 
 
       IF(Average_Numpart(ID_U_WIND).ge.1)then

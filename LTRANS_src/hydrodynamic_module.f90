@@ -493,7 +493,8 @@ CONTAINS
             ! ZW(k)=0.5*(ZC(k)+ZC(k+1))
             !enddo
           endif
-          write(*,*)'ZW=',ZW
+          write(*,*)'ZW='
+          call write_array(ZW,10,'f10.3')
         endif
 
         ! Z-coordinate on rho grid (Z) : cell-centered coordinates
@@ -513,7 +514,9 @@ CONTAINS
         else
          stop' missing vertical coordimates'
         endif
-        write(*,*)'ZC=',ZC
+        
+        write(*,*)'ZC='
+        call write_array(ZC,10,'f10.3')
 
         if(trim(Zinterfaces_location)=='not_provided') then 
           ZW(ws)=0.0
@@ -521,7 +524,8 @@ CONTAINS
            ZW(k)=ZW(k+1)+2*(ZC(k)-ZW(k+1))
            write(*,*)'ZW(',k,')=',ZW(k+1),'+2*(',ZC(k),'-',ZW(k+1),')=',ZW(k)
           enddo
-          write(*,*)'computed ZW=',ZW
+          write(*,*)'computed ZW='
+          call write_array(ZW,10,'f10.3')
         endif
       else          !--- CL-OGS: angle read only for ROMS files  
         if(Vtransform.eq.0)then
@@ -1487,18 +1491,48 @@ CONTAINS
 
     ! Create search restriction algorithms
     !if(ADJele_file)then
-      write(*,*) 'find adjacent elements, reading or writing in file ',        &
-                        TRIM(ADJele_fname)
-      open(unit=110,file=TRIM(ADJele_fname),form='unformatted',                &
+      write(*,*) 'opening Adjacent element file :',        &
+                        TRIM(ADJele_fname)//'.rho'
+      open(unit=110,file=TRIM(ADJele_fname)//'.rho',form='unformatted',                &
                  status='unknown', action='readwrite',access='direct',         &
                  recl=4*max_rho_elements*10*us_tridim, iostat=ios)
       if ( ios /= 0 ) then
         do waiting=1,10
          call sleep(30)
-         write(*,*)'waiting as opening of file',trim(ADJele_fname),' failed'
-         open(unit=110,file=TRIM(ADJele_fname),form='unformatted',             &
+         write(*,*)'waiting as opening of file',trim(ADJele_fname)//'.rho',' failed'
+         open(unit=110,file=TRIM(ADJele_fname)//'.rho',form='unformatted',             &
                status='unknown',  action='readwrite',access='direct',          &
                recl=4*max_rho_elements*10*us_tridim,iostat=ios)
+         if ( ios == 0 ) exit
+        enddo
+      endif
+      write(*,*) 'opening Adjacent element file :',        &
+                        TRIM(ADJele_fname)//'.u'
+      open(unit=111,file=TRIM(ADJele_fname)//'.u',form='unformatted',                &
+                 status='unknown', action='readwrite',access='direct',         &
+                 recl=4*max_u_elements*10*us_tridim, iostat=ios)
+      if ( ios /= 0 ) then
+        do waiting=1,10
+         call sleep(30)
+         write(*,*)'waiting as opening of file',trim(ADJele_fname)//'.u',' failed'
+         open(unit=111,file=TRIM(ADJele_fname)//'.v',form='unformatted',             &
+               status='unknown',  action='readwrite',access='direct',          &
+               recl=4*max_u_elements*10*us_tridim,iostat=ios)
+         if ( ios == 0 ) exit
+        enddo
+      endif
+      write(*,*) 'opening Adjacent element file :',        &
+                        TRIM(ADJele_fname)//'.v'
+      open(unit=112,file=TRIM(ADJele_fname)//'.v',form='unformatted',                &
+                 status='unknown', action='readwrite',access='direct',         &
+                 recl=4*max_v_elements*10*us_tridim, iostat=ios)
+      if ( ios /= 0 ) then
+        do waiting=1,10
+         call sleep(30)
+         write(*,*)'waiting as opening of file',trim(ADJele_fname)//'.v',' failed'
+         open(unit=112,file=TRIM(ADJele_fname)//'.v',form='unformatted',             &
+               status='unknown',  action='readwrite',access='direct',          &
+               recl=4*max_v_elements*10*us_tridim,iostat=ios)
          if ( ios == 0 ) exit
         enddo
       endif
@@ -1511,15 +1545,15 @@ CONTAINS
     if(ADJele_file)then
       write(*,*)'read from file ',TRIM(ADJele_fname)
       do k=1,us_tridim
-       read(110,rec=1,IOSTAT=ios)r_Adjacent(:,:,k)
+       read(110,rec=k,IOSTAT=ios)r_Adjacent(:,:,k)
        if ( ios /= 0 ) stop " ERROR reading r_Adjacent "
       enddo
       do k=1,us_tridim
-       read(110,rec=2,IOSTAT=ios)u_Adjacent(:,:,k)
+       read(111,rec=us_tridim+k,IOSTAT=ios)u_Adjacent(:,:,k)
        if ( ios /= 0 ) stop " ERROR reading u_Adjacent "
       enddo
       do k=1,us_tridim
-       read(110,rec=3,IOSTAT=ios)v_Adjacent(:,:,k)
+       read(112,rec=2*us_tridim+k,IOSTAT=ios)v_Adjacent(:,:,k)
        if ( ios /= 0 ) stop " ERROR reading v_Adjacent "
       enddo
     else
@@ -1569,7 +1603,7 @@ CONTAINS
           enddo 
         enddo 
       enddo 
-     
+
       write(*,*) ' - compute v adjacent elements '
       v_Adjacent=0
       do k=1,us_tridim
@@ -1593,22 +1627,36 @@ CONTAINS
         enddo
       enddo 
 
-     write(*,*)'write in rho,u and v adjacent elements in file ',              &
+     write(*,*)'write rho,u and v adjacent elements in file ',              &
                                                   TRIM(ADJele_fname)
      do k=1,us_tridim
-       write(110,rec=1,IOSTAT=ios)r_Adjacent(:,:,k)
+       write(110,rec=k,IOSTAT=ios)r_Adjacent(:,:,k)
        if ( ios /= 0 ) stop " ERROR writing r_Adjacent "
      enddo
      do k=1,us_tridim
-       write(110,rec=2,IOSTAT=ios)u_Adjacent(:,:,k)
+       write(111,rec=us_tridim+k,IOSTAT=ios)u_Adjacent(:,:,k)
        if ( ios /= 0 ) stop " ERROR writing u_Adjacent "
      enddo
      do k=1,us_tridim
-       write(110,rec=3,IOSTAT=ios)v_Adjacent(:,:,k)
+       write(112,rec=2*us_tridim+k,IOSTAT=ios)v_Adjacent(:,:,k)
        if ( ios /= 0 ) stop " ERROR writing v_Adjacent "
      enddo
-    endif 
+    endif
     CLOSE(110)
+    CLOSE(111)
+    CLOSE(112)
+    do k=1,us_tridim
+       if(rho_kwele(k).ne.maxval(r_Adjacent(:,:,k)))then
+         write(*,*) 'error level ',k,' rho_kwele=',rho_kwele(k),' while maxval(r_Adj)=',maxval(r_Adjacent(:,:,k))
+         stop
+       elseif(u_kwele(k).ne.maxval(u_Adjacent(:,:,k)))then
+         write(*,*) 'error level ',k,' u_kwele=',u_kwele(k),' while maxval(u_Adj)=',maxval(u_Adjacent(:,:,k))
+         stop
+       elseif(v_kwele(k).ne.maxval(v_Adjacent(:,:,k)))then
+         write(*,*) 'error level ',k,' v_kwele=',v_kwele(k),' while maxval(v_Adj)=',maxval(v_Adjacent(:,:,k))
+         stop
+       endif 
+    enddo
 
     !DEALLOCATE SUBROUTINE VARIABLES
     DEALLOCATE(euleriandepth,mask_u,mask_v)
@@ -4433,7 +4481,12 @@ CONTAINS
         enddo
       endif
      
-      if (getKRlevel==0) stop "ERROR computng KRlevel"
+      if (getKRlevel==0) then
+           write(*,*) "ERROR computng KRlevel"
+           write(*,*)'Zin=',Zin,'ws=',ws
+           write(*,*)'ZW=',ZW
+           !stop "ERROR computng KRlevel"
+       endif
     else
       getKRlevel=1
     endif
@@ -6734,11 +6787,12 @@ CONTAINS
 
     if(Hydro_NetCDF)then
       varname=trim(var_name_in_netcdf(var_id))
-      write(*,'(4a,3(a,i8))')'read in NetCDF file var ',trim(varname),' from file',TRIM(filenm), &
-           ' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk_in_file
+      !write(*,'(4a,3(a,i8))')'read in NetCDF file var ',trim(varname),' from file',TRIM(filenm), &
+      !     ' for time record num=',recordnum,':',recordnum+incrstepf-1,' nk=',nk_in_file
     else
-      write(*,'(4a,3(a,i8))')'read in MITgcm native binary file for var ',trim(explicit_var_name(var_id)),' from file',TRIM(filenm), &
-           ' for time record num=',start_index(timeindex),':',start_index(timeindex)+count_index(timeindex)-1,' nk=',nk_in_file
+      !write(*,'(4a,3(a,i8))')'read in MITgcm native binary file for var ',trim(explicit_var_name(var_id)),' from file',TRIM(filenm), &
+      !     ' for time record num=',start_index(timeindex),':',start_index(timeindex)+count_index(timeindex)-1,' nk=',nk_in_file
+      continue
     endif
 
 
@@ -6842,11 +6896,11 @@ CONTAINS
               t_ijruv(JMIN,RUVnod):t_ijruv(JMAX,RUVnod)+ one_if_interpol_v, &
               1+missing_first_Wnode:nk_in_file+missing_first_Wnode, &
               1:incrstepf) = read_buffer
-         write(*,'(8(a,i4),2(a,4i4),a)')'saving in field(',t_ijruv(IMIN,RUVnod), &
-                   ':',t_ijruv(IMAX,RUVnod),'+',one_if_interpol_u, &
-                   ' , ',t_ijruv(JMIN,RUVnod),':',t_ijruv(JMAX,RUVnod),'+', one_if_interpol_v, &
-                   ' , ',1+missing_first_Wnode,':',nk_in_file+missing_first_Wnode,' , : ) reading startindex =[',&   
-                         start_index,'], count_index= [',count_index,']' 
+      !write(*,'(8(a,i4),2(a,4i4),a)')'saving in field(',t_ijruv(IMIN,RUVnod), &
+      !  ':',t_ijruv(IMAX,RUVnod),'+',one_if_interpol_u, &
+      !  ' , ',t_ijruv(JMIN,RUVnod),':',t_ijruv(JMAX,RUVnod),'+', one_if_interpol_v, &
+      !  ' , ',1+missing_first_Wnode,':',nk_in_file+missing_first_Wnode,' , : ) reading startindex =[',&   
+      !        start_index,'], count_index= [',count_index,']' 
 
       write(*,'(4a,2(a,ES14.6E3))')'finished reading var ',trim(varname ),' from NetCDF file ',TRIM(filenm),' ,var read has min=',minval(read_buffer), &
                ' max=',maxval(read_buffer)
@@ -6965,31 +7019,32 @@ CONTAINS
            write(*,*) NF90_STRERROR(STATUS)
            stop
          endif
-         write(*,'(a,i2,3a,i6)') ' >>> dimension ',nc_dim,' of variable read in the file is ',trim(nc_dimname),' of size ',nc_dimsize(nc_dim)
+         !write(*,'(a,i2,3a,i6)') ' >>> dimension ',nc_dim,' of variable read in the file is ',trim(nc_dimname),' of size ',nc_dimsize(nc_dim)
          call to_lower(nc_dimname,nc_dimname_lower)
 
          select case (nc_dim)
 
           case(1) ! Check dimension 1: contains "lon"
-           if (index(nc_dimname_lower, 'lon') == 0) then
-             write(*,*) 'Warning: Dimension 1 does not contain lon, got:', trim(nc_dimname)
-           endif
-           if(nc_dimsize(nc_dim).ne.ni_in_file) then
-            write(*,*) 'Warning: Dimension 1 size mismatch, expected ',ni_in_file,' got ',nc_dimsize(nc_dim)
-           endif
-
+           !if (index(nc_dimname_lower, 'lon') == 0) then
+           !  write(*,*) 'Warning: Dimension 1 does not contain lon, got:', trim(nc_dimname)
+           !endif
+           !if(nc_dimsize(nc_dim).ne.ni_in_file) then
+           ! write(*,*) 'Warning: Dimension 1 size mismatch, expected ',ni_in_file,' got ',nc_dimsize(nc_dim)
+           !endif
+           continue
           case(2) ! Check dimension 2: contains "lat"
-            if (index(nc_dimname_lower, 'lat') == 0) then
-              write(*,*) 'Warning: Dimension 2 does not contain lat, got:', trim(nc_dimname)
-            endif
-           if(nc_dimsize(nc_dim).ne.nj_in_file) then
-            write(*,*) 'Warning: Dimension 2 size mismatch, expected ',nj_in_file,' got ',nc_dimsize(nc_dim)
-           endif
+           ! if (index(nc_dimname_lower, 'lat') == 0) then
+           !   write(*,*) 'Warning: Dimension 2 does not contain lat, got:', trim(nc_dimname)
+           ! endif
+           !if(nc_dimsize(nc_dim).ne.nj_in_file) then
+           ! write(*,*) 'Warning: Dimension 2 size mismatch, expected ',nj_in_file,' got ',nc_dimsize(nc_dim)
+           !endif
+           continue
 
           case(3)! Check dimension 3: contains "z" or "depth", or eventually time 
-          if (index(nc_dimname_lower, 'z') == 0 .and. index(nc_dimname_lower, 'h') == 0) then
+            if (index(nc_dimname_lower, 'z') == 0 .and. index(nc_dimname_lower, 'h') == 0) then
               if (index(nc_dimname_lower, 'time') > 0) then
-                write(*,*) 'Dimension 3 does not contain either z, h ; it is instead time:', trim(nc_dimname)
+                !write(*,*) 'Dimension 3 does not contain either z, h ; it is instead time:', trim(nc_dimname)
                 var_has_vertical_dimension=.False.
                 if(nc_dimsize(nc_dim)<recordnum) then
                   write(*,*) 'ERROR: Dimension 3 size mismatch for time'
@@ -7001,14 +7056,15 @@ CONTAINS
                 write(*,*) 'ERROR: Dimension 3 does not contain z, h, not time got:', trim(nc_dimname)
                 stop
               endif
-          else if(nc_dimsize(nc_dim).ne.nk_in_file) then
-            write(*,*) 'Warning: Dimension 3 size mismatch, expected ',nk_in_file,' got ',nc_dimsize(nc_dim)
-           endif
+            else if(nc_dimsize(nc_dim).ne.nk_in_file) then
+              !write(*,*) 'Warning: Dimension 3 size mismatch, expected ',nk_in_file,' got ',nc_dimsize(nc_dim)
+              continue
+            endif
 
          case(4) ! Check dimension 4: contains "time"
-           if (index(nc_dimname_lower, 'time') == 0) then
-             write(*,*) 'Warning: Dimension 4 does not contain time, got:', trim(nc_dimname)
-           endif
+           !if (index(nc_dimname_lower, 'time') == 0) then
+           !  write(*,*) 'Warning: Dimension 4 does not contain time, got:', trim(nc_dimname)
+           !endif
            if(nc_dimsize(nc_dim).lt.start_index(4)) then
             write(*,*) 'ERROR: Dimension 4 size mismatch for time, we want record',start_index(4), &
                       ' while the file contains ',nc_dimsize(nc_dim),'records'
@@ -7016,6 +7072,7 @@ CONTAINS
            endif
          case default
            write(*,*) 'Warning: Variable has more than 4 dimensions, cannot validate all dimensions'
+           !continue
          end select
 
        enddo
@@ -7374,6 +7431,43 @@ CONTAINS
      
   END SUBROUTINE
 
+  subroutine write_array(A, nperline, fmt_str)
+    !-----------------------------------------------------------------
+    ! Writes a 1D real array with a dynamically created FORMAT string.
+    !
+    ! Arguments:
+    !   A        : real array (1D, allocatable or static)
+    !   fmt_str  : character string specifying the float format, e.g., 'F8.3'
+    !   nperline : integer, how many numbers per line
+    !-----------------------------------------------------------------
+    implicit none
+    double precision, intent(in) :: A(:)
+    character(len=*), intent(in) :: fmt_str
+    integer, intent(in) :: nperline
+
+    integer :: n, i
+    character(len=50) :: fmt
+    integer :: repeats, remainder
+
+    n = size(A)
+    repeats = nperline
+    ! Build the format string dynamically
+    write(fmt, '(A,I0,A,A)') '(', repeats, fmt_str, ')'
+
+    ! Write the array using the dynamic format
+    i = 1
+    do while (i <= n)
+       if (i + nperline - 1 <= n) then
+          write(*, trim(fmt)) A(i:i+nperline-1)
+       else
+          ! Handle last line with fewer elements
+          write(fmt, '(A,I0,A,A)') '(', n-i+1, fmt_str, ')'
+          write(*,trim(fmt)) A(i:n)
+       end if
+       i = i + nperline
+    end do
+
+  end subroutine write_array
 
 END MODULE HYDRO_MOD
 

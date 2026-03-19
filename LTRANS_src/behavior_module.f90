@@ -448,7 +448,7 @@ CONTAINS
      elseif(P_behave(n).eq.3)then !TYPE 3. Sink to bottom 
          parBehav=-abs(sink)
          if(P_zc .LT. (P_depth+1.0)) then
-            write(*,'(i2)',advance='no')P_behave(n)
+            !write(*,'(i2)',advance='no')P_behave(n)
             P_behave(n) = 4
             !write(*,'(2(a,i5),3(a,f8.2))') &
             !'it',it,'Part',n,' reached bottom arriving at P_zc=',P_zc,&
